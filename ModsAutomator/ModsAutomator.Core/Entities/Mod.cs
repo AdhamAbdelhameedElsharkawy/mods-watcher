@@ -8,18 +8,20 @@ namespace ModsAutomator.Core.Entities
     /// This class represents an abstract Mod that is used in an app
     /// Root source URL is used by web crawler to check on latest versions of the Mod
     /// </summary>
-    public class Mod
+    public abstract class Mod
     {
-        private int _id;
+        private Guid _id;
         private int _appId;
         private string _name = string.Empty;
         private string _rootSourceUrl = string.Empty;
         private bool _isDeprecated;
+        private string? _description;
 
-        public int Id { get => _id; set => _id = value; }
-        public int AppId { get => _appId; set => _appId = value; }
-        public string Name { get => _name; set => _name = value; }
+        public Guid Id { get => _id; init => _id = value; }
+        public int AppId { get => _appId; init => _appId = value; }
+        public string Name { get => _name; init => _name = value; }
         public string RootSourceUrl { get => _rootSourceUrl; set => _rootSourceUrl = value; }
         public bool IsDeprecated { get => _isDeprecated; set => _isDeprecated = value; }
+        public string? Description { get => _description; set => _description = value; }
     }
 }
