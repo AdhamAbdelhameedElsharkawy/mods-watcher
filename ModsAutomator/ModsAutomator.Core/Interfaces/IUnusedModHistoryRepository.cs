@@ -1,0 +1,10 @@
+﻿using ModsAutomator.Core.Entities;
+using System.Data;
+
+namespace ModsAutomator.Core.Interfaces
+{
+    public interface IUnusedModHistoryRepository : IRepository<UnusedModHistory, int>
+    {
+        Task<IEnumerable<UnusedModHistory>> FindByModdedAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+    }
+}

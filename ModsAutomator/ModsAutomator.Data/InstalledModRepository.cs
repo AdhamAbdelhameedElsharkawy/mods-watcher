@@ -1,0 +1,161 @@
+﻿using Dapper;
+using ModsAutomator.Core.Entities;
+using ModsAutomator.Core.Interfaces;
+using ModsAutomator.Data.Interfaces;
+using System.Data;
+using System.Transactions;
+
+namespace ModsAutomator.Data
+{
+    public class InstalledModRepository : BaseRepository, IInstalledModRepository
+    {
+        private readonly IModRepository _modRepository;
+
+        public InstalledModRepository(IConnectionFactory connectionFactory, IModRepository modRepository) : base(connectionFactory)
+        {
+            this._modRepository = modRepository;
+        }
+
+        public Task<bool> DeleteAsync(int id, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"DELETE FROM InstalledMod WHERE Id = @Id;";
+
+                var affected = await conn.ExecuteAsync(
+                    new CommandDefinition(sql, new { Id = id }, trans, cancellationToken: cancellationToken));
+
+                return affected > 0;
+
+            }, true, connection, transaction);
+        }
+
+        public Task<InstalledMod?> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"
+SELECT m.Id, m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
+       im.InstalledVersion, im.InstalledDate, im.InstalledSizeMB,
+       im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.PriorityOrder
+FROM InstalledMod im
+JOIN Mod m ON m.Id = im.ModId
+WHERE im.ModId = @ModId;";
+
+                return await conn.QuerySingleOrDefaultAsync<InstalledMod>(
+                    new CommandDefinition(sql, new { ModId = modId }, trans, cancellationToken: cancellationToken));
+
+            }, false, connection, transaction);
+        }
+
+        public Task<InstalledMod?> GetByIdAsync(int id, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"
+SELECT m.Id, m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
+       im.InstalledVersion, im.InstalledDate, im.InstalledSizeMB,
+       im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.PriorityOrder
+FROM InstalledMod im
+JOIN Mod m ON m.Id = im.ModId
+WHERE im.Id = @Id;";
+
+                return await conn.QuerySingleOrDefaultAsync<InstalledMod>(
+                    new CommandDefinition(sql, new { Id = id }, trans, cancellationToken: cancellationToken));
+
+            }, false, connection, transaction);
+        }
+
+        public Task<InstalledMod?> InsertAsync(InstalledMod entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                // ensure Mod exists
+                var existingMod = await _modRepository.GetByIdAsync(
+                    entity.Id, conn, trans, cancellationToken);
+
+                if (existingMod == null)
+                {
+                    await _modRepository.InsertAsync(
+                        entity, conn, trans, cancellationToken);
+                }
+
+                const string sql = @"
+INSERT INTO InstalledMod
+(ModId, InstalledVersion, InstalledDate, InstalledSizeMB,
+ PackageType, PackageFilesNumber, SupportedAppVersions, PriorityOrder)
+VALUES
+(@ModId, @InstalledVersion, @InstalledDate, @InstalledSizeMB,
+ @PackageType, @PackageFilesNumber, @SupportedAppVersions, @PriorityOrder);";
+
+                await conn.ExecuteAsync(
+                    new CommandDefinition(sql, new
+                    {
+                        ModId = entity.Id,
+                        entity.InstalledVersion,
+                        entity.InstalledDate,
+                        entity.InstalledSizeMB,
+                        PackageType = (int)entity.PackageType,
+                        entity.PackageFilesNumber,
+                        entity.SupportedAppVersions,
+                        entity.PriorityOrder
+                    }, trans, cancellationToken: cancellationToken));
+
+                return (InstalledMod?)entity;
+
+            }, true, connection, transaction);
+        }
+
+        public Task<IEnumerable<InstalledMod>> QueryAllAsync(IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"
+SELECT m.Id, m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
+       im.InstalledVersion, im.InstalledDate, im.InstalledSizeMB,
+       im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.PriorityOrder
+FROM InstalledMod im
+JOIN Mod m ON m.Id = im.ModId;";
+
+                return await conn.QueryAsync<InstalledMod>(
+                    new CommandDefinition(sql, transaction: trans, cancellationToken: cancellationToken));
+
+            }, false, connection, transaction);
+        }
+
+        public Task<InstalledMod?> UpdateAsync(InstalledMod entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"
+UPDATE InstalledMod SET
+    InstalledVersion = @InstalledVersion,
+    InstalledDate = @InstalledDate,
+    InstalledSizeMB = @InstalledSizeMB,
+    PackageType = @PackageType,
+    PackageFilesNumber = @PackageFilesNumber,
+    SupportedAppVersions = @SupportedAppVersions,
+    PriorityOrder = @PriorityOrder
+WHERE ModId = @ModId;";
+
+                await conn.ExecuteAsync(
+                    new CommandDefinition(sql, new
+                    {
+                        ModId = entity.Id,
+                        entity.InstalledVersion,
+                        entity.InstalledDate,
+                        entity.InstalledSizeMB,
+                        PackageType = (int)entity.PackageType,
+                        entity.PackageFilesNumber,
+                        entity.SupportedAppVersions,
+                        entity.PriorityOrder
+                    }, trans, cancellationToken: cancellationToken));
+
+                return (InstalledMod?)entity;
+
+            }, true, connection, transaction);
+        }
+
+
+    }
+}
