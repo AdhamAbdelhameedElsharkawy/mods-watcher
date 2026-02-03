@@ -1,12 +1,37 @@
-﻿<Window x:Class="ModsAutomator.Desktop.MainWindow"
+﻿<Window x:Class="ModsAutomator.Desktop.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ModsAutomator.Desktop"
+        xmlns:viewmodels="clr-namespace:ModsAutomator.Desktop.ViewModels"
+        xmlns:views="clr-namespace:ModsAutomator.Desktop.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Mods Automator 2026" Height="600" Width="1000"
+        Background="#1E1E1E">
 
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type viewmodels:AppSelectionViewModel}">
+            <views:AppSelectionView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:LibraryViewModel}">
+            <views:LibraryView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:AvailableVersionsViewModel}">
+            <views:AvailableVersionsView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:ModHistoryViewModel}">
+            <views:ModHistoryView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:RetiredModsViewModel}">
+            <views:RetiredModsView />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <ContentControl Content="{Binding CurrentViewModel}" />
     </Grid>
 </Window>

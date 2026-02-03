@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,11 +14,11 @@ using System.Windows.Shapes;
 namespace ModsAutomator.Desktop.Views
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for ModHistoryView.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class ModHistoryView : UserControl
     {
-        public MainWindow()
+        public ModHistoryView()
         {
             InitializeComponent();
         }

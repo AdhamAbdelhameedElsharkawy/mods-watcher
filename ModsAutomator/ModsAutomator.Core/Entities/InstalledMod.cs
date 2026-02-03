@@ -10,6 +10,7 @@ namespace ModsAutomator.Core.Entities
     /// </summary>
     public class InstalledMod : Mod
     {
+        private int _id;
         private string _installedVersion = string.Empty;
         private DateOnly _installedDate;
         private decimal _installedSizeMB;
@@ -25,5 +26,6 @@ namespace ModsAutomator.Core.Entities
         public int PackageFilesNumber { get => _packageFilesNumber; set => _packageFilesNumber = value; }
         public string SupportedAppVersions { get => _supportedAppVersions; set => _supportedAppVersions = value; }
         public int PriorityOrder { get => _priorityOrder; set => _priorityOrder = value; }
+        public int Id1 { get => _id; set => _id = value; }
     }
 }
