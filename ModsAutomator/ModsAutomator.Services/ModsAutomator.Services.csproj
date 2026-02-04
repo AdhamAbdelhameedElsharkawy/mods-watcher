@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ModsAutomator.Core\ModsAutomator.Core.csproj" />
+    <ProjectReference Include="..\ModsAutomator.Data\ModsAutomator.Data.csproj" />
+  </ItemGroup>
+
 </Project>

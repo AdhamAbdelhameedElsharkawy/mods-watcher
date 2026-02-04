@@ -18,7 +18,7 @@ namespace ModsAutomator.Core.Entities
 
 
         public int Id { get => this._id; init { this._id = value; } }
-        public string Name { get => _name; init => _name = value; }
+        public string Name { get => _name; set => _name = value; }
         public string? Description { get => _description; set => _description = value; }
         public string LatestVersion { get => _latestVersion; set => _latestVersion = value; }
         public string InstalledVersion { get => _installedVersion; set => _installedVersion = value; }

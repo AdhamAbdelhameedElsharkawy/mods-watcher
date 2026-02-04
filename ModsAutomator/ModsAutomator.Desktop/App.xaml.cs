@@ -1,8 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using ModsAutomator.Data;
+using ModsAutomator.Data.DI;
+using ModsAutomator.Data.Interfaces;
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Desktop.Services;
 using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Desktop.Views;
+using ModsAutomator.Services;
+using ModsAutomator.Services.DI;
+using ModsAutomator.Services.Interfaces;
 using System.Windows;
 
 
@@ -22,30 +28,38 @@ namespace ModsAutomator.Desktop
         public App()
         {
             var services = new ServiceCollection();
+            string connectionString = "Data Source=mods.db";
 
-            // 1. Register Services (Singletons usually)
+            // 1. Data Project DI (Registers Repos & Factory)
+            services.AddDataServices(connectionString);
+
+            // 2. Services Project DI (Registers StorageService, etc.)
+            // Assuming you have a method like AddBusinessServices() in that project
+            services.AddServicesLayer();
+
+            // 3. Desktop Project (Local registrations)
             services.AddSingleton<INavigationService, NavigationService>();
-
-            // 2. Register ViewModels (Transients so they refresh when navigated to)
-            services.AddSingleton<MainViewModel>(); // Main stays alive
+            services.AddSingleton<MainViewModel>();
             services.AddTransient<AppSelectionViewModel>();
-            services.AddTransient<LibraryViewModel>();
-            services.AddTransient<AvailableVersionsViewModel>();
-            services.AddTransient<ModHistoryViewModel>();
-            services.AddTransient<RetiredModsViewModel>();
+            // ... other viewmodels
 
             ServiceProvider = services.BuildServiceProvider();
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
-            var mainWindow = new MainWindow();
+            // 1. Initialize Database using the registered Factory
+            var connectionFactory = ServiceProvider.GetRequiredService<IConnectionFactory>();
+            using (var connection = connectionFactory.CreateConnection())
+            {
+                await SqliteDbInitializer.InitializeAsync(connection);
+            }
 
-            // 1. Get the MainViewModel so the Window has its context
+            // 2. Setup UI
+            var mainWindow = new MainWindow();
             var mainVM = ServiceProvider.GetRequiredService<MainViewModel>();
             mainWindow.DataContext = mainVM;
 
-            // 2. NEW: Use the NavigationService to set the initial "App Selection" screen
             var nav = ServiceProvider.GetRequiredService<INavigationService>();
             nav.NavigateTo<AppSelectionViewModel>();
 

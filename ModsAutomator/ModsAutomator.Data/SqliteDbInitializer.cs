@@ -7,6 +7,9 @@ namespace ModsAutomator.Data
     {
         public static async Task InitializeAsync(IDbConnection conn)
         {
+            // Register the handler here
+            SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+
             var sql = @"
 
 CREATE TABLE IF NOT EXISTS ModdedApp (
@@ -64,7 +67,7 @@ CREATE TABLE IF NOT EXISTS InstalledModHistory (
     InstalledAt TEXT,
     RemovedAt TEXT,
     LocalFilePath TEXT,
-    IsRollbackTarget INTEGER
+    IsRollbackTarget INTEGER,
     FOREIGN KEY(ModId) REFERENCES Mod(Id)
 );
 

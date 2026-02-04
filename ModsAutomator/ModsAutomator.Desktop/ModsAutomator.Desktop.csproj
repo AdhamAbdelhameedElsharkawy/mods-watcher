@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ModsAutomator.Core\ModsAutomator.Core.csproj" />
+    <ProjectReference Include="..\ModsAutomator.Services\ModsAutomator.Services.csproj" />
   </ItemGroup>
 
 </Project>

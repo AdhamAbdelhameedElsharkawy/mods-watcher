@@ -8,12 +8,10 @@ using System.Transactions;
 
 namespace ModsAutomator.Data
 {
-    public class ModRepositroy : BaseRepository, IModRepository
+    public class ModRepository : BaseRepository, IModRepository
     {
 
-        
-
-        public ModRepositroy(IConnectionFactory connectionFactory) : base(connectionFactory)
+        public ModRepository(IConnectionFactory connectionFactory) : base(connectionFactory)
         {
         }
 

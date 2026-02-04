@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Data.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using ModsAutomator.Core.Interfaces;
 
 namespace ModsAutomator.Data.DI
 {
@@ -11,10 +12,13 @@ namespace ModsAutomator.Data.DI
             services.AddSingleton<IConnectionFactory>(new SqliteConnectionFactory(connectionString));
 
             // Repositories
-            //services.AddScoped<IInstalledModRepository, InstalledModRepository>();
-            //services.AddScoped<IAvailableModRepository, AvailableModRepository>();
-            //services.AddScoped<IInstalledModHistoryRepository, InstalledModHistoryRepository>();
-            // No IModRepository, remember Mod is abstract
+            services.AddScoped<IModdedAppRepository, ModdedAppRepository>();
+            services.AddScoped<IModRepository, ModRepository>();
+            services.AddScoped<IInstalledModRepository, InstalledModRepository>();
+            services.AddScoped<IAvailableModRepository, AvailableModRepository>();
+            services.AddScoped<IInstalledModHistoryRepository, InstalledModHistoryRepository>();
+            services.AddScoped<IUnusedModHistoryRepository, UnusedModHistoryRepository>();
+            
 
             return services;
         }

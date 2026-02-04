@@ -16,7 +16,7 @@ namespace ModsAutomator.Desktop.Views
     /// <summary>
     /// Interaction logic for AddAppDialog.xaml
     /// </summary>
-    public partial class AddAppDialog : UserControl
+    public partial class AddAppDialog : Window
     {
         public AddAppDialog()
         {
