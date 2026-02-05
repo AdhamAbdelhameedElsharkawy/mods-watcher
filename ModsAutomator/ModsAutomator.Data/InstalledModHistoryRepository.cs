@@ -2,10 +2,7 @@
 using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Text;
 
 namespace ModsAutomator.Data
 {
@@ -13,12 +10,20 @@ namespace ModsAutomator.Data
     {
         public InstalledModHistoryRepository(IConnectionFactory factory) : base(factory) { }
 
+        // Alias Id to InternalId so Dapper maps it correctly to your entity
+        private const string BaseSelectSql = @"
+            SELECT 
+                Id AS InternalId, 
+                ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget
+            FROM InstalledModHistory";
+
         public Task<InstalledModHistory?> GetByIdAsync(int id, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(async (conn, trans) =>
             {
-                const string sql = "SELECT * FROM InstalledModHistory WHERE Id = @Id;";
-                return await conn.QuerySingleOrDefaultAsync<InstalledModHistory>(new CommandDefinition(sql, new { Id = id }, trans, cancellationToken: cancellationToken));
+                string sql = $"{BaseSelectSql} WHERE Id = @Id;";
+                return await conn.QuerySingleOrDefaultAsync<InstalledModHistory>(
+                    new CommandDefinition(sql, new { Id = id }, trans, cancellationToken: cancellationToken));
             }, false, connection, transaction);
         }
 
@@ -26,8 +31,18 @@ namespace ModsAutomator.Data
         {
             return ExecuteAsync(async (conn, trans) =>
             {
-                const string sql = "SELECT * FROM InstalledModHistory;";
-                return await conn.QueryAsync<InstalledModHistory>(new CommandDefinition(sql, transaction: trans, cancellationToken: cancellationToken));
+                return await conn.QueryAsync<InstalledModHistory>(
+                    new CommandDefinition(BaseSelectSql, transaction: trans, cancellationToken: cancellationToken));
+            }, false, connection, transaction);
+        }
+
+        public Task<IEnumerable<InstalledModHistory>> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                string sql = $"{BaseSelectSql} WHERE ModId = @ModId;";
+                return await conn.QueryAsync<InstalledModHistory>(
+                    new CommandDefinition(sql, new { ModId = modId }, trans, cancellationToken: cancellationToken));
             }, false, connection, transaction);
         }
 
@@ -36,10 +51,10 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-INSERT INTO InstalledModHistory
-(ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget)
-VALUES
-(@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @LocalFilePath, @IsRollbackTarget);";
+                    INSERT INTO InstalledModHistory
+                    (ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget)
+                    VALUES
+                    (@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @LocalFilePath, @IsRollbackTarget);";
 
                 await conn.ExecuteAsync(new CommandDefinition(sql, new
                 {
@@ -58,7 +73,7 @@ VALUES
 
         public Task<InstalledModHistory?> UpdateAsync(InstalledModHistory entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("History records are immutable.");
         }
 
         public Task<bool> DeleteAsync(int id, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
@@ -70,15 +85,5 @@ VALUES
                 return affected > 0;
             }, true, connection, transaction);
         }
-
-        public Task<IEnumerable<InstalledModHistory>> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync(async (conn, trans) =>
-            {
-                const string sql = "SELECT * FROM InstalledModHistory WHERE ModId = @ModId;";
-                return await conn.QueryAsync<InstalledModHistory>(new CommandDefinition(sql, new { ModId = modId }, trans, cancellationToken: cancellationToken));
-            }, false, connection, transaction);
-        }
     }
-
 }

@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using System.Data;
 
-namespace ModsAutomator.Data
+namespace ModsAutomator.Data.Helpers
 {
     public class DateOnlyTypeHandler : SqlMapper.TypeHandler<DateOnly>
     {

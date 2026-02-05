@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace ModsAutomator.Data
+namespace ModsAutomator.Data.Helpers
 {
     public class SqliteConnectionFactory : IConnectionFactory
     {

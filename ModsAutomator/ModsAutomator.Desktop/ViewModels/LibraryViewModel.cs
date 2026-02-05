@@ -43,14 +43,14 @@ namespace ModsAutomator.Desktop.ViewModels
             Mods.Clear();
 
             // Logic logic:
-            // 1. Fetch Mod Shells where AppId == _selectedApp.Id
+            // 1. Fetch Mod Shells where AppId == _selectedApp.InternalId
             // 2. For each Shell, fetch the current InstalledMod record
             // 3. Wrap them in the ModItemViewModel we discussed earlier
 
-            /* var shells = _dataService.GetModsForApp(_selectedApp.Id);
+            /* var shells = _dataService.GetModsForApp(_selectedApp.InternalId);
             foreach(var shell in shells)
             {
-                var installed = _dataService.GetInstalledModForShell(shell.Id);
+                var installed = _dataService.GetInstalledModForShell(shell.InternalId);
                 Mods.Add(new ModItemViewModel(shell, installed));
             }
             */

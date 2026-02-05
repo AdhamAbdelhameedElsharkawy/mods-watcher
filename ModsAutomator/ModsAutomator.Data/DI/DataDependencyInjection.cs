@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Data.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using ModsAutomator.Core.Interfaces;
+using ModsAutomator.Data.Helpers;
 
 namespace ModsAutomator.Data.DI
 {

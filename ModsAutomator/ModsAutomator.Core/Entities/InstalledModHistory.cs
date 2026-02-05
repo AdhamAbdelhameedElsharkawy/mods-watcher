@@ -6,7 +6,7 @@ namespace ModsAutomator.Core.Entities
 {
     public class InstalledModHistory
     {
-        public int Id { get; init; }
+        public int InternalId { get; init; }
 
         public Guid ModId { get; init; }
 

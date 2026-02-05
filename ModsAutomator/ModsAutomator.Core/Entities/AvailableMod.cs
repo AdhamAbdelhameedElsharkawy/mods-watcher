@@ -10,7 +10,7 @@ namespace ModsAutomator.Core.Entities
     /// </summary>
     public class AvailableMod : Mod
     {
-        private int _id;
+        private int _internalId;
         private string _version = string.Empty;
         private DateOnly _releaseDate;
         private decimal _sizeMB;
@@ -26,6 +26,6 @@ namespace ModsAutomator.Core.Entities
         public PackageType PackageType { get => _packageType; set => _packageType = value; }
         public int PackageFilesNumber { get => _packageFilesNumber; set => _packageFilesNumber = value; }
         public string SupportedAppVersions { get => _supportedAppVersions; set => _supportedAppVersions = value; }
-        public int Id1 { get => _id; set => _id = value; }
+        public int InternalId { get => _internalId; set => _internalId = value; }
     }
 }

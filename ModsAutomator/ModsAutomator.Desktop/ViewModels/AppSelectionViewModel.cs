@@ -39,7 +39,7 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 //if (o is ModdedAppItemViewModel wrapper)
                 //{
-                //    await _storageService.DeleteAppAsync(wrapper.App.Id);
+                //    await _storageService.DeleteAppAsync(wrapper.App.InternalId);
                 //    ModdedApps.Remove(wrapper);
                 //}
             });

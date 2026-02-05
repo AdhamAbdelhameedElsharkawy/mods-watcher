@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 
-namespace ModsAutomator.Data
+namespace ModsAutomator.Data.Helpers
 {
     public static class SqliteDbInitializer
     {
@@ -9,6 +9,7 @@ namespace ModsAutomator.Data
         {
             // Register the handler here
             SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+            SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
             var sql = @"
 
