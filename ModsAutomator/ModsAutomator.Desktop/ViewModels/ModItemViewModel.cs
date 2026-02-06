@@ -15,7 +15,19 @@ namespace ModsAutomator.Desktop.ViewModels
         public bool IsUsed
         {
             get => Installed?.IsUsed ?? false;
-            set { if (Installed != null) { Installed.IsUsed = value; OnPropertyChanged(); } }
+            set
+            {
+                if (Installed != null)
+                {
+                    Installed.IsUsed = value;
+
+                    // 1. Notifies the Badge (via CallerMemberName "IsUsed")
+                    OnPropertyChanged();
+
+                    // 2. Manually notifies the Summary Text
+                    OnPropertyChanged(nameof(Summary));
+                }
+            }
         }
 
         // Summary as requested: Size and Used status

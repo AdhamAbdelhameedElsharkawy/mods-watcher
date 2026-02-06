@@ -20,7 +20,7 @@ namespace ModsAutomator.Core.Entities
 
         public Guid Id { get => _id; init => _id = value; }
         public int AppId { get => _appId; init => _appId = value; }
-        public string Name { get => _name; init => _name = value; }
+        public string Name { get => _name; set => _name = value; }
         public string RootSourceUrl { get => _rootSourceUrl; set => _rootSourceUrl = value; }
         public bool IsDeprecated { get => _isDeprecated; set => _isDeprecated = value; }
         public string? Description { get => _description; set => _description = value; }

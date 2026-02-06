@@ -45,40 +45,32 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
                                 <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                     <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
-
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="" FontFamily="Segoe MDL2 Assets" 
-                                                Command="{Binding DataContext.EditAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Background="Transparent" Foreground="#555" BorderThickness="0" Margin="0,0,5,0"/>
-
-                                        <Button Content="" FontFamily="Segoe MDL2 Assets" 
-                                                Command="{Binding DataContext.DeleteAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                ToolTip="Hard Wipe: Deletes all app data and mods"
-                                                Background="Transparent" Foreground="#442222" BorderThickness="0">
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Foreground" Value="#F44336"/>
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
+                                        <Button Content="" FontFamily="Segoe MDL2 Assets" Command="{Binding DataContext.EditAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Background="Transparent" Foreground="#555" BorderThickness="0" Margin="0,0,5,0"/>
+                                        <Button Content="" FontFamily="Segoe MDL2 Assets" Command="{Binding DataContext.DeleteAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Background="Transparent" Foreground="#442222" BorderThickness="0"/>
                                     </StackPanel>
                                 </DockPanel>
 
                                 <StackPanel Grid.Row="1" Margin="0,0,0,15">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Targeting Version: " Foreground="#888" FontSize="12"/>
-                                        <TextBlock Text="{Binding InstalledVersion}" Foreground="#2196F3" FontSize="12" FontWeight="Bold"/>
-                                    </StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Installed" Foreground="#888" FontSize="10"/>
+                                            <TextBlock Text="{Binding InstalledVersion}" Foreground="#2196F3" FontSize="13" FontWeight="Bold"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="Latest" Foreground="#888" FontSize="10" TextAlignment="Right"/>
+                                            <TextBlock Text="{Binding LatestVersion}" Foreground="#FFC107" FontSize="13" FontWeight="Bold" TextAlignment="Right"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </StackPanel>
 
                                 <Border Grid.Row="2" Padding="15" Background="#252525" CornerRadius="8" Margin="0,0,0,20">
@@ -89,16 +81,14 @@
                                                 <TextBlock Text="{Binding ActiveModsCount}" Foreground="White" FontWeight="Bold"/>
                                                 <TextBlock Text=" Active" Foreground="#888" Margin="4,0,0,0"/>
                                             </StackPanel>
-                                            <TextBlock Text="{Binding TotalUsedSizeMB, StringFormat='{}{0:N0} MB'}" 
-                                                       Foreground="#555" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+                                            <TextBlock Text="{Binding TotalUsedSizeMB, StringFormat='{}{0:N0} MB'}" Foreground="#555" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
                                         </Grid>
-
                                         <StackPanel Visibility="{Binding IncompatibleCountVisibility}">
                                             <Separator Background="#333" Margin="0,5,0,10"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#F44336" Margin="0,0,8,0"/>
                                                 <TextBlock Text="{Binding IncompatibleCount}" Foreground="#F44336" FontWeight="Bold"/>
-                                                <TextBlock Text=" Incompatible" Foreground="#F44336" FontSize="11" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                                <TextBlock Text=" Incompatible" Foreground="#F44336" FontSize="11" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </StackPanel>
@@ -109,19 +99,18 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-
-                                    <Button Content="Manage &amp; Fix" 
-                                            Command="{Binding DataContext.SelectAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            Padding="10,8" Background="#333" Foreground="White" BorderThickness="0"/>
-
-                                    <Button Grid.Column="1" 
-                                            Content="" FontFamily="Segoe MDL2 Assets" 
-                                            ToolTip="Crawl for Compatible Versions"
-                                            Command="{Binding DataContext.CrawlAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            Width="40" Margin="8,0,0,0" Background="#252525" Foreground="#FFC107" BorderBrush="#444"/>
+                                    <Button Content="Manage &amp; Fix" Command="{Binding DataContext.SelectAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="10,8" Background="#333" Foreground="White" BorderThickness="0"/>
+                                    <Button Grid.Column="1" Content="" FontFamily="Segoe MDL2 Assets" Command="{Binding DataContext.CrawlAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Width="40" Margin="8,0,0,0" Background="#252525" Foreground="#FFC107" BorderBrush="#444"/>
                                 </Grid>
+
+                                <StackPanel Grid.Row="4" Margin="0,15,0,0">
+                                    <Separator Background="#252525" Margin="0,0,0,5"/>
+                                    <DockPanel>
+                                        <TextBlock Text="Last Updated:" Foreground="#444" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding LastUpdatedDate, StringFormat='{}{0:yyyy-MM-dd}'}" 
+                               Foreground="#666" FontSize="10" HorizontalAlignment="Right"/>
+                                    </DockPanel>
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </DataTemplate>

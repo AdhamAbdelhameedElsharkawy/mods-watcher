@@ -15,6 +15,6 @@ namespace ModsAutomator.Services.Interfaces
         Task UpdateAppAsync(ModdedApp app);
 
         // We'll add methods for the Library Screen (GetModsByAppId) 
-        // in the next step to keep this focused.
+        Task<IEnumerable<(Mod Shell, InstalledMod Installed)>> GetModsByAppId(int appId);
     }
 }

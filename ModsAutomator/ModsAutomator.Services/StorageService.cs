@@ -10,18 +10,24 @@ namespace ModsAutomator.Services
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly IModdedAppRepository _appRepo;
+        private readonly IModRepository _modRepo;
         private readonly IInstalledModRepository _installedModRepo;
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
             IConnectionFactory connectionFactory,
             IModdedAppRepository appRepo,
+            IModRepository modRepo,
             IInstalledModRepository installedModRepo)
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
+            _modRepo = modRepo;
             _installedModRepo = installedModRepo;
         }
+
+
+        #region ModdedApp Methods
 
         public async Task AddAppAsync(ModdedApp app)
         {
@@ -80,6 +86,29 @@ namespace ModsAutomator.Services
             }
 
             return summaries;
+        }
+
+        #endregion
+
+        public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed)>> GetModsByAppId(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open) connection.Open();
+
+            // 1. Fetch all Mod Shells belonging to this App
+            // Assuming you have a ModRepository injected or accessible
+            var shells = await _modRepo.GetByAppIdAsync(appId, connection);
+
+            var results = new List<(Mod, InstalledMod?)>();
+
+            foreach (Mod shell in shells)
+            {
+                // 2. Fetch the current installation record for this shell
+                var installed = await _installedModRepo.FindByModIdAsync(shell.Id, connection);
+                results.Add((shell, installed));
+            }
+
+            return results;
         }
     }
 }

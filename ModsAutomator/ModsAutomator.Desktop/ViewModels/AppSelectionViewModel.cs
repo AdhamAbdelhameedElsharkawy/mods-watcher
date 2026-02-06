@@ -107,6 +107,6 @@ namespace ModsAutomator.Desktop.ViewModels
                 LoadApps();
             }
         }
-        private void CrawlMods(ModdedAppItemViewModel? item) { /* Start Web Crawler */ }
+        private void CrawlMods(ModdedAppItemViewModel? item) { throw new NotImplementedException(); }
     }
 }

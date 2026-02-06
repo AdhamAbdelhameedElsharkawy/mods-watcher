@@ -16,7 +16,7 @@ namespace ModsAutomator.Desktop.Views
     /// <summary>
     /// Interaction logic for ModShellDialog.xaml
     /// </summary>
-    public partial class ModShellDialog : UserControl
+    public partial class ModShellDialog : Window
     {
         public ModShellDialog()
         {
