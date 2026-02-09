@@ -28,14 +28,20 @@ namespace ModsAutomator.Desktop.ViewModels
             set => SetProperty(ref _selectedApp, value);
         }
 
+        public bool CanCrawlSelectedMod =>
+    SelectedMod != null &&
+    SelectedMod.Installed != null &&
+    SelectedMod.Installed.IsUsed;
+
         // --- Commands ---
-        public ICommand NavToArchiveCommand { get; }
+
+        public ICommand NavToRetiredCommand { get; }
         public ICommand AddModShellCommand { get; }
         public ICommand EditModShellCommand { get; }
         public ICommand CrawlAppCommand { get; }
         public ICommand GoToCrawlerCommand { get; }
         public ICommand ShowHistoryCommand { get; }
-        public ICommand RetireCommand { get; }
+        public ICommand ToggleModActivationCommand { get; }
         public ICommand HardWipeCommand { get; }
 
         public LibraryViewModel(INavigationService navigationService, IStorageService storageService)
@@ -45,7 +51,6 @@ namespace ModsAutomator.Desktop.ViewModels
             Mods = new ObservableCollection<ModItemViewModel>();
 
             // Initialize Commands
-            NavToArchiveCommand = new RelayCommand(_ => _navigationService.NavigateTo<AppSelectionViewModel>());
             AddModShellCommand = new RelayCommand(_ => RegisterNewMod());
             EditModShellCommand = new RelayCommand(_ => EditSelectedModShell());
 
@@ -53,9 +58,14 @@ namespace ModsAutomator.Desktop.ViewModels
             CrawlAppCommand = new RelayCommand(_ => CrawlAllMods());
             GoToCrawlerCommand = new RelayCommand(obj => ExecuteCrawl(obj));
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
-            RetireCommand = new RelayCommand(_ => RetireSelectedMod());
+            ToggleModActivationCommand = new RelayCommand(_ => ToggleModActivation());
             HardWipeCommand = new RelayCommand(_ => HardWipeSelectedMod());
+            // For mods that were Hard Wiped (UnusedModHistory)
+            NavToRetiredCommand = new RelayCommand(_ => _navigationService.NavigateTo<RetiredModsViewModel, ModdedApp>(SelectedApp));
+
         }
+
+
 
         public void Initialize(ModdedApp app)
         {
@@ -97,19 +107,29 @@ namespace ModsAutomator.Desktop.ViewModels
             _navigationService.NavigateTo<ModHistoryViewModel, (Guid, ModdedApp)>((SelectedMod.Shell.Id, SelectedApp));
         }
 
-        private async void RetireSelectedMod()
+        private async void ToggleModActivation()
         {
             if (SelectedMod?.Installed == null) return;
 
-            var result = MessageBox.Show($"Retire {SelectedMod.Shell.Name}? This will disable the mod but keep its files.",
-                "Retire Mod", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            bool currentlyActive = SelectedMod.Installed.IsUsed;
+            string action = currentlyActive ? "Deactivate" : "Activate";
+
+            var result = MessageBox.Show($"{action} {SelectedMod.Shell.Name}?",
+                $"{action} Mod", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                SelectedMod.Installed.IsUsed = false;
-                //TODO: This should ideally be a service method that handles the logic of retiring (and potentially moving to history), but for now we'll just update the flag and save.
-                //await _storageService.UpdateInstalledModAsync(SelectedMod.Installed);
-                LoadLibrary(); // Refresh UI
+                // Toggle the state
+                SelectedMod.Installed.IsUsed = !currentlyActive;
+
+                // Notify the UI that the Crawl button status changed
+                OnPropertyChanged(nameof(CanCrawlSelectedMod));
+
+                // Save to DB
+                await _storageService.UpdateModShellAsync(SelectedMod.Shell);
+
+                // Refresh UI
+                LoadLibrary();
             }
         }
 

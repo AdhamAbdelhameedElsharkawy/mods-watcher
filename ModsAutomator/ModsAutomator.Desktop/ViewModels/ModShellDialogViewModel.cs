@@ -42,7 +42,7 @@ namespace ModsAutomator.Desktop.ViewModels
             IsEditMode = existingMod != null;
 
             // Use provided Mod for Edit, or new Mod for Add (linking to the current App)
-            Shell = existingMod ?? new Mod { AppId = appId };
+            Shell = existingMod ?? new Mod { AppId = appId, Id = Guid.NewGuid() };
 
             SaveCommand = new RelayCommand(async _ => await SaveAsync());
             CancelCommand = new RelayCommand(_ => Close(false));
@@ -50,12 +50,16 @@ namespace ModsAutomator.Desktop.ViewModels
 
         private async Task SaveAsync()
         {
-            //if (IsEditMode)
-            //    await _storageService.UpdateModShellAsync(Shell);
-            //else
-            //    await _storageService.AddModShellAsync(Shell);
+            if (IsEditMode)
+                await _storageService.UpdateModShellAsync(Shell);
+            else
+            {
+                await _storageService.AddModShellAsync(Shell);
 
-            //Close(true);
+            }
+                
+
+            Close(true);
         }
 
         private void Close(bool result)

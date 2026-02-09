@@ -13,6 +13,7 @@ namespace ModsAutomator.Tests.Services
         private readonly Mock<IModdedAppRepository> _appRepoMock;
         private readonly Mock<IModRepository> _shellModRepoMock;
         private readonly Mock<IInstalledModRepository> _modRepoMock;
+        private readonly Mock<IUnusedModHistoryRepository> _unusedModRepoMock;
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly StorageService _service;
 
@@ -22,6 +23,7 @@ namespace ModsAutomator.Tests.Services
             _appRepoMock = new Mock<IModdedAppRepository>();
             _shellModRepoMock = new Mock<IModRepository>();
             _modRepoMock = new Mock<IInstalledModRepository>();
+            _unusedModRepoMock = new Mock<IUnusedModHistoryRepository>();
             _connectionMock = new Mock<IDbConnection>();
 
             // 1. SETUP: When the service asks for a connection, give it our mock connection
@@ -31,7 +33,8 @@ namespace ModsAutomator.Tests.Services
                 _factoryMock.Object,
                 _appRepoMock.Object,
                 _shellModRepoMock.Object,
-                _modRepoMock.Object
+                _modRepoMock.Object,
+                _unusedModRepoMock.Object
             );
         }
 
@@ -134,7 +137,8 @@ namespace ModsAutomator.Tests.Services
     
 
     #endregion
-    #region Mod Repository Tests
+        
+        #region Mod Repository Tests
 
     [Fact]
         public async Task GetModsByAppId_ShouldReturnCombinedShellAndInstallation()
@@ -183,6 +187,99 @@ namespace ModsAutomator.Tests.Services
             Assert.Null(inst2);
 
             _connectionMock.Verify(c => c.Open(), Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task AddModShellAsync_ShouldCallInsert_WithGeneratedGuid()
+        {
+            // Arrange
+            var shell = new Mod { Name = "New Mod", RootSourceUrl = "https://source.com", Id = Guid.NewGuid(), AppId = 1 };
+
+            // Act
+            await _service.AddModShellAsync(shell);
+
+            // Assert
+            _shellModRepoMock.Verify(r => r.InsertAsync(
+                It.Is<Mod>(m => m.Name == "New Mod" && m.Id != Guid.Empty),
+                It.IsAny<IDbConnection>(),
+                null,
+                default),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateModShellAsync_ShouldCallUpdate()
+        {
+            // Arrange
+            var shell = new Mod { Id = Guid.NewGuid(), Name = "Updated Mod" };
+
+            // Act
+            await _service.UpdateModShellAsync(shell);
+
+            // Assert
+            _shellModRepoMock.Verify(r => r.UpdateAsync(
+                It.Is<Mod>(m => m.Name == "Updated Mod"),
+                It.IsAny<IDbConnection>(),
+                null,
+                default),
+                Times.Once);
+        }
+
+        #endregion
+
+        #region Retired Mods Tests
+
+        [Fact]
+        public async Task GetRetiredModsByAppIdAsync_ShouldCallFindByModdedAppId()
+        {
+            // Arrange
+            int appId = 99;
+            var historyList = new List<UnusedModHistory> { new UnusedModHistory { Name = "Old Mod" } };
+            _unusedModRepoMock.Setup(r => r.FindByModdedAppIdAsync(appId, It.IsAny<IDbConnection>()))
+                              .ReturnsAsync(historyList);
+
+            // Act
+            var result = await _service.GetRetiredModsByAppIdAsync(appId);
+
+            // Assert
+            Assert.Single(result);
+            _unusedModRepoMock.Verify(r => r.FindByModdedAppIdAsync(appId, It.IsAny<IDbConnection>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RestoreModFromHistoryAsync_ShouldInsertModAndRemoveHistory()
+        {
+            // Arrange
+            var transactionMock = new Mock<IDbTransaction>();
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            var history = new UnusedModHistory
+            {
+                Id = 1,
+                ModId = Guid.NewGuid(),
+                ModdedAppId = 10,
+                Name = "Restorable Mod",
+                RootSourceUrl = "https://mod.com/source"
+            };
+
+            // Act
+            await _service.RestoreModFromHistoryAsync(history);
+
+            // Assert: Check that a NEW Mod was created with the DNA from history
+            _shellModRepoMock.Verify(r => r.InsertAsync(
+                It.Is<Mod>(m => m.Id == history.ModId && m.Name == history.Name && m.RootSourceUrl == history.RootSourceUrl),
+                It.IsAny<IDbConnection>(),
+                It.IsAny<IDbTransaction>(), // Transaction must be present
+                default),
+                Times.Once);
+
+            // Assert: Check that the history record was deleted
+            _unusedModRepoMock.Verify(r => r.DeleteAsync(
+                history.Id,
+                It.IsAny<IDbConnection>(),
+                It.IsAny<IDbTransaction>(),
+                default),
+                Times.Once);
         }
 
         #endregion

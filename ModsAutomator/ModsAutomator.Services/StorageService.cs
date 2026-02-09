@@ -12,18 +12,21 @@ namespace ModsAutomator.Services
         private readonly IModdedAppRepository _appRepo;
         private readonly IModRepository _modRepo;
         private readonly IInstalledModRepository _installedModRepo;
+        private readonly IUnusedModHistoryRepository _unUsedModRepo;
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
             IConnectionFactory connectionFactory,
             IModdedAppRepository appRepo,
             IModRepository modRepo,
-            IInstalledModRepository installedModRepo)
+            IInstalledModRepository installedModRepo,
+            IUnusedModHistoryRepository unUsedModRepo)
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
             _modRepo = modRepo;
             _installedModRepo = installedModRepo;
+            _unUsedModRepo = unUsedModRepo;
         }
 
 
@@ -90,6 +93,30 @@ namespace ModsAutomator.Services
 
         #endregion
 
+        #region Mod Shell Methods
+
+        public async Task AddModShellAsync(Mod shell)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+
+            await _modRepo.InsertAsync(shell, connection);
+        }
+
+        public async Task UpdateModShellAsync(Mod shell)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modRepo.UpdateAsync(shell, connection);
+
+
+        }
+
+
         public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed)>> GetModsByAppId(int appId)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -110,5 +137,59 @@ namespace ModsAutomator.Services
 
             return results;
         }
+
+        #endregion
+
+
+
+        #region Retired Mods Methods
+
+        public async Task<IEnumerable<UnusedModHistory>> GetRetiredModsByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            // Fetches historical snapshots from the UnusedModHistory table
+            return await _unUsedModRepo.FindByModdedAppIdAsync(appId, connection);
+
+
+        }
+
+        public async Task RestoreModFromHistoryAsync(UnusedModHistory history)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Re-create the Mod Shell using the 3 essential props: 
+                // ModId (Guid), RootSourceUrl (for crawler), and Name
+                var restoredShell = new Mod
+                {
+                    Id = history.ModId,
+                    AppId = history.ModdedAppId,
+                    Name = history.Name,
+                    RootSourceUrl = history.RootSourceUrl,
+                    Description = history.Description ?? "Restored from Retired History"
+                };
+
+                // 2. Insert the restored shell into the active Mods table
+                await _modRepo.InsertAsync(restoredShell, connection, transaction);
+
+                // 3. Remove the snapshot from history now that it is back in the library
+                await _unUsedModRepo.DeleteAsync(history.Id, connection, transaction);
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        #endregion
     }
 }

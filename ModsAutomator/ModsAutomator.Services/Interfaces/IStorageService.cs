@@ -16,5 +16,13 @@ namespace ModsAutomator.Services.Interfaces
 
         // We'll add methods for the Library Screen (GetModsByAppId) 
         Task<IEnumerable<(Mod Shell, InstalledMod Installed)>> GetModsByAppId(int appId);
+        Task AddModShellAsync(Mod shell);
+        Task UpdateModShellAsync(Mod shell);
+
+        //Retired Mods/UnusedModHistory
+
+        Task<IEnumerable<UnusedModHistory>> GetRetiredModsByAppIdAsync(int appId);
+
+        Task RestoreModFromHistoryAsync(UnusedModHistory history);
     }
 }

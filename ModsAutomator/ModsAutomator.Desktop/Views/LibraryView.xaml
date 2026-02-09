@@ -7,6 +7,9 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <conv:NullToBoolConverter x:Key="NullToBoolConverter" />
+        <conv:InverseBoolToVisConverter x:Key="InverseBoolToVisConverter" />
+        <conv:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+        <conv:ModReadyToCrawlConverter x:Key="ModReadyToCrawlConverter" />
     </UserControl.Resources>
 
     <Grid>
@@ -24,17 +27,20 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-
                         <Button Content="+ Register Mod" Command="{Binding AddModShellCommand}" 
-                                Background="#2196F3" Foreground="White" Margin="0,0,0,0" Padding="12,5" FontWeight="SemiBold"/>
+            Background="#2196F3" Foreground="White" Margin="0,0,10,0" Padding="12,5"/>
 
                         <Button Content="Crawl All" Command="{Binding CrawlAppCommand}" 
-                                Background="#252525" Foreground="#FFC107" Margin="10,0,10,0" Padding="12,5"/>
-                        <Button Command="{Binding NavToArchiveCommand}"
-Background="Transparent" Foreground="#888" BorderThickness="0" Margin="0,0,10,0">
+            Background="#252525" Foreground="#FFC107" Margin="0,0,10,0" Padding="12,5"/>
+
+                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0" Background="#333"/>
+
+                        <Button Command="{Binding NavToRetiredCommand}"
+            Background="Transparent" Foreground="#666" BorderThickness="0" Margin="0,0,10,0"
+            ToolTip="The permanent graveyard of wiped mods">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="View Archive" VerticalAlignment="Center"/>
+                                <TextBlock Text="&#xED1A;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Retired History" VerticalAlignment="Center" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -88,9 +94,18 @@ Background="Transparent" Foreground="#888" BorderThickness="0" Margin="0,0,10,0"
                     <TextBlock Text="{Binding SelectedMod.Shell.Name}" FontSize="22" FontWeight="Bold" Foreground="White"/>
 
                     <Button Command="{Binding GoToCrawlerCommand}" 
-                            CommandParameter="{Binding SelectedMod}"
-                            IsEnabled="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}"
-                            Margin="0,20,0,0" Padding="12" Background="#252525" BorderBrush="#FFC107" BorderThickness="0,0,0,2">
+        CommandParameter="{Binding SelectedMod}"
+        Margin="0,20,0,0" Padding="12" 
+        Background="#252525" BorderBrush="#FFC107" BorderThickness="0,0,0,2">
+                        <Button.IsEnabled>
+                            <MultiBinding Converter="{StaticResource ModReadyToCrawlConverter}">
+                                <Binding Path="SelectedMod" />
+                                <Binding Path="SelectedMod.Installed.IsUsed" />
+                            </MultiBinding>
+                        </Button.IsEnabled>
+                        <Button.Opacity>
+                            <Binding Path="SelectedMod.Installed.IsUsed" Converter="{StaticResource BoolToOpacityConverter}" />
+                        </Button.Opacity>
                         <DockPanel>
                             <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#FFC107" FontSize="16" Margin="0,0,12,0"/>
                             <StackPanel VerticalAlignment="Center">
@@ -118,9 +133,17 @@ Background="Transparent" Foreground="#888" BorderThickness="0" Margin="0,0,10,0"
                 </StackPanel>
 
                 <StackPanel Grid.Row="1">
-                    <Button Content="Retire Mod" Command="{Binding RetireCommand}" 
-                            IsEnabled="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}"
-                            Background="#333" Foreground="#BBB" Height="35" BorderThickness="0" Margin="0,0,0,10"/>
+                    <Button Content="Deactivate Mod" 
+            Command="{Binding ToggleActivationCommand}" 
+            Visibility="{Binding SelectedMod.Installed.IsUsed, Converter={StaticResource BooleanToVisibilityConverter}}"
+            IsEnabled="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}"
+            Background="#333" Foreground="#BBB" Height="35" BorderThickness="0" Margin="0,0,0,10"/>
+
+                    <Button Content="Activate Mod" 
+            Command="{Binding ToggleActivationCommand}" 
+            Visibility="{Binding SelectedMod.Installed.IsUsed, Converter={StaticResource InverseBoolToVisConverter}}"
+            IsEnabled="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}"
+            Background="#4CAF50" Foreground="White" FontWeight="Bold" Height="35" BorderThickness="0" Margin="0,0,0,10"/>
 
                     <Button Command="{Binding HardWipeCommand}" 
                             IsEnabled="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}"

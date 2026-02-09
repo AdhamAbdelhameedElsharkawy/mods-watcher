@@ -37,6 +37,7 @@ namespace ModsAutomator.Desktop.ViewModels
             // 2. Delete Logic
             DeleteAppCommand = new RelayCommand(async o =>
             {
+                //TODO:Hard wipe for all mods on app/game deletion. Maybe add a confirmation dialog first? needs implementation.
                 //if (o is ModdedAppItemViewModel wrapper)
                 //{
                 //    await _storageService.DeleteAppAsync(wrapper.App.InternalId);
@@ -107,6 +108,8 @@ namespace ModsAutomator.Desktop.ViewModels
                 LoadApps();
             }
         }
+
+        //TODO:need implementation. Maybe add a confirmation dialog first? needs implementation.
         private void CrawlMods(ModdedAppItemViewModel? item) { throw new NotImplementedException(); }
     }
 }
