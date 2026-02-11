@@ -338,6 +338,13 @@ namespace ModsAutomator.Tests.Services
             // Arrange
             var target = new InstalledModHistory { Version = "1.0.0", LocalFilePath = "C:\\mods\\backup.zip" };
 
+            // Ensure BeginTransaction does not return null
+            var mockTransaction = new Mock<IDbTransaction>();
+
+            _connectionMock
+                .Setup(c => c.BeginTransaction())
+                .Returns(mockTransaction.Object);
+
             // Act
             var task = _service.RollbackToVersionAsync(target, "1.1.0");
             await task;
