@@ -38,19 +38,20 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, Version, AppVersion, RemovedAt, Reason, Description)
-VALUES (@ModId, @ModdedAppId, @Name, @Version, @AppVersion, @RemovedAt, @Reason, @Description);";
+INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, AppName, AppVersion, RemovedAt, Reason, Description, RootSourceUrl)
+VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason, @Description, @RootSourceUrl);";
 
                 await conn.ExecuteAsync(new CommandDefinition(sql, new
                 {
                     entity.ModId,
                     entity.ModdedAppId,
                     entity.Name,
-                    entity.Version,
+                    entity.AppName,
                     entity.AppVersion,
                     entity.RemovedAt,
                     entity.Reason,
-                    entity.Description
+                    entity.Description,
+                    entity.RootSourceUrl
                 }, trans, cancellationToken: cancellationToken));
 
                 return (UnusedModHistory?)entity;
@@ -80,6 +81,16 @@ VALUES (@ModId, @ModdedAppId, @Name, @Version, @AppVersion, @RemovedAt, @Reason,
                 return await conn.QueryAsync<UnusedModHistory>(
                     new CommandDefinition(sql, new { AppId = appId }, trans, cancellationToken: cancellationToken));
             }, false, connection, transaction);
+        }
+
+        public Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"DELETE FROM UnusedModHistory WHERE ModdedAppId = @AppId;";
+                var affected = await conn.ExecuteAsync(new CommandDefinition(sql, new { AppId = appId }, trans, cancellationToken: cancellationToken));
+                return affected > 0;
+            }, true, connection, transaction);
         }
     }
 

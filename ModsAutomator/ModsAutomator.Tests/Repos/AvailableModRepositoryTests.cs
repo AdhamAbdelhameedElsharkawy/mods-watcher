@@ -128,5 +128,27 @@ namespace ModsAutomator.Tests.Repos
             Assert.True(deleted);
             Assert.False(exists);
         }
+
+        [Fact]
+        public async Task DeleteByAppIdAsync_ShouldWipeDataUsingSubquery()
+        {
+            // Arrange
+            var ids = await SeedDatabaseAsync(); // Seeds AppId and ModId
+            int appId = ids.AppId;
+            Guid modId = ids.ModId;
+
+            await Connection.ExecuteAsync(
+                "INSERT INTO AvailableMod (ModId, AvailableVersion) VALUES (@ModId, 'v1')",
+                new { ModId = modId });
+
+            // Act
+            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
+
+            // Assert
+            Assert.True(result);
+            var count = await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM AvailableMod WHERE ModId = @ModId", new { ModId = modId });
+            Assert.Equal(0, count);
+        }
     }
 }

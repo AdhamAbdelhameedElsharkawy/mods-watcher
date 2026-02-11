@@ -13,6 +13,8 @@ namespace ModsAutomator.Services
         private readonly IModRepository _modRepo;
         private readonly IInstalledModRepository _installedModRepo;
         private readonly IUnusedModHistoryRepository _unUsedModRepo;
+        private readonly IInstalledModHistoryRepository _installedModHistoryRepo;
+        private readonly IAvailableModRepository _availableModRepo;
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
@@ -20,13 +22,17 @@ namespace ModsAutomator.Services
             IModdedAppRepository appRepo,
             IModRepository modRepo,
             IInstalledModRepository installedModRepo,
-            IUnusedModHistoryRepository unUsedModRepo)
+            IUnusedModHistoryRepository unUsedModRepo,
+            IInstalledModHistoryRepository installedModHistoryRepo,
+            IAvailableModRepository availableModRepo)
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
             _modRepo = modRepo;
             _installedModRepo = installedModRepo;
             _unUsedModRepo = unUsedModRepo;
+            _installedModHistoryRepo = installedModHistoryRepo;
+            _availableModRepo = availableModRepo;
         }
 
 
@@ -140,8 +146,6 @@ namespace ModsAutomator.Services
 
         #endregion
 
-
-
         #region Retired Mods Methods
 
         public async Task<IEnumerable<UnusedModHistory>> GetRetiredModsByAppIdAsync(int appId)
@@ -180,6 +184,136 @@ namespace ModsAutomator.Services
 
                 // 3. Remove the snapshot from history now that it is back in the library
                 await _unUsedModRepo.DeleteAsync(history.Id, connection, transaction);
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Installed Mod History Methods
+        public async Task<IEnumerable<InstalledModHistory>> GetInstalledModHistoryAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            // Fetch historical version snapshots for this specific mod shell
+            // This uses the IInstalledModHistoryRepository you'll have in your Data layer
+            return await _installedModHistoryRepo.FindByModIdAsync(modId, connection);
+        }
+
+        public async Task RollbackToVersionAsync(InstalledModHistory target, string appVersion)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Get current active record to archive it
+                InstalledMod? currentActive = await _installedModRepo.FindByModIdAsync(target.ModId, connection, transaction);
+
+                if (currentActive != null)
+                {
+                    // 2. Archive the version we are about to replace
+                    var archiveRecord = new InstalledModHistory
+                    {
+                        ModId = currentActive.Id,
+                        Version = currentActive.InstalledVersion,
+                        AppVersion = appVersion,
+                        InstalledAt = currentActive.InstalledDate,
+                        RemovedAt = DateOnly.FromDateTime(DateTime.Now)
+                    };
+                    await _installedModHistoryRepo.InsertAsync(archiveRecord, connection, transaction);
+
+                    // 3. Promote the target history version back to the active record
+                    //TODO:R2, refine logic (thorugh AvailableMods?) to get accurate InstalledDate, Size, PackageType, etc. or drive InstalledModHistory from InstalledMod records instead of just snapshots of version/appversion?
+                    currentActive.InstalledVersion = target.Version;
+
+                    await _installedModRepo.UpdateAsync(currentActive, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+        #endregion
+
+        #region Hard Wipe Logic
+
+        public async Task HardWipeAppAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Wipe Unused History for this app
+                await _unUsedModRepo.DeleteByAppIdAsync(appId, connection, transaction);
+
+                // 2. Wipe sub-tables (Order doesn't matter among these three)
+                await _installedModRepo.DeleteByAppIdAsync(appId, connection, transaction);
+                await _availableModRepo.DeleteByAppIdAsync(appId, connection, transaction);
+                await _installedModHistoryRepo.DeleteByAppIdAsync(appId, connection, transaction);
+
+                // 3. Wipe Mod shells
+                await _modRepo.DeleteByAppIdAsync(appId, connection, transaction);
+
+                // 4. Wipe the App itself
+                await _appRepo.DeleteAsync(appId, connection, transaction);
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task HardWipeModAsync(Mod mod, ModdedApp parentApp)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Create the shell-based history record
+                var history = new UnusedModHistory
+                {
+                    ModId = mod.Id,
+                    ModdedAppId = mod.AppId,
+                    Name = mod.Name,
+                    AppName = parentApp.Name,
+                    AppVersion = parentApp.InstalledVersion ?? "Unknown",
+                    RootSourceUrl = mod.RootSourceUrl,
+                    RemovedAt = DateOnly.FromDateTime(DateTime.Now),
+                    Reason = "User Hard Wipe" // Default until prompt is added
+                };
+
+                await _unUsedModRepo.InsertAsync(history, connection, transaction);
+
+                // 2. Perform bulk deletions in sub-tables (repos call your DeleteByModId logic)
+                await _installedModRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
+                await _availableModRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
+                await _installedModHistoryRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
+
+                // 3. Delete the Mod Shell itself
+                await _modRepo.DeleteAsync(mod.Id, connection, transaction);
 
                 transaction.Commit();
             }

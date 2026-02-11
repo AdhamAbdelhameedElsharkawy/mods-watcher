@@ -78,10 +78,13 @@ CREATE TABLE IF NOT EXISTS UnusedModHistory (
     ModdedAppId INTEGER,
     Name TEXT,
     Version TEXT,
+    AppName TEXT,
     AppVersion TEXT,
+    SupportedAppVersions TEXT,
     RemovedAt TEXT,
     Reason TEXT,
-    Description TEXT
+    Description TEXT,
+    RootSourceUrl TEXT
 );
 
 ";

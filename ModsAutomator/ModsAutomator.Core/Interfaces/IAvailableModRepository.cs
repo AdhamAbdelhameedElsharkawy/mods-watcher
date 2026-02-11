@@ -8,6 +8,10 @@ namespace ModsAutomator.Core.Interfaces
 {
     public interface IAvailableModRepository : IRepository<AvailableMod, int>
     {
-        public Task<IEnumerable<AvailableMod>> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+        Task<IEnumerable<AvailableMod>> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<bool> DeleteByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
     }
 }

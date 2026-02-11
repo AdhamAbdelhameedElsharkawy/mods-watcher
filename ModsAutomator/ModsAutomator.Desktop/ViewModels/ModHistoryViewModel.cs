@@ -1,40 +1,104 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
-    public class ModHistoryViewModel : BaseViewModel, IInitializable<(Guid ModId, ModdedApp App)>
+    public class ModHistoryViewModel : BaseViewModel, IInitializable<(Mod Mod, ModdedApp App)>
     {
         private readonly INavigationService _navigationService;
-        private Guid _modId;
+        private readonly IStorageService _storageService;
+        private Mod _mod;
         private ModdedApp _parentApp;
+        private string _selectedModName = "Mod History";
+        private bool _overrideRollbackRules;
 
-        public ObservableCollection<InstalledModHistory> HistoryItems { get; set; }
 
-        public ModHistoryViewModel(INavigationService navigationService)
+        public ObservableCollection<ModHistoryItemViewModel> HistoryItems { get; set; }
+
+        public bool HasHistory => HistoryItems.Count > 0;
+
+        public string SelectedModName
         {
-            _navigationService = navigationService;
-            HistoryItems = new ObservableCollection<InstalledModHistory>();
+            get => _selectedModName;
+            set
+            {
+                _selectedModName = value;
+                OnPropertyChanged();
+            }
         }
 
-        // Initialize now captures both pieces of state
-        public void Initialize((Guid ModId, ModdedApp App) data)
+        public bool OverrideRollbackRules
         {
-            _modId = data.ModId;
+            get => _overrideRollbackRules;
+            set
+            {
+                if (SetProperty(ref _overrideRollbackRules, value))
+                {
+                    // When the checkbox changes, tell all wrappers to re-check their button state
+                    foreach (var item in HistoryItems) item.RefreshCompatibility();
+                }
+            }
+        }
+
+        public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService)
+        {
+            _navigationService = navigationService;
+            _storageService = storageService;
+
+            HistoryItems = new ObservableCollection<ModHistoryItemViewModel>();
+        }
+
+        public void Initialize((Mod Mod, ModdedApp App) data)
+        {
+            _mod = data.Mod;
             _parentApp = data.App;
+
+            this._selectedModName = _mod.Name;
+
             LoadHistory();
         }
 
-        private void LoadHistory()
+        private async void LoadHistory()
         {
-            // Use _modId to fetch records
+            HistoryItems.Clear();
+            //TODO:R2, logic to filter history data before returning it to the viewmodel
+            var historyData = await _storageService.GetInstalledModHistoryAsync(_mod.Id);
+
+            foreach (var entry in historyData)
+            {
+                // Create the wrapper, passing the current app version and a link to the override status
+                var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules);
+                HistoryItems.Add(wrapper);
+            }
+
+            OnPropertyChanged(nameof(HasHistory));
         }
+
+        public ICommand RollbackCommand => new RelayCommand(async o =>
+        {
+            if (o is ModHistoryItemViewModel wrapper)
+            {
+                // Safety check in case the command is triggered via shortcut/double-click
+                if (!wrapper.CanRollback) return;
+
+                var result = MessageBox.Show(
+                    $"Rollback to version {wrapper.History.Version}?\n\nCompatibility: {(wrapper.IsCompatible ? "Matched" : "Forced via Override")}",
+                    "Confirm Rollback", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    await _storageService.RollbackToVersionAsync(wrapper.History, this._parentApp.InstalledVersion);
+                    BackCommand.Execute(null);
+                }
+            }
+        });
 
         public ICommand BackCommand => new RelayCommand(o =>
         {
-            // Navigate back to Library using the parent app reference
             _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);
         });
     }

@@ -1,75 +1,59 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
-    public class RetiredModsViewModel : BaseViewModel
+    public class RetiredModsViewModel : BaseViewModel, IInitializable<ModdedApp>
     {
-        private readonly ModdedApp _app;
-        private readonly INavigationService _nav;
+        private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
+        private ModdedApp _parentApp;
 
-        public string AppName => _app.Name;
+        public ObservableCollection<UnusedModHistory> RetiredMods { get; } = new();
 
-        // Using the historical entity instead of the live Mod entity
-        public ObservableCollection<UnusedModHistory> RetiredMods { get; set; }
+        public bool HasNoRetiredMods => RetiredMods.Count == 0;
 
-        // Logic for the Blank State/Opacity toggles in XAML
-        public bool HasRetiredMods => RetiredMods.Count > 0;
-        public bool HasNoRetiredMods => !HasRetiredMods;
-
-        public ICommand RestoreCommand { get; } // Matches binding in XAML
-        public ICommand BackCommand { get; }
-
-        public RetiredModsViewModel(ModdedApp app, INavigationService nav, IStorageService storageService)
+        public RetiredModsViewModel(INavigationService navigationService, IStorageService storageService)
         {
-            _app = app;
-            _nav = nav;
+            _navigationService = navigationService;
             _storageService = storageService;
-
-            RetiredMods = new ObservableCollection<UnusedModHistory>();
-
-            // Wire up collection change notification to update blank state properties
-            RetiredMods.CollectionChanged += (s, e) =>
-            {
-                OnPropertyChanged(nameof(HasRetiredMods));
-                OnPropertyChanged(nameof(HasNoRetiredMods));
-            };
-
-            LoadData();
-
-            // Command to Re-birth the mod from history
-            RestoreCommand = new RelayCommand(o =>
-            {
-                if (o is UnusedModHistory selectedHistory)
-                {
-                    // Logic: Service creates a new ModShell/InstalledMod using history DNA
-                    _storageService.RestoreModFromHistoryAsync(selectedHistory);
-
-                    // Remove from graveyard view
-                    RetiredMods.Remove(selectedHistory);
-                }
-            });
-
-            // Navigation back to the active library
-            BackCommand = new RelayCommand(o =>
-            {
-                _nav.NavigateTo<LibraryViewModel, ModdedApp>(_app);
-            });
         }
 
-        private async Task LoadData()
+        public async void Initialize(ModdedApp app)
+        {
+            _parentApp = app;
+            await LoadRetiredMods();
+        }
+
+        private async Task LoadRetiredMods()
         {
             RetiredMods.Clear();
-            var archived = await _storageService.GetRetiredModsByAppIdAsync(_app.Id);
-            foreach (var m in archived)
+            var history = await _storageService.GetRetiredModsByAppIdAsync(_parentApp.Id);
+
+            foreach (var item in history)
             {
-                RetiredMods.Add(m);
+                RetiredMods.Add(item);
             }
+
+            OnPropertyChanged(nameof(HasNoRetiredMods));
         }
+
+        public ICommand RestoreCommand => new RelayCommand(async (o) =>
+        {
+            if (o is UnusedModHistory historyItem)
+            {
+                await _storageService.RestoreModFromHistoryAsync(historyItem);
+                await LoadRetiredMods(); // Refresh list
+            }
+        });
+
+        public ICommand BackCommand => new RelayCommand(o =>
+        {
+            _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);
+        });
     }
 }

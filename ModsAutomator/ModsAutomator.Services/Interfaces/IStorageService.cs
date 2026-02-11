@@ -24,5 +24,17 @@ namespace ModsAutomator.Services.Interfaces
         Task<IEnumerable<UnusedModHistory>> GetRetiredModsByAppIdAsync(int appId);
 
         Task RestoreModFromHistoryAsync(UnusedModHistory history);
+
+        // Mod Installation History
+
+        Task<IEnumerable<InstalledModHistory>> GetInstalledModHistoryAsync(Guid modId);
+
+        Task RollbackToVersionAsync(InstalledModHistory target, string appVersion);
+
+        // Hard wipe
+
+        Task HardWipeAppAsync(int appId);
+
+        Task HardWipeModAsync(Mod mod, ModdedApp parentApp);
     }
 }

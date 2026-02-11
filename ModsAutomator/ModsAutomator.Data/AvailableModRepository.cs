@@ -88,5 +88,28 @@ namespace ModsAutomator.Data
                 return affected > 0;
             }, true, connection, transaction);
         }
+
+        // Single Mod Cleanup
+        public Task<bool> DeleteByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"DELETE FROM AvailableMod WHERE ModId = @ModId;";
+                var affected = await conn.ExecuteAsync(new CommandDefinition(sql, new { ModId = modId }, trans, cancellationToken: cancellationToken));
+                return affected > 0;
+            }, true, connection, transaction);
+        }
+
+        // Bulk App Cleanup (Using the Subquery strategy)
+        public Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"DELETE FROM AvailableMod
+                             WHERE ModId IN (SELECT Id FROM Mod WHERE AppId = @AppId);";
+                var affected = await conn.ExecuteAsync(new CommandDefinition(sql, new { AppId = appId }, trans, cancellationToken: cancellationToken));
+                return affected > 0;
+            }, true, connection, transaction);
+        }
     }
 }

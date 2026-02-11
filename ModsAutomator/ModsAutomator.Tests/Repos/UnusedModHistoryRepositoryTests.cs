@@ -24,10 +24,12 @@ namespace ModsAutomator.Tests.Repos
                 ModId = Guid.NewGuid(),
                 ModdedAppId = 1,
                 Name = "Snapshot Mod",
-                Version = "1.0.0",
+                AppName = "Test Game",
                 AppVersion = "2.0",
                 RemovedAt = new DateOnly(2026, 2, 5),
-                Reason = "Cleanup"
+                Reason = "Cleanup",
+                RootSourceUrl = "http://example.com/mod"
+
             };
 
             // Act
@@ -121,6 +123,25 @@ namespace ModsAutomator.Tests.Repos
             var exists = await Connection.ExecuteScalarAsync<bool>(
                 "SELECT COUNT(1) FROM UnusedModHistory WHERE Id = @Id", new { Id = dbId });
             Assert.False(exists);
+        }
+
+        [Fact]
+        public async Task DeleteByAppIdAsync_ShouldCleanHistoryForApp()
+        {
+            // Arrange
+            int appId = 50; // Mock AppId
+            await Connection.ExecuteAsync(
+                "INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name) VALUES (@ModId, @AppId, 'OldMod')",
+                new { ModId = Guid.NewGuid().ToString(), AppId = appId });
+
+            // Act
+            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
+
+            // Assert
+            Assert.True(result);
+            var count = await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM UnusedModHistory WHERE ModdedAppId = @AppId", new { AppId = appId });
+            Assert.Equal(0, count);
         }
     }
 }

@@ -15,26 +15,24 @@ namespace ModsAutomator.Tests.Repos
             _repo = new InstalledModHistoryRepository(FactoryMock.Object);
         }
 
-        private async Task<Guid> SeedModAsync()
+        private async Task<(int AppId, Guid ModId)> SeedDatabaseAsync()
         {
-            // FK Requirements: ModdedApp -> Mod -> InstalledModHistory
-            const string appSql = "INSERT INTO ModdedApp (Name) VALUES ('TestApp'); SELECT last_insert_rowid();";
+            const string appSql = "INSERT INTO ModdedApp (Name) VALUES ('Witcher 3'); SELECT last_insert_rowid();";
             int appId = await Connection.QuerySingleAsync<int>(appSql);
 
             Guid modId = Guid.NewGuid();
-            await Connection.ExecuteAsync(
-                "INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'TestMod', 1, 0)",
-                new { Id = modId, AppId = appId });
+            const string modSql = "INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'Fast Travel', 1, 0)";
+            await Connection.ExecuteAsync(modSql, new { Id = modId, AppId = appId });
 
-            return modId;
+            return (appId, modId);
         }
 
         [Fact]
         public async Task InsertAsync_ShouldSaveRecord_AndReturnEntity()
         {
             // Arrange
-            var modId = await SeedModAsync();
-            var history = new InstalledModHistory { ModId = modId, Version = "1.0.0" };
+            var ids = await SeedDatabaseAsync();
+            var history = new InstalledModHistory { ModId = ids.ModId, Version = "1.0.0" };
 
             // Act
             var result = await _repo.InsertAsync(history, Connection);
@@ -48,10 +46,10 @@ namespace ModsAutomator.Tests.Repos
         public async Task GetByIdAsync_ShouldReturnCorrectEntry_UsingInternalId()
         {
             // Arrange
-            var modId = await SeedModAsync();
+            var ids = await SeedDatabaseAsync();
             await Connection.ExecuteAsync(
                 "INSERT INTO InstalledModHistory (ModId, Version) VALUES (@ModId, 'v1')",
-                new { ModId = modId });
+                new { ModId = ids.ModId });
             int dbId = await Connection.ExecuteScalarAsync<int>("SELECT last_insert_rowid()");
 
             // Act
@@ -67,11 +65,11 @@ namespace ModsAutomator.Tests.Repos
         public async Task QueryAllAsync_ShouldReturnAllHistoryRecords()
         {
             // Arrange
-            var modId = await SeedModAsync();
+            var ids = await SeedDatabaseAsync();
             await Connection.ExecuteAsync(@"
                 INSERT INTO InstalledModHistory (ModId, Version) VALUES 
                 (@ModId, 'v1'), 
-                (@ModId, 'v2')", new { ModId = modId });
+                (@ModId, 'v2')", new { ModId = ids.ModId });
 
             // Act
             var results = await _repo.QueryAllAsync(Connection);
@@ -84,15 +82,15 @@ namespace ModsAutomator.Tests.Repos
         public async Task FindByModIdAsync_ShouldReturnOnlySpecificModHistory()
         {
             // Arrange
-            var modId1 = await SeedModAsync();
+            var ids = await SeedDatabaseAsync();
             var modId2 = Guid.NewGuid(); // Just for differentiation in query
             await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) SELECT @Id, AppId, 'Mod2', @IsUsed, @IsDeprecated FROM Mod LIMIT 1", new { Id = modId2, IsUsed = true, IsDeprecated = false });
 
-            await Connection.ExecuteAsync("INSERT INTO InstalledModHistory (ModId, Version) VALUES (@Id, 'Target')", new { Id = modId1 });
+            await Connection.ExecuteAsync("INSERT INTO InstalledModHistory (ModId, Version) VALUES (@Id, 'Target')", new { Id = ids.ModId });
             await Connection.ExecuteAsync("INSERT INTO InstalledModHistory (ModId, Version) VALUES (@Id, 'Other')", new { Id = modId2 });
 
             // Act
-            var results = await _repo.FindByModIdAsync(modId1, Connection);
+            var results = await _repo.FindByModIdAsync(ids.ModId, Connection);
 
             // Assert
             Assert.Single(results);
@@ -103,8 +101,8 @@ namespace ModsAutomator.Tests.Repos
         public async Task DeleteAsync_ShouldRemoveEntryFromDatabase()
         {
             // Arrange
-            var modId = await SeedModAsync();
-            await Connection.ExecuteAsync("INSERT INTO InstalledModHistory (ModId) VALUES (@ModId)", new { ModId = modId });
+            var ids = await SeedDatabaseAsync();
+            await Connection.ExecuteAsync("INSERT INTO InstalledModHistory (ModId) VALUES (@ModId)", new { ModId = ids.ModId });
             int dbId = await Connection.ExecuteScalarAsync<int>("SELECT last_insert_rowid()");
 
             // Act
@@ -115,6 +113,28 @@ namespace ModsAutomator.Tests.Repos
             var exists = await Connection.ExecuteScalarAsync<bool>(
                 "SELECT COUNT(1) FROM InstalledModHistory WHERE Id = @Id", new { Id = dbId });
             Assert.False(exists);
+        }
+
+        [Fact]
+        public async Task DeleteByAppIdAsync_ShouldWipeDataUsingSubquery()
+        {
+            /// Arrange
+            var ids = await SeedDatabaseAsync(); // Seeds AppId and ModId
+            int appId = ids.AppId;
+            Guid modId = ids.ModId;
+
+            await Connection.ExecuteAsync(
+                "INSERT INTO InstalledModHistory (ModId, Version) VALUES (@ModId, 'v1')",
+                new { ModId = modId });
+
+            // Act
+            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
+
+            // Assert
+            Assert.True(result);
+            var count = await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM InstalledModHistory WHERE ModId = @ModId", new { ModId = modId });
+            Assert.Equal(0, count);
         }
     }
 }

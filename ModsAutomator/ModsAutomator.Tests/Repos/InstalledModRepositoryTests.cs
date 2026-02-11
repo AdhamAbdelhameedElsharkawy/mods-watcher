@@ -175,5 +175,27 @@ namespace ModsAutomator.Tests.Repos
             Assert.Equal(ids.ModId, result.Id); // This checks the Guid mapping specifically
             Assert.Equal("5.0", result.InstalledVersion);
         }
+
+        [Fact]
+        public async Task DeleteByAppIdAsync_ShouldWipeDataUsingSubquery()
+        {
+            // Arrange
+            var ids = await SeedDatabaseAsync(); // Seeds AppId and ModId
+            int appId = ids.AppId;
+            Guid modId = ids.ModId;
+
+            await Connection.ExecuteAsync(
+                "INSERT INTO InstalledMod (ModId, InstalledVersion) VALUES (@ModId, 'v1')",
+                new { ModId = modId });
+
+            // Act
+            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
+
+            // Assert
+            Assert.True(result);
+            var count = await Connection.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM InstalledMod WHERE ModId = @ModId", new { ModId = modId });
+            Assert.Equal(0, count);
+        }
     }
 }

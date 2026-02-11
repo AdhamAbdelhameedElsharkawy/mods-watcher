@@ -12,5 +12,9 @@ namespace ModsAutomator.Core.Interfaces
         Task<InstalledMod?> FindByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
 
         public Task<(int ActiveCount, decimal TotalSize, int IncompatibleCount)> GetAppSummaryStatsAsync(int appId, string targetVersion, IDbConnection? connection = null);
+
+        Task<bool> DeleteByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
     }
 }

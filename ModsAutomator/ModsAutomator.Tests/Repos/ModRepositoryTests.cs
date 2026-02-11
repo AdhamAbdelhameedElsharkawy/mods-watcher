@@ -119,6 +119,25 @@ namespace ModsAutomator.Tests.Repos
         }
 
         [Fact]
+        public async Task DeleteByAppIdAsync_ShouldRemoveAllModsForApp()
+        {
+            // Arrange
+            const string appSql = "INSERT INTO ModdedApp (Name) VALUES ('AppToWipe'); SELECT last_insert_rowid();";
+            int appId = await Connection.QuerySingleAsync<int>(appSql);
+
+            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M1', 1, 0)", new { Id = Guid.NewGuid(), AppId = appId });
+            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M2', 1, 0)", new { Id = Guid.NewGuid(), AppId = appId });
+
+            // Act
+            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
+
+            // Assert
+            Assert.True(result);
+            var count = await Connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM Mod WHERE AppId = @AppId", new { AppId = appId });
+            Assert.Equal(0, count);
+        }
+
+        [Fact]
         public async Task GetByIdAsync_ShouldReturnCorrectMod()
         {
             // Arrange

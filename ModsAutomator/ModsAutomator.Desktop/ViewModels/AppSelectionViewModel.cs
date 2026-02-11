@@ -2,10 +2,12 @@
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
+    //TODO: Crawler logic Pending
     public class AppSelectionViewModel : BaseViewModel
     {
         private readonly IStorageService _storageService;
@@ -37,12 +39,37 @@ namespace ModsAutomator.Desktop.ViewModels
             // 2. Delete Logic
             DeleteAppCommand = new RelayCommand(async o =>
             {
-                //TODO:Hard wipe for all mods on app/game deletion. Maybe add a confirmation dialog first? needs implementation.
-                //if (o is ModdedAppItemViewModel wrapper)
-                //{
-                //    await _storageService.DeleteAppAsync(wrapper.App.InternalId);
-                //    ModdedApps.Remove(wrapper);
-                //}
+                if (o is ModdedAppItemViewModel wrapper)
+                {
+                    // Confirmation Dialog
+                    var result = MessageBox.Show(
+                        $"Are you sure you want to HARD WIPE '{wrapper.App.Name}'?\n\n" +
+                        "This will permanently delete:\n" +
+                        "• The App record\n" +
+                        "• All Mod Shells\n" +
+                        "• All Installation History\n" +
+                        "• All Unused/Retired Mod snapshots\n\n" +
+                        "This action cannot be undone.",
+                        "Point of No Return",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            // Trigger the bulk wipe logic 
+                            await _storageService.HardWipeAppAsync(wrapper.App.Id);
+
+                            // Remove from the UI collection
+                            ModdedApps.Remove(wrapper);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to wipe app: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                }
             });
 
             // 3. Command Placeholders
@@ -109,7 +136,6 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        //TODO:need implementation. Maybe add a confirmation dialog first? needs implementation.
         private void CrawlMods(ModdedAppItemViewModel? item) { throw new NotImplementedException(); }
     }
 }

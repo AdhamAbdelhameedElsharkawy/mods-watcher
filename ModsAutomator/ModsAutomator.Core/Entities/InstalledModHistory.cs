@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ModsAutomator.Core.Entities
+﻿namespace ModsAutomator.Core.Entities
 {
     public class InstalledModHistory
     {
@@ -18,8 +14,9 @@ namespace ModsAutomator.Core.Entities
 
         public DateOnly? RemovedAt { get; set; }
 
+        //TODO:Unused, consider removing or repurposing
         public string? LocalFilePath { get; set; } = "";
-
+        //TODO:Unused, consider removing or repurposing
         public bool IsRollbackTarget { get; set; }
     }
 }

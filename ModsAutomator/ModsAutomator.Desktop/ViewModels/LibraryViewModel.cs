@@ -7,6 +7,8 @@ using System.Windows;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
+    
+    //TODO: Crawler logic Pending
     public class LibraryViewModel : BaseViewModel, IInitializable<ModdedApp>
     {
         private readonly INavigationService _navigationService;
@@ -19,7 +21,14 @@ namespace ModsAutomator.Desktop.ViewModels
         public ModItemViewModel SelectedMod
         {
             get => _selectedMod;
-            set => SetProperty(ref _selectedMod, value);
+            set
+            {
+                if (SetProperty(ref _selectedMod, value))
+                {
+                    OnPropertyChanged(nameof(CanToggleActivation));
+                    OnPropertyChanged(nameof(CanCrawlSelectedMod));
+                }
+            }
         }
 
         public ModdedApp SelectedApp
@@ -32,6 +41,9 @@ namespace ModsAutomator.Desktop.ViewModels
     SelectedMod != null &&
     SelectedMod.Installed != null &&
     SelectedMod.Installed.IsUsed;
+
+        // This returns true only if the mod has an installation record
+        public bool CanToggleActivation => SelectedMod?.Installed != null;
 
         // --- Commands ---
 
@@ -104,7 +116,7 @@ namespace ModsAutomator.Desktop.ViewModels
         private void ViewModHistory()
         {
             if (SelectedMod == null) return;
-            _navigationService.NavigateTo<ModHistoryViewModel, (Guid, ModdedApp)>((SelectedMod.Shell.Id, SelectedApp));
+            _navigationService.NavigateTo<ModHistoryViewModel, (Mod, ModdedApp)>((SelectedMod.Shell, SelectedApp));
         }
 
         private async void ToggleModActivation()
@@ -133,20 +145,45 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        //TODO: This should ideally be a service method that handles the logic of hard wiping (deleting files, moving to unused history, etc), but for now we'll just call a placeholder method and refresh the UI.
         private async void HardWipeSelectedMod()
         {
-            //if (SelectedMod == null) return;
+            if (SelectedMod == null) return;
 
-            //var result = MessageBox.Show($"WARNING: Hard Wipe will delete {SelectedMod.Shell.Name} and move it to Unused History. This cannot be undone.",
-            //    "HARD WIPE", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            // 1. Confirm the destructive action
+            var result = MessageBox.Show(
+                $"Are you sure you want to HARD WIPE '{SelectedMod.Shell.Name}'?\n\n" +
+                "This will:\n" +
+                "• Delete all current installation data.\n" +
+                "• Delete available version lists.\n" +
+                "• Move the Mod Identity to the Retired Archive.\n\n" +
+                "You can restore the shell later, but files will be gone.",
+                "Confirm Hard Wipe",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
 
-            //if (result == MessageBoxResult.Yes)
-            //{
-            //    // This would be your service method that handles the migration to unusedModhistory
-            //    await _storageService.HardWipeModAsync(SelectedMod.Shell.Id);
-            //    LoadLibrary();
-            //}
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    // 2. Capture a reason (Optional TODO: Replace with a custom Dialog view)
+                    // For now, we use a default or a simple prompt logic
+                    string reason = "User manually retired the mod.";
+
+                    // 3. Execute the service call with the parent App context
+                    // This populates the AppName and AppVersion in the history record
+                    await _storageService.HardWipeModAsync(SelectedMod.Shell, SelectedApp);
+
+                    // 4. Refresh the UI
+                    SelectedMod = null; // Clear selection
+                    LoadLibrary();
+
+                    MessageBox.Show("Mod successfully retired to the archive.", "Operation Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred during wipe: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void RegisterNewMod()

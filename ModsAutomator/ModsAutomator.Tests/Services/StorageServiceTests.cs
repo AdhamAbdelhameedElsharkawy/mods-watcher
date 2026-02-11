@@ -14,6 +14,8 @@ namespace ModsAutomator.Tests.Services
         private readonly Mock<IModRepository> _shellModRepoMock;
         private readonly Mock<IInstalledModRepository> _modRepoMock;
         private readonly Mock<IUnusedModHistoryRepository> _unusedModRepoMock;
+        private readonly Mock<IInstalledModHistoryRepository> _installedModHistoryRepoMock;
+        private readonly Mock<IAvailableModRepository> _availableModRepoMock;
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly StorageService _service;
 
@@ -24,6 +26,8 @@ namespace ModsAutomator.Tests.Services
             _shellModRepoMock = new Mock<IModRepository>();
             _modRepoMock = new Mock<IInstalledModRepository>();
             _unusedModRepoMock = new Mock<IUnusedModHistoryRepository>();
+            _installedModHistoryRepoMock = new Mock<IInstalledModHistoryRepository>();
+            _availableModRepoMock = new Mock<IAvailableModRepository>();
             _connectionMock = new Mock<IDbConnection>();
 
             // 1. SETUP: When the service asks for a connection, give it our mock connection
@@ -34,7 +38,9 @@ namespace ModsAutomator.Tests.Services
                 _appRepoMock.Object,
                 _shellModRepoMock.Object,
                 _modRepoMock.Object,
-                _unusedModRepoMock.Object
+                _unusedModRepoMock.Object,
+                _installedModHistoryRepoMock.Object,
+                _availableModRepoMock.Object
             );
         }
 
@@ -134,13 +140,13 @@ namespace ModsAutomator.Tests.Services
             Assert.Equal(1024, summaryA.TotalSize);
             Assert.Equal(1, summaryA.IncompatibleCount);
         }
-    
 
-    #endregion
-        
+
+        #endregion
+
         #region Mod Repository Tests
 
-    [Fact]
+        [Fact]
         public async Task GetModsByAppId_ShouldReturnCombinedShellAndInstallation()
         {
             // Arrange
@@ -283,6 +289,139 @@ namespace ModsAutomator.Tests.Services
         }
 
         #endregion
-    }
 
+        #region Mod History Tests
+
+        [Fact]
+        public async Task GetInstalledModHistoryAsync_ShouldCallRepoWithCorrectId()
+        {
+            // Arrange
+            var targetModId = Guid.NewGuid();
+            var expectedHistory = new List<InstalledModHistory>
+    {
+        new() { ModId = targetModId, Version = "1.0.0", InstalledAt = new DateOnly(2025, 1, 1) },
+        new() { ModId = targetModId, Version = "1.1.0", InstalledAt = new DateOnly(2026, 2, 1) }
+    };
+
+            _installedModHistoryRepoMock
+                .Setup(r => r.FindByModIdAsync(targetModId, _connectionMock.Object))
+                .ReturnsAsync(expectedHistory);
+
+            // Act
+            var result = await _service.GetInstalledModHistoryAsync(targetModId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count());
+            _installedModHistoryRepoMock.Verify(r => r.FindByModIdAsync(targetModId, _connectionMock.Object), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetInstalledModHistoryAsync_ShouldReturnEmpty_WhenNoHistoryExists()
+        {
+            // Arrange
+            var targetModId = Guid.NewGuid();
+            _installedModHistoryRepoMock
+                .Setup(r => r.FindByModIdAsync(targetModId, _connectionMock.Object))
+                .ReturnsAsync(new List<InstalledModHistory>());
+
+            // Act
+            var result = await _service.GetInstalledModHistoryAsync(targetModId);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task RollbackToVersionAsync_ShouldCompleteSuccessfully()
+        {
+            // Arrange
+            var target = new InstalledModHistory { Version = "1.0.0", LocalFilePath = "C:\\mods\\backup.zip" };
+
+            // Act
+            var task = _service.RollbackToVersionAsync(target, "1.1.0");
+            await task;
+
+            // Assert
+            Assert.True(task.IsCompletedSuccessfully);
+        }
+
+        #endregion
+
+        #region Hard Wipe Tests
+
+        [Fact]
+        public async Task HardWipeModAsync_ShouldCallReposInCorrectOrder()
+        {
+            // Arrange
+            var mod = new Mod
+            {
+                Id = Guid.NewGuid(),
+                AppId = 1,
+                Name = "Test Mod",
+                RootSourceUrl = "https://source.com/mod"
+            };
+
+            var app = new ModdedApp
+            {
+                Id = mod.AppId,
+                Name = "Test App",
+                InstalledVersion = "1.0.0"
+            };
+
+            var mockTransaction = new Mock<IDbTransaction>();
+
+            // Ensure BeginTransaction does not return null
+            _connectionMock
+                .Setup(c => c.BeginTransaction())
+                .Returns(mockTransaction.Object);
+
+            // Act
+            await _service.HardWipeModAsync(mod, app);
+
+            // Assert
+            // 1. Verify Snapshot Insertion
+            _unusedModRepoMock.Verify(r => r.InsertAsync(
+                It.Is<UnusedModHistory>(h => h.ModId == mod.Id && h.AppName == app.Name),
+                _connectionMock.Object,
+                It.IsAny<IDbTransaction>()), Times.Once);
+
+            // 2. Verify Sub-table Deletions
+            _modRepoMock.Verify(r => r.DeleteByModIdAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _availableModRepoMock.Verify(r => r.DeleteByModIdAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _installedModHistoryRepoMock.Verify(r => r.DeleteByModIdAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+
+            // 3. Verify Shell Deletion
+            _shellModRepoMock.Verify(r => r.DeleteAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task HardWipeAppAsync_ShouldCallBulkDeleteRepos()
+        {
+            // Arrange
+            int appId = 10;
+
+            var mockTransaction = new Mock<IDbTransaction>();
+
+            // Ensure BeginTransaction does not return null
+            _connectionMock
+                .Setup(c => c.BeginTransaction())
+                .Returns(mockTransaction.Object);
+
+            // Act
+            await _service.HardWipeAppAsync(appId);
+
+            // Assert
+            // Verify bulk purge across all related tables
+            _unusedModRepoMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _modRepoMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _availableModRepoMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _installedModHistoryRepoMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _modRepoMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+            _appRepoMock.Verify(r => r.DeleteAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>()), Times.Once);
+        }
+
+        #endregion
+
+    }
 }

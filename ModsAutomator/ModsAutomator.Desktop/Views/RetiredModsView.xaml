@@ -46,15 +46,22 @@
 
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}" Foreground="White" FontSize="18" FontWeight="Bold"/>
+
                                         <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                            <TextBlock Text="{Binding Version, StringFormat='Last Version: {0}'}" Foreground="#666" FontSize="12"/>
-                                            <TextBlock Text=" | " Foreground="#444" Margin="5,0"/>
-                                            <TextBlock Text="{Binding AppVersion, StringFormat='App: {0}'}" Foreground="#666" FontSize="12"/>
+                                            <TextBlock Text="{Binding AppName}" Foreground="#2196F3" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text=" v" Foreground="#666" FontSize="12"/>
+                                            <TextBlock Text="{Binding AppVersion}" Foreground="#666" FontSize="12"/>
+                                            <TextBlock Text=" | Removed: " Foreground="#444" Margin="5,0"/>
+                                            <TextBlock Text="{Binding RemovedAt}" Foreground="#666" FontSize="12"/>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding RootSourceUrl}" Foreground="#2196F3" FontSize="11" Margin="0,8,0,0" Opacity="0.7"/>
+
+                                        <TextBlock Text="{Binding RootSourceUrl}" Foreground="#666" FontSize="11" Margin="0,8,0,0" Opacity="0.7"/>
+
+                                        <TextBlock Text="{Binding Reason}" Foreground="#FFA500" FontSize="11" Margin="0,5,0,0" 
+                                                   FontStyle="Italic" Visibility="{Binding Reason, Converter={StaticResource BoolToVis}}"/>
                                     </StackPanel>
 
-                                    <Button Grid.Column="1" Content="Restore to Library" 
+                                    <Button Grid.Column="1" Content="Restore Shell" 
                                             Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Padding="20,10" Background="#3F51B5" Foreground="White" BorderThickness="0" VerticalAlignment="Center"/>

@@ -43,6 +43,7 @@ namespace ModsAutomator.Desktop
             services.AddTransient<AppSelectionViewModel>();
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<RetiredModsViewModel>();
+            services.AddTransient<ModHistoryViewModel>();
             // ... other viewmodels
 
             ServiceProvider = services.BuildServiceProvider();
