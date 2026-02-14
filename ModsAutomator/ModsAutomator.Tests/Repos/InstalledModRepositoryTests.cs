@@ -133,32 +133,6 @@ namespace ModsAutomator.Tests.Repos
         }
 
         [Fact]
-        public async Task GetAppSummaryStatsAsync_ShouldHandleMultipleModsAndIncompatibility()
-        {
-            // Arrange
-            const string appSql = "INSERT INTO ModdedApp (Name) VALUES ('StatsApp'); SELECT last_insert_rowid();";
-            int appId = await Connection.QuerySingleAsync<int>(appSql);
-
-            // Mod 1: Compatible
-            Guid mod1Id = Guid.NewGuid();
-            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M1', 1, 0)", new { Id = mod1Id, AppId = appId });
-            await Connection.ExecuteAsync("INSERT INTO InstalledMod (ModId, InstalledSizeMB, SupportedAppVersions) VALUES (@Id, 100, '1.0,2.0')", new { Id = mod1Id });
-
-            // Mod 2: Incompatible (Doesn't support 2.0)
-            Guid mod2Id = Guid.NewGuid();
-            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M2', 1, 0)", new { Id = mod2Id, AppId = appId });
-            await Connection.ExecuteAsync("INSERT INTO InstalledMod (ModId, InstalledSizeMB, SupportedAppVersions) VALUES (@Id, 50, '1.0')", new { Id = mod2Id });
-
-            // Act
-            var stats = await _repo.GetAppSummaryStatsAsync(appId, "2.0", Connection);
-
-            // Assert
-            Assert.Equal(2, stats.ActiveCount);
-            Assert.Equal(150m, stats.TotalSize);
-            Assert.Equal(1, stats.IncompatibleCount); // Only M2 is incompatible
-        }
-
-        [Fact]
         public async Task FindByModIdAsync_ShouldReturnCorrectModByGuid()
         {
             // Arrange

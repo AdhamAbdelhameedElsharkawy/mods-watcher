@@ -119,17 +119,17 @@ namespace ModsAutomator.Tests.Services
         new ModdedApp { Id = 2, Name = "Game B", InstalledVersion = "2.0" }
     };
 
-            // Setup: When Repo.QueryAllAsync is called, return our list
+            // Setup: Return app list
             _appRepoMock.Setup(r => r.QueryAllAsync(It.IsAny<IDbConnection>(), null, default))
                         .ReturnsAsync(apps);
 
-            // Setup: Return specific stats for App ID 1
-            _modRepoMock.Setup(r => r.GetAppSummaryStatsAsync(1, "1.0", It.IsAny<IDbConnection>()))
-                        .ReturnsAsync((5, 1024, 1)); // 5 active, 1GB, 1 incompatible
+            // Setup: Return specific stats for App ID 1 (ActiveCount: 5, PotentialUpdatesCount: 3)
+            _shellModRepoMock.Setup(r => r.GetWatcherSummaryStatsAsync(1, It.IsAny<IDbConnection>()))
+                        .ReturnsAsync((5, 3));
 
-            // Setup: Return specific stats for App ID 2
-            _modRepoMock.Setup(r => r.GetAppSummaryStatsAsync(2, "2.0", It.IsAny<IDbConnection>()))
-                        .ReturnsAsync((0, 0, 0));
+            // Setup: Return specific stats for App ID 2 (ActiveCount: 0, PotentialUpdatesCount: 0)
+            _shellModRepoMock.Setup(r => r.GetWatcherSummaryStatsAsync(2, It.IsAny<IDbConnection>()))
+                        .ReturnsAsync((0, 0));
 
             // 2. Act
             var results = (await _service.GetAllAppSummariesAsync()).ToList();
@@ -137,11 +137,15 @@ namespace ModsAutomator.Tests.Services
             // 3. Assert
             Assert.Equal(2, results.Count);
 
-            // Check if App A (ID 1) got the right stats mapped
+            // Check App A (ID 1)
             var summaryA = results.First(s => s.App.Id == 1);
             Assert.Equal(5, summaryA.ActiveCount);
-            Assert.Equal(1024, summaryA.TotalSize);
-            Assert.Equal(1, summaryA.IncompatibleCount);
+            Assert.Equal(3, summaryA.PotentialUpdatesCount);
+
+            // Check App B (ID 2)
+            var summaryB = results.First(s => s.App.Id == 2);
+            Assert.Equal(0, summaryB.ActiveCount);
+            Assert.Equal(0, summaryB.PotentialUpdatesCount);
         }
 
 

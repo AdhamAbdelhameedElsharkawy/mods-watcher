@@ -117,56 +117,6 @@ namespace ModsAutomator.Data
                 return (InstalledMod?)entity;
             }, true, connection, transaction);
 
-        public Task<(int ActiveCount, decimal TotalSize, int IncompatibleCount)> GetAppSummaryStatsAsync(int appId, string targetVersion, IDbConnection? connection = null)
-
-        {
-
-            // Explicitly type the lambda return to match the Task signature
-
-            return ExecuteAsync<(int, decimal, int)>(async (conn, trans) =>
-
-            {
-
-                var wrappedVersion = $",{targetVersion},";
-
-
-
-                const string sql = @"
-
-            SELECT 
-
-                COUNT(*) as ActiveCount, 
-
-                IFNULL(SUM(InstalledSizeMB), 0) as TotalSize,
-
-                SUM(CASE WHEN ',' || SupportedAppVersions || ',' NOT LIKE '%' || @Target || '%' THEN 1 ELSE 0 END) as IncompatibleCount
-
-            FROM InstalledMod im
-
-            JOIN Mod m ON m.Id = im.ModId
-
-            WHERE m.AppId = @AppId AND m.IsUsed = 1";
-
-
-
-                var result = await conn.QuerySingleAsync(sql, new { AppId = appId, Target = wrappedVersion }, trans);
-
-
-
-                return (
-
-                    (int)(result.ActiveCount ?? 0),
-
-                    Convert.ToDecimal(result.TotalSize ?? 0),
-
-                    (int)(result.IncompatibleCount ?? 0)
-
-                );
-
-            }, false, connection);
-
-        }
-
         // Single Mod Cleanup
         public Task<bool> DeleteByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
         {

@@ -9,7 +9,6 @@ namespace ModsAutomator.Core.DTO
     {
         public ModdedApp App { get; set; }
         public int ActiveCount { get; set; }
-        public decimal TotalSize { get; set; }
-        public int IncompatibleCount { get; set; }
+        public int PotentialUpdatesCount { get; set; }
     }
 }

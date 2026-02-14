@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using ModsAutomator.Core.Entities;
+using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
 using System.Data;
@@ -63,6 +64,28 @@ namespace ModsAutomator.Data
                 return await conn.QuerySingleOrDefaultAsync<Mod>(
                     new CommandDefinition(sql, new { Id = id }, trans, cancellationToken: cancellationToken));
             }, false, connection, transaction);
+        }
+
+        public async Task<(int ActiveCount, int PotentialUpdatesCount)> GetWatcherSummaryStatsAsync(int appId, IDbConnection connection)
+        {
+            const string sql = @"
+        SELECT 
+            COUNT(CASE WHEN IsUsed = 1 THEN 1 END) as ActiveCount,
+            COUNT(CASE 
+                    WHEN IsUsed = 1 
+                    AND IsWatchable = 1 
+                    AND WatcherStatus = @UpdateStatus 
+                    THEN 1 END) as PotentialUpdatesCount
+        FROM Mods
+        WHERE AppId = @AppId";
+
+            var result = await connection.QuerySingleAsync(sql, new
+            {
+                AppId = appId,
+                UpdateStatus = (int)WatcherStatusType.UpdateFound
+            });
+
+            return (result.ActiveCount, result.PotentialUpdatesCount);
         }
 
         public Task<Mod?> InsertAsync(Mod entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)

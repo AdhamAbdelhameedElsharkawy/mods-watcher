@@ -2,6 +2,7 @@
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
+using System.DirectoryServices.ActiveDirectory;
 using System.Windows;
 using System.Windows.Input;
 
@@ -21,7 +22,7 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand EditAppCommand { get; }
         public ICommand DeleteAppCommand { get; }
         public ICommand SelectAppCommand { get; }
-        public ICommand CrawlAppModsCommand { get; }
+        public ICommand SyncAppModsCommand { get; }
 
         public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService)
         {
@@ -74,7 +75,7 @@ namespace ModsAutomator.Desktop.ViewModels
             // 3. Command Placeholders
             AddAppCommand = new RelayCommand(_ => AddNewApp());
             EditAppCommand = new RelayCommand(o => EditApp(o as ModdedAppItemViewModel));
-            CrawlAppModsCommand = new RelayCommand(o => CrawlMods(o as ModdedAppItemViewModel));
+            SyncAppModsCommand = new RelayCommand(o => SyncAppWatcher(o as ModdedAppItemViewModel));
 
             LoadApps();
         }
@@ -92,8 +93,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 var wrapper = new ModdedAppItemViewModel(dto.App)
                 {
                     ActiveModsCount = dto.ActiveCount,
-                    TotalUsedSizeMB = dto.TotalSize,
-                    IncompatibleCount = dto.IncompatibleCount
+                    PotentialUpdatesCount = dto.PotentialUpdatesCount
                 };
 
                 ModdedApps.Add(wrapper);
@@ -135,13 +135,10 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        private void CrawlMods(ModdedAppItemViewModel? item) {
+        //TODO:new watcher logic
+        private void SyncAppWatcher(ModdedAppItemViewModel? item) {
 
-            // New Path: Go directly to the Discovery/Sync center for all 'isUsed' mods
-            // Pass Shell as null to indicate "All Mods" mode
-            if (item == null) return;
-            
-            _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((null, item.App));
+            throw new NotImplementedException();
 
         }
     }

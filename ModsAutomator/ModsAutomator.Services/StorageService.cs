@@ -35,7 +35,7 @@ namespace ModsAutomator.Services
             _installedModRepo = installedModRepo;
             _unUsedModRepo = unUsedModRepo;
             _installedModHistoryRepo = installedModHistoryRepo;
-            _installedModRepo = installedModRepo;
+            _modCrawlerConfigRepo = modCrawlerConfigRepo;
             _availableModRepo = availableModRepo;
         }
 
@@ -80,21 +80,21 @@ namespace ModsAutomator.Services
             if (connection.State != System.Data.ConnectionState.Open)
                 connection.Open();
 
-            // 1. Get all apps using the existing connection
+            // 1. Get all apps
             var apps = await _appRepo.QueryAllAsync(connection);
             var summaries = new List<AppSummaryDto>();
 
-            // 2. Loop and fetch stats for each app using the SAME connection
+            // 2. Fetch counts based on Mod entity properties
             foreach (var app in apps)
             {
-                var stats = await _installedModRepo.GetAppSummaryStatsAsync(app.Id, app.InstalledVersion, connection);
+                // Get the specific counts for this app's mod collection
+                var stats = await _modRepo.GetWatcherSummaryStatsAsync(app.Id, connection);
 
                 summaries.Add(new AppSummaryDto
                 {
                     App = app,
                     ActiveCount = stats.ActiveCount,
-                    TotalSize = stats.TotalSize,
-                    IncompatibleCount = stats.IncompatibleCount
+                    PotentialUpdatesCount = stats.PotentialUpdatesCount
                 });
             }
 

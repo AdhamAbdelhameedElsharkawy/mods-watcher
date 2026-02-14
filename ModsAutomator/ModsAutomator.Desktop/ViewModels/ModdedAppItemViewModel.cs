@@ -9,8 +9,6 @@ namespace ModsAutomator.Desktop.ViewModels
 
         // Row 0 & 1 Identity
         public string Name => App.Name;
-
-        // Ensure this points to the correct entity property
         public string InstalledVersion => App.InstalledVersion;
 
         // Row 2 Stats: Active Mods
@@ -21,30 +19,13 @@ namespace ModsAutomator.Desktop.ViewModels
             set => SetProperty(ref _activeModsCount, value);
         }
 
-        // Row 2 Stats: Total Size (Changed to decimal for consistency)
-        private decimal _totalUsedSizeMB;
-        public decimal TotalUsedSizeMB
+        // Row 2 Stats: Potential Updates (Replaced Size/Incompatible logic)
+        private int _potentialUpdatesCount;
+        public int PotentialUpdatesCount
         {
-            get => _totalUsedSizeMB;
-            set => SetProperty(ref _totalUsedSizeMB, value);
+            get => _potentialUpdatesCount;
+            set => SetProperty(ref _potentialUpdatesCount, value);
         }
-
-        // Incompatibility Logic
-        private int _incompatibleCount;
-        public int IncompatibleCount
-        {
-            get => _incompatibleCount;
-            set
-            {
-                if (SetProperty(ref _incompatibleCount, value))
-                {
-                    OnPropertyChanged(nameof(IncompatibleCountVisibility));
-                }
-            }
-        }
-
-        public Visibility IncompatibleCountVisibility =>
-            IncompatibleCount > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         public ModdedAppItemViewModel(ModdedApp app)
         {

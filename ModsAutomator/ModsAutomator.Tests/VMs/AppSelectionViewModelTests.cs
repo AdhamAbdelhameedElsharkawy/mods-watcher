@@ -28,8 +28,7 @@ namespace ModsAutomator.Tests.VMs
                 {
                     App = new ModdedApp { Id = 1, Name = "Witcher 3" },
                     ActiveCount = 10,
-                    TotalSize = 1024,
-                    IncompatibleCount = 2
+                    PotentialUpdatesCount =2
                 }
             };
             _serviceMock.Setup(s => s.GetAllAppSummariesAsync()).ReturnsAsync(fakeSummaries);
@@ -48,8 +47,6 @@ namespace ModsAutomator.Tests.VMs
 
             Assert.Equal("Witcher 3", wrapper.App.Name);
             Assert.Equal(10, wrapper.ActiveModsCount);
-            Assert.Equal(1024, wrapper.TotalUsedSizeMB);
-            Assert.Equal(2, wrapper.IncompatibleCount);
         }
 
         [Fact]

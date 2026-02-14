@@ -8,5 +8,7 @@ namespace ModsAutomator.Core.Interfaces
         Task<IEnumerable<Mod>> GetByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
 
         Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<(int ActiveCount, int PotentialUpdatesCount)> GetWatcherSummaryStatsAsync(int appId, IDbConnection connection);
     }
 }
