@@ -16,8 +16,9 @@ namespace ModsAutomator.Data
                 m.Id,                -- Maps to AvailableMod.Id (Guid)
                 am.Id AS InternalId, -- Internal Auto-increment
                 m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
+                m.IsWatchable, m.IsCrawlable, m.LastWatched, m.WatcherStatus, m.LastWatcherHash,
                 am.AvailableVersion, am.ReleaseDate, am.SizeMB, am.DownloadUrl, 
-                am.PackageType, am.PackageFilesNumber, am.SupportedAppVersions, am.LastCrawled
+                am.PackageType, am.PackageFilesNumber, am.SupportedAppVersions, am.LastCrawled, am.CrawledModUrl
             FROM AvailableMod am
             JOIN Mod m ON m.Id = am.ModId";
 
@@ -55,8 +56,8 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                    INSERT INTO AvailableMod (ModId, AvailableVersion, ReleaseDate, SizeMB, DownloadUrl, PackageType, PackageFilesNumber, SupportedAppVersions, LastCrawled)
-                    VALUES (@ModId, @AvailableVersion, @ReleaseDate, @SizeMB, @DownloadUrl, @PackageType, @PackageFilesNumber, @SupportedAppVersions, @LastCrawled);";
+                    INSERT INTO AvailableMod (ModId, AvailableVersion, ReleaseDate, SizeMB, DownloadUrl, PackageType, PackageFilesNumber, SupportedAppVersions, LastCrawled, CrawledModUrl)
+                    VALUES (@ModId, @AvailableVersion, @ReleaseDate, @SizeMB, @DownloadUrl, @PackageType, @PackageFilesNumber, @SupportedAppVersions, @LastCrawled, @CrawledModUrl);";
 
                 await conn.ExecuteAsync(new CommandDefinition(sql, new
                 {
@@ -68,7 +69,8 @@ namespace ModsAutomator.Data
                     PackageType = (int)entity.PackageType,
                     entity.PackageFilesNumber,
                     entity.SupportedAppVersions,
-                    entity.LastCrawled
+                    entity.LastCrawled,
+                    entity.CrawledModUrl
                 }, trans, cancellationToken: cancellationToken));
 
                 return (AvailableMod?)entity;

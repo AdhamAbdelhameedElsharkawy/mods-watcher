@@ -15,6 +15,7 @@ namespace ModsAutomator.Services
         private readonly IInstalledModRepository _installedModRepo;
         private readonly IUnusedModHistoryRepository _unUsedModRepo;
         private readonly IInstalledModHistoryRepository _installedModHistoryRepo;
+        private readonly IModCrawlerConfigRepository _modCrawlerConfigRepo;
         private readonly IAvailableModRepository _availableModRepo;
 
         // We inject the Repository and the ConnectionFactory
@@ -25,6 +26,7 @@ namespace ModsAutomator.Services
             IInstalledModRepository installedModRepo,
             IUnusedModHistoryRepository unUsedModRepo,
             IInstalledModHistoryRepository installedModHistoryRepo,
+            IModCrawlerConfigRepository modCrawlerConfigRepo,
             IAvailableModRepository availableModRepo)
         {
             _connectionFactory = connectionFactory;
@@ -33,6 +35,7 @@ namespace ModsAutomator.Services
             _installedModRepo = installedModRepo;
             _unUsedModRepo = unUsedModRepo;
             _installedModHistoryRepo = installedModHistoryRepo;
+            _installedModRepo = installedModRepo;
             _availableModRepo = availableModRepo;
         }
 
@@ -269,6 +272,7 @@ namespace ModsAutomator.Services
                 await _installedModRepo.DeleteByAppIdAsync(appId, connection, transaction);
                 await _availableModRepo.DeleteByAppIdAsync(appId, connection, transaction);
                 await _installedModHistoryRepo.DeleteByAppIdAsync(appId, connection, transaction);
+                await _modCrawlerConfigRepo.DeleteByAppIdAsync(appId, connection, transaction);
 
                 // 3. Wipe Mod shells
                 await _modRepo.DeleteByAppIdAsync(appId, connection, transaction);
@@ -312,6 +316,7 @@ namespace ModsAutomator.Services
                 await _installedModRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
                 await _availableModRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
                 await _installedModHistoryRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
+                await _modCrawlerConfigRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
 
                 // 3. Delete the Mod Shell itself
                 await _modRepo.DeleteAsync(mod.Id, connection, transaction);

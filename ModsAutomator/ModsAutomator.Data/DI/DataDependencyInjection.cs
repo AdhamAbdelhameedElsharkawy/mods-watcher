@@ -19,6 +19,7 @@ namespace ModsAutomator.Data.DI
             services.AddScoped<IAvailableModRepository, AvailableModRepository>();
             services.AddScoped<IInstalledModHistoryRepository, InstalledModHistoryRepository>();
             services.AddScoped<IUnusedModHistoryRepository, UnusedModHistoryRepository>();
+            services.AddScoped<IModCrawlerConfigRepository, ModCrawlerConfigRepository>();
             
 
             return services;

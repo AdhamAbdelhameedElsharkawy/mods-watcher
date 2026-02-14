@@ -16,6 +16,7 @@ namespace ModsAutomator.Tests.Services
         private readonly Mock<IUnusedModHistoryRepository> _unusedModRepoMock;
         private readonly Mock<IInstalledModHistoryRepository> _installedModHistoryRepoMock;
         private readonly Mock<IAvailableModRepository> _availableModRepoMock;
+        private readonly Mock<IModCrawlerConfigRepository> _configRepoMock;
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly StorageService _service;
 
@@ -28,6 +29,7 @@ namespace ModsAutomator.Tests.Services
             _unusedModRepoMock = new Mock<IUnusedModHistoryRepository>();
             _installedModHistoryRepoMock = new Mock<IInstalledModHistoryRepository>();
             _availableModRepoMock = new Mock<IAvailableModRepository>();
+            _configRepoMock = new Mock<IModCrawlerConfigRepository>();
             _connectionMock = new Mock<IDbConnection>();
 
             // 1. SETUP: When the service asks for a connection, give it our mock connection
@@ -40,6 +42,7 @@ namespace ModsAutomator.Tests.Services
                 _modRepoMock.Object,
                 _unusedModRepoMock.Object,
                 _installedModHistoryRepoMock.Object,
+                _configRepoMock.Object,
                 _availableModRepoMock.Object
             );
         }

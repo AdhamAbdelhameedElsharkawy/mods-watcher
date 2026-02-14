@@ -29,6 +29,7 @@ namespace ModsAutomator.Data
                 m.Id,                -- Maps to Entity.Id (Guid)
                 im.Id AS InternalId, -- Alias the auto-increment ID
                 m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
+                m.IsWatchable, m.IsCrawlable, m.LastWatched, m.WatcherStatus, m.LastWatcherHash,
                 im.InstalledVersion, im.InstalledDate, im.InstalledSizeMB,
                 im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.PriorityOrder
             FROM InstalledMod im

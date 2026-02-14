@@ -57,8 +57,7 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                SELECT Id, AppId, Name, RootSourceUrl, IsDeprecated, Description, IsUsed
-                FROM Mod
+                SELECT * FROM Mod
                 WHERE Id = @Id;";
 
                 return await conn.QuerySingleOrDefaultAsync<Mod>(
@@ -72,9 +71,9 @@ namespace ModsAutomator.Data
             {
                 const string sql = @"
                 INSERT INTO Mod
-                (Id, AppId, Name, RootSourceUrl, IsDeprecated, Description, IsUsed)
+                (Id, AppId, Name, Author, RootSourceUrl, IsDeprecated, Description, IsUsed, IsWatchable, IsCrawlable, LastWatched, WatcherStatus, LastWatcherHash)
                 VALUES
-                (@Id, @AppId, @Name, @RootSourceUrl, @IsDeprecated, @Description, @IsUsed);";
+               (@Id, @AppId, @Name, @Author, @RootSourceUrl, @IsDeprecated, @Description, @IsUsed, @IsWatchable, @IsCrawlable, @LastWatched, @WatcherStatus, @LastWatcherHash);";
 
                 await conn.ExecuteAsync(
                     new CommandDefinition(sql, new
@@ -82,10 +81,16 @@ namespace ModsAutomator.Data
                         entity.Id,
                         entity.AppId,
                         entity.Name,
+                        entity.Author,
                         entity.RootSourceUrl,
                         entity.IsDeprecated,
                         entity.Description,
-                        entity.IsUsed
+                        entity.IsUsed,
+                        entity.IsWatchable,
+                        entity.IsCrawlable,
+                        entity.LastWatched,
+                        entity.WatcherStatus,
+                        entity.LastWatcherHash
                     }, trans, cancellationToken: cancellationToken));
 
                 return (Mod?)entity;
@@ -97,8 +102,7 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                SELECT Id, AppId, Name, RootSourceUrl, IsDeprecated, Description, IsUsed
-                FROM Mod;";
+                SELECT * FROM Mod;";
 
                 return await conn.QueryAsync<Mod>(
                     new CommandDefinition(sql, transaction: trans, cancellationToken: cancellationToken));
@@ -114,7 +118,12 @@ namespace ModsAutomator.Data
                     RootSourceUrl = @RootSourceUrl,
                     IsDeprecated = @IsDeprecated,
                     Description = @Description,
-                    IsUsed = @IsUsed
+                    IsUsed = @IsUsed,
+                    IsWatchable = @IsWatchable,
+                    IsCrawlable = @IsCrawlable,
+                    LastWatched = @LastWatched,
+                    WatcherStatus = @WatcherStatus,
+                    LastWatcherHash = @LastWatcherHash
                 WHERE Id = @Id;";
 
                 await conn.ExecuteAsync(
@@ -124,7 +133,13 @@ namespace ModsAutomator.Data
                         entity.RootSourceUrl,
                         entity.IsDeprecated,
                         entity.Description,
-                        entity.IsUsed
+                        entity.IsUsed,
+                        entity.IsWatchable,
+                        entity.IsCrawlable,
+                        entity.LastWatched,
+                        entity.WatcherStatus,
+                        entity.LastWatcherHash
+
                     }, trans, cancellationToken: cancellationToken));
 
                 return (Mod?)entity;
