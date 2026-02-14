@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.DTO;
 using ModsAutomator.Core.Entities;
+using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
 using ModsAutomator.Services.Interfaces;
@@ -322,6 +323,184 @@ namespace ModsAutomator.Services
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        #endregion
+
+        #region Available Versions Methods
+
+        public async Task<IEnumerable<(Mod Shell, IEnumerable<AvailableMod> Versions)>> GetAvailableVersionsByAppIdAsync(int appId, Guid? modId = null)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+
+            // 1. Get Shells (Filter by specific modId if provided, else all for app)
+            var shells = await _modRepo.GetByAppIdAsync(appId, connection);
+            if (modId.HasValue)
+                shells = shells.Where(s => s.Id == modId.Value);
+
+            var results = new List<(Mod, IEnumerable<AvailableMod>)>();
+
+            foreach (var shell in shells)
+            {
+                // 2. Fetch crawled versions for each shell
+                var versions = await _availableModRepo.FindByModIdAsync(shell.Id, connection);
+                results.Add((shell, versions));
+            }
+
+            return results;
+        }
+
+        public async Task SaveCrawledVersionsAsync(Guid modId, IEnumerable<AvailableMod> versions)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+
+                foreach (AvailableMod v in versions)
+                {
+                    v.Id = modId;
+                    v.LastCrawled = DateTime.Now;
+                    await _availableModRepo.InsertAsync(v, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task PromoteAvailableToInstalledAsync(AvailableMod selected, string appVersion)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Archive current active mod to History
+                var currentActive = await _installedModRepo.FindByModIdAsync(selected.Id, connection, transaction);
+                if (currentActive != null)
+                {
+                    var history = new InstalledModHistory
+                    {
+                        ModId = currentActive.Id,
+                        Version = currentActive.InstalledVersion,
+                        AppVersion = appVersion,
+                        InstalledAt = currentActive.InstalledDate,
+                        RemovedAt = DateOnly.FromDateTime(DateTime.Now)
+                    };
+                    await _installedModHistoryRepo.InsertAsync(history, connection, transaction);
+
+                    // 2. Update active record with new version info
+                    currentActive.InstalledVersion = selected.AvailableVersion;
+                    currentActive.InstalledDate = DateOnly.FromDateTime(DateTime.Now);
+                    currentActive.InstalledSizeMB = selected.SizeMB;
+                    currentActive.PackageType = selected.PackageType;
+                    currentActive.PackageFilesNumber = selected.PackageFilesNumber;
+                    currentActive.SupportedAppVersions = selected.SupportedAppVersions;
+
+                    await _installedModRepo.UpdateAsync(currentActive, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<(AvailableMod Entity, SyncChangeType Type)>> CompareAndIdentifyChangesAsync(Guid modId, int appId, List<AvailableMod> webVersions)
+        {
+            var changes = new List<(AvailableMod Entity, SyncChangeType Type)>();
+
+            // 1. Get the current local state for this specific mod
+            var localData = await GetAvailableVersionsByAppIdAsync(appId, modId);
+            var localVersions = localData.SelectMany(x => x.Versions).ToList();
+
+            // 2. Identify NEW or MODIFIED items
+            foreach (var webMod in webVersions)
+            {
+                var localMatch = localVersions.FirstOrDefault(l => l.AvailableVersion == webMod.AvailableVersion);
+
+                if (localMatch == null)
+                {
+                    // Brand new version found online
+                    changes.Add((webMod, SyncChangeType.New));
+                }
+                else if (IsModChanged(localMatch, webMod))
+                {
+                    // Version exists but data (URL, Date, Compatibility) is different
+                    changes.Add((webMod, SyncChangeType.Modified));
+                }
+            }
+
+            // 3. Identify STALE items (in local storage but no longer on Web)
+            foreach (var localMod in localVersions)
+            {
+                if (!webVersions.Any(w => w.AvailableVersion == localMod.AvailableVersion))
+                {
+                    changes.Add((localMod, SyncChangeType.Stale));
+                }
+            }
+
+            return changes;
+        }
+
+        public async Task CommitSyncChangeAsync(Guid modId, AvailableMod entity, SyncChangeType type)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                entity.Id = modId;
+                entity.LastCrawled = DateTime.Now;
+
+                switch (type)
+                {
+                    case SyncChangeType.New:
+                        await _availableModRepo.InsertAsync(entity, connection, transaction);
+                        break;
+
+                    case SyncChangeType.Modified:
+                        await _availableModRepo.UpdateAsync(entity, connection, transaction);
+                        break;
+
+                    case SyncChangeType.Stale:
+                        await _availableModRepo.DeleteAsync(entity.InternalId, connection, transaction);
+                        break;
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private bool IsModChanged(AvailableMod local, AvailableMod web)
+        {
+            // Check if critical metadata has drifted
+            return local.DownloadUrl != web.DownloadUrl ||
+                   local.ReleaseDate != web.ReleaseDate ||
+                   local.PackageFilesNumber != web.PackageFilesNumber||
+                   local.PackageType != web.PackageType||
+                   local.SupportedAppVersions != web.SupportedAppVersions||
+                   local.SizeMB != web.SizeMB;
         }
 
         #endregion

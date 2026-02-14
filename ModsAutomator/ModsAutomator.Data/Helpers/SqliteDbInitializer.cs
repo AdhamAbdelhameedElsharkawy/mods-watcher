@@ -27,10 +27,16 @@ CREATE TABLE IF NOT EXISTS Mod (
     Id TEXT PRIMARY KEY,
     AppId INTEGER NOT NULL,
     Name TEXT NOT NULL,
+    Author TEXT, 
     RootSourceUrl TEXT,
-    IsDeprecated INTEGER NOT NULL,
+    IsDeprecated INTEGER NOT NULL DEFAULT 0,
     Description TEXT,
     IsUsed INTEGER NOT NULL,
+    IsWatchable INTEGER NOT NULL DEFAULT 0,
+    IsCrawlable INTEGER NOT NULL DEFAULT 0,
+    LastWatched TEXT,
+    WatcherStatus INTEGER NOT NULL DEFAULT 0,
+    LastWatcherHash TEXT,
     FOREIGN KEY(AppId) REFERENCES ModdedApp(Id)
 );
 
@@ -57,6 +63,8 @@ CREATE TABLE IF NOT EXISTS AvailableMod (
     PackageType INTEGER,
     PackageFilesNumber INTEGER,
     SupportedAppVersions TEXT,
+    LastCrawled TEXT,
+    CrawledModUrl TEXT, 
     FOREIGN KEY(ModId) REFERENCES Mod(Id)
 );
 
@@ -85,6 +93,20 @@ CREATE TABLE IF NOT EXISTS UnusedModHistory (
     Reason TEXT,
     Description TEXT,
     RootSourceUrl TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ModCrawlerConfig (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ModId TEXT NOT NULL,
+    WatcherXPath TEXT,
+    LinksCollectionXPath TEXT,
+    VersionXPath TEXT,
+    ReleaseDateXPath TEXT,
+    SizeXPath TEXT,
+    DownloadUrlXPath TEXT,
+    SupportedAppVersionsXPath TEXT,
+    PackageFilesNumberXPath TEXT,
+    FOREIGN KEY(ModId) REFERENCES Mod(Id)
 );
 
 ";

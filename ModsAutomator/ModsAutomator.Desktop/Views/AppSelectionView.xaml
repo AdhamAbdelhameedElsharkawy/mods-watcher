@@ -100,7 +100,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Button Content="Manage &amp; Fix" Command="{Binding DataContext.SelectAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="10,8" Background="#333" Foreground="White" BorderThickness="0"/>
-                                    <Button Grid.Column="1" Content="" FontFamily="Segoe MDL2 Assets" Command="{Binding DataContext.CrawlAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Width="40" Margin="8,0,0,0" Background="#252525" Foreground="#FFC107" BorderBrush="#444"/>
+                                    <Button Grid.Column="1" Content="" 
+        ToolTip="View Available Versions &amp; Sync"
+        FontFamily="Segoe MDL2 Assets" 
+        Command="{Binding DataContext.CrawlAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+        CommandParameter="{Binding}" 
+        Width="40" Margin="8,0,0,0" Background="#252525" Foreground="#FFC107" BorderBrush="#444"/>
                                 </Grid>
 
                                 <StackPanel Grid.Row="4" Margin="0,15,0,0">

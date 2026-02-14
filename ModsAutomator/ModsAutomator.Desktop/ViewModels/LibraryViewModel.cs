@@ -1,14 +1,15 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
+using System;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
-    
-    //TODO: Crawler logic Pending
     public class LibraryViewModel : BaseViewModel, IInitializable<ModdedApp>
     {
         private readonly INavigationService _navigationService;
@@ -38,22 +39,23 @@ namespace ModsAutomator.Desktop.ViewModels
         }
 
         public bool CanCrawlSelectedMod =>
-    SelectedMod != null &&
-    SelectedMod.Installed != null &&
-    SelectedMod.Installed.IsUsed;
+            SelectedMod != null &&
+            SelectedMod.Installed != null &&
+            SelectedMod.Installed.IsUsed;
 
-        // This returns true only if the mod has an installation record
         public bool CanToggleActivation => SelectedMod?.Installed != null;
 
         // --- Commands ---
-
         public ICommand NavToRetiredCommand { get; }
         public ICommand AddModShellCommand { get; }
         public ICommand EditModShellCommand { get; }
-        public ICommand CrawlAppCommand { get; }
-        public ICommand GoToCrawlerCommand { get; }
+
+        // Navigation to Versions Manager
+        public ICommand NavToVersionsManagerCommand { get; } // Global (App Mode)
+        public ICommand NavToSingleModVersionsCommand { get; } // Specific (Mod Mode)
+
         public ICommand ShowHistoryCommand { get; }
-        public ICommand ToggleModActivationCommand { get; }
+        public ICommand ToggleActivationCommand { get; }
         public ICommand HardWipeCommand { get; }
 
         public LibraryViewModel(INavigationService navigationService, IStorageService storageService)
@@ -62,22 +64,23 @@ namespace ModsAutomator.Desktop.ViewModels
             _storageService = storageService;
             Mods = new ObservableCollection<ModItemViewModel>();
 
-            // Initialize Commands
+            // Initialization & Setup
             AddModShellCommand = new RelayCommand(_ => RegisterNewMod());
             EditModShellCommand = new RelayCommand(_ => EditSelectedModShell());
 
-            // Map the rest of the buttons
-            CrawlAppCommand = new RelayCommand(_ => CrawlAllMods());
-            GoToCrawlerCommand = new RelayCommand(obj => ExecuteCrawl(obj));
+            // NAVIGATION FLOW
+            NavToVersionsManagerCommand = new RelayCommand(_ =>
+                _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((null, SelectedApp)));
+
+            NavToSingleModVersionsCommand = new RelayCommand(obj => ExecuteNavToVersions(obj));
+
+            // Misc Actions
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
-            ToggleModActivationCommand = new RelayCommand(_ => ToggleModActivation());
+            ToggleActivationCommand = new RelayCommand(_ => ToggleModActivation());
             HardWipeCommand = new RelayCommand(_ => HardWipeSelectedMod());
-            // For mods that were Hard Wiped (UnusedModHistory)
-            NavToRetiredCommand = new RelayCommand(_ => _navigationService.NavigateTo<RetiredModsViewModel, ModdedApp>(SelectedApp));
-
+            NavToRetiredCommand = new RelayCommand(_ =>
+                _navigationService.NavigateTo<RetiredModsViewModel, ModdedApp>(SelectedApp));
         }
-
-
 
         public void Initialize(ModdedApp app)
         {
@@ -97,20 +100,14 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        // --- Command Logic ---
-
-        private void ExecuteCrawl(object? obj)
+        private void ExecuteNavToVersions(object? obj)
         {
-            // Use the parameter if available (from list button), otherwise use SelectedMod (from inspector)
+            // Use parameter if from card button, else use inspector selection
             var target = obj as ModItemViewModel ?? SelectedMod;
             if (target == null) return;
 
-            // _navigationService.NavigateTo<AvailableModsViewModel, (Mod, ModdedApp)>((target.Shell, SelectedApp));
-        }
-
-        private void CrawlAllMods()
-        {
-            // Logic for batch crawling all mods in the current app
+            _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>(
+                (target.Shell, SelectedApp));
         }
 
         private void ViewModHistory()
@@ -131,16 +128,12 @@ namespace ModsAutomator.Desktop.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                // Toggle the state
                 SelectedMod.Installed.IsUsed = !currentlyActive;
 
-                // Notify the UI that the Crawl button status changed
-                OnPropertyChanged(nameof(CanCrawlSelectedMod));
-
-                // Save to DB
+                // Persistence - Update the installation record state
                 await _storageService.UpdateModShellAsync(SelectedMod.Shell);
 
-                // Refresh UI
+                OnPropertyChanged(nameof(CanCrawlSelectedMod));
                 LoadLibrary();
             }
         }
@@ -149,39 +142,26 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             if (SelectedMod == null) return;
 
-            // 1. Confirm the destructive action
             var result = MessageBox.Show(
                 $"Are you sure you want to HARD WIPE '{SelectedMod.Shell.Name}'?\n\n" +
                 "This will:\n" +
                 "• Delete all current installation data.\n" +
                 "• Delete available version lists.\n" +
-                "• Move the Mod Identity to the Retired Archive.\n\n" +
-                "You can restore the shell later, but files will be gone.",
-                "Confirm Hard Wipe",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "• Move the Mod Identity to the Retired Archive.",
+                "Confirm Hard Wipe", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
             {
                 try
                 {
-                    // 2. Capture a reason (Optional TODO: Replace with a custom Dialog view)
-                    // For now, we use a default or a simple prompt logic
-                    string reason = "User manually retired the mod.";
-
-                    // 3. Execute the service call with the parent App context
-                    // This populates the AppName and AppVersion in the history record
                     await _storageService.HardWipeModAsync(SelectedMod.Shell, SelectedApp);
-
-                    // 4. Refresh the UI
-                    SelectedMod = null; // Clear selection
+                    SelectedMod = null;
                     LoadLibrary();
-
-                    MessageBox.Show("Mod successfully retired to the archive.", "Operation Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Mod successfully retired.", "Complete", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"An error occurred during wipe: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Error during wipe: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

@@ -7,7 +7,6 @@ using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
-    //TODO: Crawler logic Pending
     public class AppSelectionViewModel : BaseViewModel
     {
         private readonly IStorageService _storageService;
@@ -136,6 +135,14 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        private void CrawlMods(ModdedAppItemViewModel? item) { throw new NotImplementedException(); }
+        private void CrawlMods(ModdedAppItemViewModel? item) {
+
+            // New Path: Go directly to the Discovery/Sync center for all 'isUsed' mods
+            // Pass Shell as null to indicate "All Mods" mode
+            if (item == null) return;
+            
+            _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((null, item.App));
+
+        }
     }
 }

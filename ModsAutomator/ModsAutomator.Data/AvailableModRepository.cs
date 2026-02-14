@@ -17,7 +17,7 @@ namespace ModsAutomator.Data
                 am.Id AS InternalId, -- Internal Auto-increment
                 m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
                 am.AvailableVersion, am.ReleaseDate, am.SizeMB, am.DownloadUrl, 
-                am.PackageType, am.PackageFilesNumber, am.SupportedAppVersions
+                am.PackageType, am.PackageFilesNumber, am.SupportedAppVersions, am.LastCrawled
             FROM AvailableMod am
             JOIN Mod m ON m.Id = am.ModId";
 
@@ -55,8 +55,8 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                    INSERT INTO AvailableMod (ModId, AvailableVersion, ReleaseDate, SizeMB, DownloadUrl, PackageType, PackageFilesNumber, SupportedAppVersions)
-                    VALUES (@ModId, @AvailableVersion, @ReleaseDate, @SizeMB, @DownloadUrl, @PackageType, @PackageFilesNumber, @SupportedAppVersions);";
+                    INSERT INTO AvailableMod (ModId, AvailableVersion, ReleaseDate, SizeMB, DownloadUrl, PackageType, PackageFilesNumber, SupportedAppVersions, LastCrawled)
+                    VALUES (@ModId, @AvailableVersion, @ReleaseDate, @SizeMB, @DownloadUrl, @PackageType, @PackageFilesNumber, @SupportedAppVersions, @LastCrawled);";
 
                 await conn.ExecuteAsync(new CommandDefinition(sql, new
                 {
@@ -67,7 +67,8 @@ namespace ModsAutomator.Data
                     entity.DownloadUrl,
                     PackageType = (int)entity.PackageType,
                     entity.PackageFilesNumber,
-                    entity.SupportedAppVersions
+                    entity.SupportedAppVersions,
+                    entity.LastCrawled
                 }, trans, cancellationToken: cancellationToken));
 
                 return (AvailableMod?)entity;

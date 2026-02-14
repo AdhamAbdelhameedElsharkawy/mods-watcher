@@ -44,6 +44,8 @@ namespace ModsAutomator.Desktop
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<RetiredModsViewModel>();
             services.AddTransient<ModHistoryViewModel>();
+            services.AddTransient<SyncReviewViewModel>();
+            services.AddTransient<AvailableVersionsViewModel>();
             // ... other viewmodels
 
             ServiceProvider = services.BuildServiceProvider();
