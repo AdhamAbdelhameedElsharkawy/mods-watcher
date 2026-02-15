@@ -13,6 +13,7 @@ namespace ModsAutomator.Services.DI
         {
             // Register all your services here
             services.AddSingleton<IStorageService, StorageService>();
+            services.AddSingleton<IWatcherService, PlaywrightWatcherService>();
 
             return services;
         }

@@ -27,15 +27,17 @@ namespace ModsAutomator.Data
             }, false, connection, transaction);
 
         public Task<ModdedApp?> InsertAsync(ModdedApp e, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
-            => ExecuteAsync(async (c, t) =>
-            {
-                const string sql = @"
-INSERT INTO ModdedApp (Name, Description, LatestVersion, InstalledVersion, LastUpdatedDate)
-VALUES (@Name, @Description, @LatestVersion, @InstalledVersion, @LastUpdatedDate);";
+    => ExecuteAsync(async (c, t) =>
+    {
+        const string sql = @"
+            INSERT INTO ModdedApp (Name, Description, LatestVersion, InstalledVersion, LastUpdatedDate)
+            VALUES (@Name, @Description, @LatestVersion, @InstalledVersion, @LastUpdatedDate);
+            SELECT last_insert_rowid();"; // Get the new ID
 
-                await c.ExecuteAsync(new CommandDefinition(sql, e, t, cancellationToken: cancellationToken));
-                return (ModdedApp?)e;
-            }, true, connection, transaction);
+        e.Id = await c.ExecuteScalarAsync<int>(new CommandDefinition(sql, e, t, cancellationToken: cancellationToken));
+        return (ModdedApp?)e;
+    }, true, connection, transaction);
+
 
         public Task<ModdedApp?> UpdateAsync(ModdedApp e, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
             => ExecuteAsync(async (c, t) =>

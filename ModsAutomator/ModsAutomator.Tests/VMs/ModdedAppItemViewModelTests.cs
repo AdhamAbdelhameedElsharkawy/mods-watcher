@@ -1,6 +1,5 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.ViewModels;
-using System.Windows;
 using Xunit;
 
 namespace ModsAutomator.Tests.VMs
@@ -8,68 +7,40 @@ namespace ModsAutomator.Tests.VMs
     public class ModdedAppItemViewModelTests
     {
         [Fact]
-        public void Properties_ShouldReflectUnderlyingEntity()
+        public void Constructor_ShouldMapEntityProperties()
         {
             // Arrange
-            var app = new ModdedApp { Name = "Elden Ring", InstalledVersion = "1.0.4" };
+            var app = new ModdedApp { Name = "Cyberpunk", InstalledVersion = "2.1" };
 
             // Act
             var vm = new ModdedAppItemViewModel(app);
 
             // Assert
-            Assert.Equal("Elden Ring", vm.Name);
-            Assert.Equal("1.0.4", vm.InstalledVersion);
+            Assert.Equal("Cyberpunk", vm.Name);
+            Assert.Equal("2.1", vm.InstalledVersion);
+            Assert.Equal(app, vm.App);
         }
 
-        //[Theory]
-        //[InlineData(0, Visibility.Collapsed)]
-        //[InlineData(1, Visibility.Visible)]
-        //[InlineData(99, Visibility.Visible)]
-        //public void IncompatibleCountVisibility_ShouldToggleBasedOnCount(int count, Visibility expectedVisibility)
-        //{
-        //    // Arrange
-        //    var vm = new ModdedAppItemViewModel(new ModdedApp());
-
-        //    // Act
-        //    vm.IncompatibleCount = count;
-
-        //    // Assert
-        //    Assert.Equal(expectedVisibility, vm.IncompatibleCountVisibility);
-        //}
-
-        //[Fact]
-        //public void SettingIncompatibleCount_ShouldRaiseNotifyPropertyChanged()
-        //{
-        //    // Arrange
-        //    var vm = new ModdedAppItemViewModel(new ModdedApp());
-        //    bool wasVisibilityNotified = false;
-
-        //    vm.PropertyChanged += (s, e) =>
-        //    {
-        //        if (e.PropertyName == nameof(vm.IncompatibleCountVisibility))
-        //            wasVisibilityNotified = true;
-        //    };
-
-        //    // Act
-        //    vm.IncompatibleCount = 5;
-
-        //    // Assert
-        //    Assert.True(wasVisibilityNotified, "IncompatibleCountVisibility should notify UI when count changes.");
-        //}
-
-        [Fact]
-        public void Stats_ShouldUpdateCorrect()
+        [Theory]
+        [InlineData(nameof(ModdedAppItemViewModel.ActiveModsCount), 5)]
+        [InlineData(nameof(ModdedAppItemViewModel.PotentialUpdatesCount), 3)]
+        [InlineData(nameof(ModdedAppItemViewModel.IsSyncing), true)]
+        public void Properties_ShouldNotifyOnChanged(string propertyName, object newValue)
         {
             // Arrange
             var vm = new ModdedAppItemViewModel(new ModdedApp());
+            bool wasNotified = false;
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == propertyName) wasNotified = true;
+            };
 
             // Act
-            vm.ActiveModsCount = 10;
-            vm.PotentialUpdatesCount = 2;
+            var prop = vm.GetType().GetProperty(propertyName);
+            prop.SetValue(vm, newValue);
 
             // Assert
-            Assert.Equal(10, vm.ActiveModsCount);
-            Assert.Equal(2, vm.PotentialUpdatesCount);
+            Assert.True(wasNotified, $"Property {propertyName} did not trigger PropertyChanged.");
         }
     }
 }

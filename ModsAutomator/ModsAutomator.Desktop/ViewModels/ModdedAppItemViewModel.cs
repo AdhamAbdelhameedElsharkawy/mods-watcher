@@ -27,6 +27,13 @@ namespace ModsAutomator.Desktop.ViewModels
             set => SetProperty(ref _potentialUpdatesCount, value);
         }
 
+        private bool _isSyncing;
+        public bool IsSyncing
+        {
+            get => _isSyncing;
+            set => SetProperty(ref _isSyncing, value);
+        }
+
         public ModdedAppItemViewModel(ModdedApp app)
         {
             App = app;

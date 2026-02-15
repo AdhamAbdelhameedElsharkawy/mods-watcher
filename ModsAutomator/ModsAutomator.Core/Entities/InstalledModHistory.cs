@@ -2,7 +2,7 @@
 {
     public class InstalledModHistory
     {
-        public int InternalId { get; init; }
+        public int InternalId { get; set; }
 
         public Guid ModId { get; init; }
 

@@ -1,114 +1,103 @@
-﻿using Moq;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
+using Moq;
 
 namespace ModsAutomator.Tests.VMs
 {
     public class LibraryViewModelTests
     {
-        private readonly Mock<IStorageService> _serviceMock;
+        private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
+        private readonly Mock<IWatcherService> _watcherMock;
         private readonly LibraryViewModel _vm;
         private readonly ModdedApp _testApp;
 
         public LibraryViewModelTests()
         {
-            _serviceMock = new Mock<IStorageService>();
+            _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
-            _testApp = new ModdedApp { Id = 1, Name = "Test Game", InstalledVersion = "1.0" };
+            _watcherMock = new Mock<IWatcherService>();
 
-            _vm = new LibraryViewModel(_navMock.Object, _serviceMock.Object);
+            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object);
+            _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
         }
 
         [Fact]
-        public async Task Initialize_ShouldLoadModsAndSetSelectedApp()
+        public async Task Initialize_ShouldLoadSortedMods()
         {
             // Arrange
-            var fakeLibrary = new List<(Mod, InstalledMod?)>
+            var data = new List<(Mod Shell, InstalledMod Installed, ModCrawlerConfig Config)>
             {
-                (new Mod { Id = Guid.NewGuid(), Name = "Mod 1" }, new InstalledMod { InstalledVersion = "1.1" })
+                (new Mod { Id = Guid.NewGuid(), Name = "Mod B", PriorityOrder = 2 }, null, null),
+                (new Mod { Id = Guid.NewGuid(), Name = "Mod A", PriorityOrder = 1 }, null, null)
             };
-            _serviceMock.Setup(s => s.GetModsByAppId(_testApp.Id)).ReturnsAsync(fakeLibrary);
+
+            _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
 
             // Act
             _vm.Initialize(_testApp);
-            await Task.Delay(50); // Delay for async void LoadLibrary
+            await Task.Delay(10); // Wait for async LoadLibrary
 
             // Assert
-            Assert.Equal(_testApp, _vm.SelectedApp);
-            Assert.Single(_vm.Mods);
-            Assert.Equal("Mod 1", _vm.Mods[0].Shell.Name);
+            Assert.Equal(2, _vm.Mods.Count);
+            Assert.Equal("Mod A", _vm.Mods[0].Shell.Name); // Verified sorting
+            Assert.Equal("Mod B", _vm.Mods[1].Shell.Name);
         }
 
         [Fact]
-        public void CanToggleActivation_ShouldBeTrue_OnlyWhenModIsInstalled()
-        {
-            // Case 1: Mod is just a Shell (not installed)
-            _vm.SelectedMod = new ModItemViewModel(new Mod(), null);
-            Assert.False(_vm.CanToggleActivation);
-
-            // Case 2: Mod is installed
-            _vm.SelectedMod = new ModItemViewModel(new Mod(), new InstalledMod());
-            Assert.True(_vm.CanToggleActivation);
-        }
-
-        [Theory]
-        [InlineData(true, true, true)]   // Installed and Used -> Can Crawl
-        [InlineData(true, false, false)] // Installed but Disabled -> Cannot Crawl
-        [InlineData(false, false, false)] // Not Installed -> Cannot Crawl
-        public void CanCrawlSelectedMod_LogicCheck(bool isInstalled, bool isUsed, bool expected)
+        public void SelectedMod_SettingValue_ShouldNotifyDependentProperties()
         {
             // Arrange
-            var installed = isInstalled ? new InstalledMod { IsUsed = isUsed } : null;
-            _vm.SelectedMod = new ModItemViewModel(new Mod(), installed);
+            var modItem = new ModItemViewModel(new Mod(), new InstalledMod { IsUsed = true }, null, "1.0");
+            List<string> changedProps = new();
+            _vm.PropertyChanged += (s, e) => changedProps.Add(e.PropertyName);
+
+            // Act
+            _vm.SelectedMod = modItem;
 
             // Assert
-            Assert.Equal(expected, _vm.CanCrawlSelectedMod);
+            Assert.Contains(nameof(_vm.CanToggleActivation), changedProps);
+            Assert.Contains(nameof(_vm.CanCrawlSelectedMod), changedProps);
+            Assert.True(_vm.CanCrawlSelectedMod);
         }
 
         [Fact]
-        public void ShowHistoryCommand_ShouldNavigateWithCorrectTuple()
+        public async Task MoveModOrder_ShouldSwapPriority_AndPersistToStorage()
         {
             // Arrange
-            _vm.Initialize(_testApp);
-            var mod = new Mod { Id = Guid.NewGuid(), Name = "HistoryMod" };
-            _vm.SelectedMod = new ModItemViewModel(mod, new InstalledMod());
+            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0");
+            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0");
+            _vm.Mods.Add(mod1);
+            _vm.Mods.Add(mod2);
+
+            // Act
+            // Using the Hybrid RelayCommand's ExecuteAsync
+            await ((RelayCommand)_vm.MoveDownCommand).ExecuteAsync(mod1);
+
+            // Assert
+            Assert.Equal(1, mod1.Shell.PriorityOrder);
+            Assert.Equal(0, mod2.Shell.PriorityOrder);
+            _storageMock.Verify(s => s.UpdateModShellAsync(It.IsAny<Mod>()), Times.Exactly(2));
+            Assert.Equal(mod1, _vm.Mods[1]); // Verified UI collection swap
+        }
+
+        [Fact]
+        public void NavToHistory_ShouldPassCorrectTuple()
+        {
+            // Arrange
+            var shell = new Mod { Id = Guid.NewGuid() };
+            _vm.SelectedApp = _testApp;
+            _vm.SelectedMod = new ModItemViewModel(shell, null, null, "1.0");
 
             // Act
             _vm.ShowHistoryCommand.Execute(null);
 
             // Assert
             _navMock.Verify(n => n.NavigateTo<ModHistoryViewModel, (Mod, ModdedApp)>(
-                It.Is<(Mod, ModdedApp)>(data => data.Item1 == mod && data.Item2 == _testApp)),
+                It.Is<(Mod, ModdedApp)>(t => t.Item1 == shell && t.Item2 == _testApp)),
                 Times.Once);
-        }
-
-        [Fact]
-        public void HardWipeCommand_ShouldClearSelectionAfterSuccess()
-        {
-            // Arrange
-            _vm.Initialize(_testApp);
-            var mod = new Mod { Id = Guid.NewGuid(), Name = "WipeMe" };
-            _vm.SelectedMod = new ModItemViewModel(mod, new InstalledMod());
-
-            // Mocking the result of MessageBox is usually done via a service, 
-            // but assuming the service call completes:
-
-            // Act
-            // Manually simulating the internal logic since MessageBox blocks
-            // await _serviceMock.Object.HardWipeModAsync(mod, _testApp); 
-
-            // Verifying the state change after a hypothetical successful wipe
-            _vm.SelectedMod = null;
-
-            // Assert
-            Assert.Null(_vm.SelectedMod);
-            Assert.False(_vm.CanToggleActivation);
         }
     }
 }

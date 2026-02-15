@@ -127,25 +127,75 @@ namespace ModsAutomator.Services
         }
 
 
-        public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed)>> GetModsByAppId(int appId)
+        public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed, ModCrawlerConfig? Config)>> GetFullModsByAppId(int appId)
         {
             using var connection = _connectionFactory.CreateConnection();
             if (connection.State != System.Data.ConnectionState.Open) connection.Open();
 
-            // 1. Fetch all Mod Shells belonging to this App
-            // Assuming you have a ModRepository injected or accessible
             var shells = await _modRepo.GetByAppIdAsync(appId, connection);
-
-            var results = new List<(Mod, InstalledMod?)>();
+            var results = new List<(Mod, InstalledMod?, ModCrawlerConfig?)>();
 
             foreach (Mod shell in shells)
             {
-                // 2. Fetch the current installation record for this shell
                 var installed = await _installedModRepo.FindByModIdAsync(shell.Id, connection);
-                results.Add((shell, installed));
+                var config = await _modCrawlerConfigRepo.GetByModIdAsync(shell.Id, connection);
+                results.Add((shell, installed, config));
             }
 
             return results;
+        }
+
+        #region Mod Shell & Config Unified Methods
+
+        public async Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            // Pass connection to the repository; the repository handles the transaction internally
+            await _modRepo.SaveModWithConfigAsync(mod, config, connection);
+        }
+
+        public async Task UpdateModWithConfigAsync(Mod mod, ModCrawlerConfig config)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modRepo.UpdateModWithConfigAsync(mod, config, connection);
+        }
+
+        public async Task<(Mod? Shell, ModCrawlerConfig? Config)> GetModPackageAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            // We fetch them separately as read-only operations
+            var shell = await _modRepo.GetByIdAsync(modId, connection);
+
+            if (shell == null)
+                return (null, null);
+
+            var config = await _modCrawlerConfigRepo.GetByModIdAsync(modId, connection);
+
+            return (shell, config);
+        }
+
+        #endregion
+
+
+        #endregion
+
+        #region Mod config Methods
+
+        public async Task<ModCrawlerConfig?> GetModCrawlerConfigByModIdAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open) connection.Open();
+
+            return await _modCrawlerConfigRepo.GetByModIdAsync(modId, connection);
         }
 
         #endregion
@@ -502,10 +552,64 @@ namespace ModsAutomator.Services
             // Check if critical metadata has drifted
             return local.DownloadUrl != web.DownloadUrl ||
                    local.ReleaseDate != web.ReleaseDate ||
-                   local.PackageFilesNumber != web.PackageFilesNumber||
-                   local.PackageType != web.PackageType||
-                   local.SupportedAppVersions != web.SupportedAppVersions||
+                   local.PackageFilesNumber != web.PackageFilesNumber ||
+                   local.PackageType != web.PackageType ||
+                   local.SupportedAppVersions != web.SupportedAppVersions ||
                    local.SizeMB != web.SizeMB;
+        }
+
+        #endregion
+
+        #region watchers
+
+        public async Task<IEnumerable<(Mod Shell, ModCrawlerConfig Config)>> GetWatchableBundleByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open) connection.Open();
+
+            // 1. Get all mods for this app that are flagged as watchable
+            var watchableMods = (await _modRepo.GetByAppIdAsync(appId, connection))
+                                .Where(m => m.IsWatchable && m.IsUsed);
+
+            var results = new List<(Mod, ModCrawlerConfig)>();
+
+            foreach (var mod in watchableMods)
+            {
+                // 2. Get the config (Stage 1 WatcherXPath is here)
+                var config = await _modCrawlerConfigRepo.GetByModIdAsync(mod.Id, connection);
+                if (config != null)
+                {
+                    results.Add((mod, config));
+                }
+            }
+
+            return results;
+        }
+
+
+
+        #endregion
+
+        #region Installed Mod Methods
+
+        public async Task SaveInstalledModAsync(InstalledMod installedMod)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            // Ensure the connection is open for the repository
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _installedModRepo.InsertAsync(installedMod, connection);
+        }
+
+        public async Task UpdateInstalledModAsync(InstalledMod installedMod)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            // Ensure the connection is open for the repository
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _installedModRepo.UpdateAsync(installedMod, connection);
         }
 
         #endregion

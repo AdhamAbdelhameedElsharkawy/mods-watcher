@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS Mod (
     LastWatched TEXT,
     WatcherStatus INTEGER NOT NULL DEFAULT 0,
     LastWatcherHash TEXT,
+    PriorityOrder INTEGER,
     FOREIGN KEY(AppId) REFERENCES ModdedApp(Id)
 );
 
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS InstalledMod (
     PackageType INTEGER,
     PackageFilesNumber INTEGER,
     SupportedAppVersions TEXT,
-    PriorityOrder INTEGER,
+    DownloadUrl TEXT,
     FOREIGN KEY(ModId) REFERENCES Mod(Id)
 );
 

@@ -1,6 +1,5 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.ViewModels;
-using Xunit;
 
 namespace ModsAutomator.Tests.VMs
 {
@@ -15,49 +14,50 @@ namespace ModsAutomator.Tests.VMs
 
             // Assert
             Assert.True(vm.IsCompatible);
+            Assert.True(vm.CanRollback);
         }
 
         [Fact]
         public void IsCompatible_ShouldBeFalse_WhenVersionsMismatch()
         {
             // Arrange
-            var history = new InstalledModHistory { AppVersion = "1.0.0" };
+            var history = new InstalledModHistory { AppVersion = "1.4.0" };
             var vm = new ModHistoryItemViewModel(history, "1.5.0", () => false);
 
             // Assert
             Assert.False(vm.IsCompatible);
-        }
-
-        [Theory]
-        [InlineData(true, false, true)]  // Matches, No Override -> True
-        [InlineData(false, true, true)]  // Mismatch, Override ON -> True
-        [InlineData(false, false, false)] // Mismatch, Override OFF -> False
-        public void CanRollback_LogicCheck(bool matches, bool overrideActive, bool expected)
-        {
-            // Arrange
-            var historyVersion = matches ? "1.0" : "2.0";
-            var history = new InstalledModHistory { AppVersion = historyVersion };
-
-            var vm = new ModHistoryItemViewModel(history, "1.0", () => overrideActive);
-
-            // Assert
-            Assert.Equal(expected, vm.CanRollback);
+            Assert.False(vm.CanRollback);
         }
 
         [Fact]
-        public void RefreshCompatibility_ShouldRaisePropertyChanged()
+        public void CanRollback_ShouldBeTrue_WhenMismatchButOverrideIsActive()
         {
             // Arrange
-            var history = new InstalledModHistory();
-            var vm = new ModHistoryItemViewModel(history, "1.0", () => false);
-            bool notified = false;
-            vm.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(vm.CanRollback)) notified = true; };
+            var history = new InstalledModHistory { AppVersion = "1.4.0" };
+            // Simulate the parent "Allow Incompatible" checkbox being checked
+            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => true);
+
+            // Assert
+            Assert.False(vm.IsCompatible);
+            Assert.True(vm.CanRollback);
+        }
+
+        [Fact]
+        public void RefreshCompatibility_ShouldTriggerPropertyChanged()
+        {
+            // Arrange
+            var vm = new ModHistoryItemViewModel(new InstalledModHistory(), "1.0", () => false);
+            bool wasNotified = false;
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(vm.CanRollback)) wasNotified = true;
+            };
 
             // Act
             vm.RefreshCompatibility();
 
             // Assert
-            Assert.True(notified);
+            Assert.True(wasNotified);
         }
     }
 }

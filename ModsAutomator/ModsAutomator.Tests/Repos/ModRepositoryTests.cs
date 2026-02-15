@@ -1,7 +1,8 @@
 ﻿using Dapper;
 using ModsAutomator.Core.Entities;
+using ModsAutomator.Core.Enums;
 using ModsAutomator.Data;
-using ModsAutomator.Tests.Repos;
+using Xunit;
 
 namespace ModsAutomator.Tests.Repos
 {
@@ -21,157 +22,112 @@ namespace ModsAutomator.Tests.Repos
         }
 
         [Fact]
-        public async Task InsertAsync_ShouldSaveMod_AndLinkToApp()
+        public async Task InsertAsync_ShouldAssignIncrementalPriority()
         {
-            // Arrange
             int appId = await SeedParentAppAsync();
-            var mod = new Mod
+            var mod1 = new Mod { Id = Guid.NewGuid(), AppId = appId, Name = "First" };
+            var mod2 = new Mod { Id = Guid.NewGuid(), AppId = appId, Name = "Second" };
+
+            await _repo.InsertAsync(mod1, Connection);
+            await _repo.InsertAsync(mod2, Connection);
+
+            var result1 = await Connection.QuerySingleAsync<Mod>("SELECT PriorityOrder FROM Mod WHERE Id = @Id", new { mod1.Id });
+            var result2 = await Connection.QuerySingleAsync<Mod>("SELECT PriorityOrder FROM Mod WHERE Id = @Id", new { mod2.Id });
+
+            Assert.Equal(0, result1.PriorityOrder);
+            Assert.Equal(1, result2.PriorityOrder);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReorderRemainingMods()
+        {
+            int appId = await SeedParentAppAsync();
+            var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+
+            for (int i = 0; i < 3; i++)
             {
-                Id = Guid.NewGuid(), 
-                AppId = appId,
-                Name = "High-Res Textures",
-                IsUsed = true,
-                IsDeprecated = false
-            };
+                await Connection.ExecuteAsync(
+                    "INSERT INTO Mod (Id, AppId, Name, PriorityOrder, IsUsed, IsDeprecated) VALUES (@Id, @AppId, @Name, @P, 1, 0)",
+                    new { Id = ids[i], AppId = appId, Name = $"M{i}", P = i });
+            }
 
-            // Act
-            await _repo.InsertAsync(mod, Connection);
+            await _repo.DeleteAsync(ids[1], Connection);
 
-            // Assert
-            var result = await Connection.QuerySingleOrDefaultAsync<Mod>(
-                "SELECT * FROM Mod WHERE Id = @Id", new { Id = mod.Id });
+            var p0 = await Connection.QuerySingleAsync<int>("SELECT PriorityOrder FROM Mod WHERE Id = @Id", new { Id = ids[0] });
+            var p2 = await Connection.QuerySingleAsync<int>("SELECT PriorityOrder FROM Mod WHERE Id = @Id", new { Id = ids[2] });
 
-            Assert.NotNull(result);
-            Assert.Equal(mod.Name, result.Name);
-            Assert.Equal(appId, result.AppId);
+            Assert.Equal(0, p0);
+            Assert.Equal(1, p2);
         }
 
         [Fact]
-        public async Task GetByAppIdAsync_ShouldReturnOnlyModsForThatApp()
+        public async Task SaveModWithConfigAsync_ShouldBeAtomic()
         {
-            // Arrange
-            int appA = await SeedParentAppAsync();
-            int appB = await SeedParentAppAsync();
-
-            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, @Name, 1, 0)",
-                new[] {
-                    new { Id = Guid.NewGuid(), AppId = appA, Name = "Mod A" },
-                    new { Id = Guid.NewGuid(), AppId = appB, Name = "Mod B" }
-                });
-
-            // Act
-            var mods = await _repo.GetByAppIdAsync(appA, Connection);
-
-            // Assert
-            Assert.Single(mods);
-            Assert.Equal("Mod A", mods.First().Name);
-        }
-
-        [Fact]
-        public async Task UpdateAsync_ShouldModifyAllowedFields()
-        {
-            // Arrange
             int appId = await SeedParentAppAsync();
-            Guid modId = Guid.NewGuid();
-            await Connection.ExecuteAsync(
-                "INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated, Description) VALUES (@Id, @AppId, 'Original', 1, 0, 'Old')",
-                new { Id = modId, AppId = appId });
+            var mod = new Mod { Id = Guid.NewGuid(), AppId = appId, Name = "AtomicMod" };
+            var config = new ModCrawlerConfig { ModId = mod.Id, VersionXPath = "//test" };
 
-            var updatedMod = new Mod
-            {
-                Id = modId,
-                IsUsed = false,
-                IsDeprecated = true,
-                Description = "New Description",
-                RootSourceUrl = "http://nexusmods.com"
-            };
+            await _repo.SaveModWithConfigAsync(mod, config, Connection);
 
-            // Act
-            await _repo.UpdateAsync(updatedMod, Connection);
+            var modCount = await Connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM Mod WHERE Id = @Id", new { mod.Id });
+            var configCount = await Connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM ModCrawlerConfig WHERE ModId = @Id", new { Id = mod.Id });
 
-            // Assert
-            var result = await Connection.QuerySingleAsync<Mod>("SELECT * FROM Mod WHERE Id = @Id", new { Id = modId });
-            Assert.Equal(false, result.IsUsed);
-            Assert.Equal(true, result.IsDeprecated);
-            Assert.Equal("New Description", result.Description);
-            Assert.Equal("http://nexusmods.com", result.RootSourceUrl);
-            // Name should NOT have changed if you didn't include it in SQL
-            Assert.Equal("Original", result.Name);
+            Assert.Equal(1, modCount);
+            Assert.Equal(1, configCount);
         }
 
         [Fact]
-        public async Task DeleteAsync_ShouldReturnTrue_WhenModIsRemoved()
+        public async Task GetWatcherSummaryStatsAsync_ShouldReturnCorrectCounts()
         {
-            // Arrange
-            int appId = await SeedParentAppAsync();
-            var modId = Guid.NewGuid();
-            await Connection.ExecuteAsync(
-                "INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'Bye', 1, 0)",
-                new { Id = modId, AppId = appId });
-
-            // Act
-            var result = await _repo.DeleteAsync(modId, Connection);
-
-            // Assert
-            Assert.True(result);
-            var exists = await Connection.ExecuteScalarAsync<bool>("SELECT COUNT(1) FROM Mod WHERE Id = @Id", new { Id = modId });
-            Assert.False(exists);
-        }
-
-        [Fact]
-        public async Task DeleteByAppIdAsync_ShouldRemoveAllModsForApp()
-        {
-            // Arrange
-            const string appSql = "INSERT INTO ModdedApp (Name) VALUES ('AppToWipe'); SELECT last_insert_rowid();";
-            int appId = await Connection.QuerySingleAsync<int>(appSql);
-
-            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M1', 1, 0)", new { Id = Guid.NewGuid(), AppId = appId });
-            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'M2', 1, 0)", new { Id = Guid.NewGuid(), AppId = appId });
-
-            // Act
-            var result = await _repo.DeleteByAppIdAsync(appId, Connection);
-
-            // Assert
-            Assert.True(result);
-            var count = await Connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM Mod WHERE AppId = @AppId", new { AppId = appId });
-            Assert.Equal(0, count);
-        }
-
-        [Fact]
-        public async Task GetByIdAsync_ShouldReturnCorrectMod()
-        {
-            // Arrange
-            int appId = await SeedParentAppAsync();
-            Guid modId = Guid.NewGuid();
-            await Connection.ExecuteAsync(
-                "INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'FindMe', 1, 0)",
-                new { Id = modId, AppId = appId });
-
-            // Act
-            var result = await _repo.GetByIdAsync(modId, Connection);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("FindMe", result.Name);
-            Assert.Equal(modId, result.Id);
-        }
-
-        [Fact]
-        public async Task QueryAllAsync_ShouldReturnEveryModInDatabase()
-        {
-            // Arrange
+            // Note: This test will reveal the "FROM Mods" bug in your current repo code
             int appId = await SeedParentAppAsync();
             await Connection.ExecuteAsync(@"
-        INSERT INTO Mod (Id, AppId, Name, IsUsed, IsDeprecated) VALUES 
-        (@Id1, @AppId, 'Mod 1', 1, 0),
-        (@Id2, @AppId, 'Mod 2', 1, 0)",
-                new { Id1 = Guid.NewGuid(), Id2 = Guid.NewGuid(), AppId = appId });
+                INSERT INTO Mod (Id, AppId, Name, IsUsed, IsWatchable, WatcherStatus, PriorityOrder, IsDeprecated) 
+                VALUES 
+                (@g1, @appId, 'M1', 1, 1, @status, 0, 0),
+                (@g2, @appId, 'M2', 1, 0, @status, 1, 0),
+                (@g3, @appId, 'M3', 0, 1, @status, 2, 0)",
+                new { appId, g1 = Guid.NewGuid(), g2 = Guid.NewGuid(), g3 = Guid.NewGuid(), status = (int)WatcherStatusType.UpdateFound });
 
-            // Act
-            var results = await _repo.QueryAllAsync(Connection);
+            var stats = await _repo.GetWatcherSummaryStatsAsync(appId, Connection);
 
-            // Assert
-            Assert.Equal(2, results.Count());
+            Assert.Equal(2, stats.ActiveCount); // M1 and M2 (IsUsed = 1)
+            Assert.Equal(1, stats.PotentialUpdatesCount); // Only M1 (Used + Watchable + UpdateFound)
+        }
+
+        [Fact]
+        public async Task UpdateModWithConfigAsync_ShouldUpdateBothTables()
+        {
+            int appId = await SeedParentAppAsync();
+            var modId = Guid.NewGuid();
+            await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, PriorityOrder, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'N', 0, 1, 0)", new { Id = modId, AppId = appId });
+            await Connection.ExecuteAsync("INSERT INTO ModCrawlerConfig (ModId, VersionXPath) VALUES (@Id, 'old')", new { Id = modId });
+
+            var mod = new Mod { Id = modId, Description = "UpdatedDesc" };
+            var config = new ModCrawlerConfig { ModId = modId, VersionXPath = "new" };
+
+            await _repo.UpdateModWithConfigAsync(mod, config, Connection);
+
+            var desc = await Connection.ExecuteScalarAsync<string>("SELECT Description FROM Mod WHERE Id = @Id", new { Id = modId });
+            var xpath = await Connection.ExecuteScalarAsync<string>("SELECT VersionXPath FROM ModCrawlerConfig WHERE ModId = @Id", new { Id = modId });
+
+            Assert.Equal("UpdatedDesc", desc);
+            Assert.Equal("new", xpath);
+        }
+
+        [Fact]
+        public async Task GetWatchableModsByAppIdAsync_ShouldFilterCorrectly()
+        {
+            int appId = await SeedParentAppAsync();
+            await Connection.ExecuteAsync(@"
+                INSERT INTO Mod (Id, AppId, Name, IsUsed, IsWatchable, PriorityOrder, IsDeprecated) 
+                VALUES (@g1, @appId, 'Yes', 1, 1, 0, 0), (@g2, @appId, 'No', 1, 0, 1, 0)",
+                new { appId, g1 = Guid.NewGuid(), g2 = Guid.NewGuid() });
+
+            var results = await _repo.GetWatchableModsByAppIdAsync(appId, Connection);
+
+            Assert.Single(results);
+            Assert.Equal("Yes", results.First().Name);
         }
     }
 }

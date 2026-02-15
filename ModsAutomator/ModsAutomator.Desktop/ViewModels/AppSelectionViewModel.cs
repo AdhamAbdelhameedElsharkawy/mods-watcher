@@ -12,6 +12,7 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly IStorageService _storageService;
         private readonly INavigationService _navigationService;
+        private readonly IWatcherService _watcherService;
 
         public ObservableCollection<ModdedAppItemViewModel> ModdedApps { get; } = new();
 
@@ -24,10 +25,11 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand SelectAppCommand { get; }
         public ICommand SyncAppModsCommand { get; }
 
-        public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService)
+        public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService, IWatcherService watcherService)
         {
             _storageService = storageService;
             _navigationService = navigationService;
+            _watcherService = watcherService;
 
             // 1. Navigation to Library
             SelectAppCommand = new RelayCommand(o =>
@@ -75,12 +77,12 @@ namespace ModsAutomator.Desktop.ViewModels
             // 3. Command Placeholders
             AddAppCommand = new RelayCommand(_ => AddNewApp());
             EditAppCommand = new RelayCommand(o => EditApp(o as ModdedAppItemViewModel));
-            SyncAppModsCommand = new RelayCommand(o => SyncAppWatcher(o as ModdedAppItemViewModel));
+            SyncAppModsCommand = new RelayCommand(o => SyncAppWatcherAsync(o as ModdedAppItemViewModel));
 
             LoadApps();
         }
 
-        private async void LoadApps()
+        private async Task LoadApps()
         {
             // Fetch the DTOs (Data + Stats combined)
             var summaries = await _storageService.GetAllAppSummariesAsync();
@@ -136,10 +138,37 @@ namespace ModsAutomator.Desktop.ViewModels
         }
 
         //TODO:new watcher logic
-        private void SyncAppWatcher(ModdedAppItemViewModel? item) {
+        private async Task SyncAppWatcherAsync(ModdedAppItemViewModel? item)
+        {
+            if (item == null) return;
 
-            throw new NotImplementedException();
+            try
+            {
+                // 1. UI Feedback: Start loading state on the app card
+                item.IsSyncing = true;
 
+                // 2. Data Fetch: Use the bundle logic we just finalized
+                var bundle = await _storageService.GetWatchableBundleByAppIdAsync(item.App.Id);
+
+                if (bundle.Any())
+                {
+                    // 3. Execution: Run Stage 1 (Hash comparison & Status Update)
+                    // This service should internally call _storageService.UpdateModShellAsync
+                    await _watcherService.RunStatusCheckAsync(bundle);
+                }
+
+                // 4. Refresh: Update the UI to show new PotentialUpdatesCount/ActiveCount
+                await LoadApps();
+            }
+            catch (Exception ex)
+            {
+                // Add logging or user notification here
+            }
+            finally
+            {
+                // 5. UI Feedback: Stop loading state
+                item.IsSyncing = false;
+            }
         }
     }
 }

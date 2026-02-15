@@ -1,4 +1,5 @@
 ﻿using ModsAutomator.Core.Entities;
+using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
 using ModsAutomator.Services;
@@ -183,19 +184,19 @@ namespace ModsAutomator.Tests.Services
                         .ReturnsAsync((InstalledMod?)null);
 
             // Act
-            var results = (await _service.GetModsByAppId(appId)).ToList();
+            var results = (await _service.GetFullModsByAppId(appId)).ToList();
 
             // Assert
             Assert.Equal(2, results.Count);
 
             // Check first item (Fully installed)
-            var (shell1, inst1) = results[0];
+            var (shell1, inst1, config1) = results[0];
             Assert.Equal("Mod A", shell1.Name);
             Assert.NotNull(inst1);
             Assert.Equal("1.0.1", inst1.InstalledVersion);
 
             // Check second item (Shell only, no installation)
-            var (shell2, inst2) = results[1];
+            var (shell2, inst2, config2) = results[1];
             Assert.Equal("Mod B", shell2.Name);
             Assert.Null(inst2);
 
@@ -436,6 +437,125 @@ namespace ModsAutomator.Tests.Services
         }
 
         #endregion
+
+        #region Hard Wipe & Sync Tests
+
+        [Fact]
+        public async Task HardWipeModAsync_ShouldExecuteFullTransaction_AndRollbackOnFailure()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+            var mod = new Mod { Id = modId, AppId = 1, Name = "Dead Mod" };
+            var app = new ModdedApp { Id = 1, Name = "Test Game" };
+
+            // 1. Mock the Transaction and the Connection's use of it
+            var transactionMock = new Mock<IDbTransaction>();
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            // 2. Setup the second delete to fail
+            _modRepoMock.Setup(r => r.DeleteByModIdAsync(modId, It.IsAny<IDbConnection>(), It.IsAny<IDbTransaction>(), default))
+                .ThrowsAsync(new Exception("Database Crash"));
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<Exception>(() => _service.HardWipeModAsync(mod, app));
+            Assert.Equal("Database Crash", ex.Message);
+
+            // 3. Verify Rollback was called because of the crash
+            transactionMock.Verify(t => t.Rollback(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CompareAndIdentifyChangesAsync_ShouldDistinguishNewModifiedAndStale()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+            var appId = 1;
+
+            // 1. Local has 1.0 (will become Stale) and 1.1 (will become Modified)
+            var localVersions = new List<AvailableMod>
+    {
+        new AvailableMod { AvailableVersion = "1.0", DownloadUrl = "site.com/old" },
+        new AvailableMod { AvailableVersion = "1.1", DownloadUrl = "site.com/ver11" }
+    };
+
+            _shellModRepoMock.Setup(r => r.GetByAppIdAsync(appId, It.IsAny<IDbConnection>()))
+                .ReturnsAsync(new List<Mod> { new Mod { Id = modId } });
+            _availableModRepoMock.Setup(r => r.FindByModIdAsync(modId, It.IsAny<IDbConnection>()))
+                .ReturnsAsync(localVersions);
+
+            // 2. Web has 1.1 (Modified URL) and 2.0 (New)
+            var webVersions = new List<AvailableMod>
+    {
+        new AvailableMod { AvailableVersion = "1.1", DownloadUrl = "site.com/FIXED" }, // Modified
+        new AvailableMod { AvailableVersion = "2.0", DownloadUrl = "site.com/new" }    // New
+    };
+
+            // Act
+            var results = (await _service.CompareAndIdentifyChangesAsync(modId, appId, webVersions)).ToList();
+
+            // Assert
+            Assert.Equal(3, results.Count);
+            Assert.Contains(results, r => r.Type == SyncChangeType.Stale && r.Entity.AvailableVersion == "1.0");
+            Assert.Contains(results, r => r.Type == SyncChangeType.Modified && r.Entity.AvailableVersion == "1.1");
+            Assert.Contains(results, r => r.Type == SyncChangeType.New && r.Entity.AvailableVersion == "2.0");
+        }
+
+        [Fact]
+        public async Task CommitSyncChangeAsync_ShouldCallCorrectRepoMethodPerType()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+            var entity = new AvailableMod { InternalId = 99, AvailableVersion = "2.1" };
+
+            // 1. Setup the Transaction Mock
+            var transactionMock = new Mock<IDbTransaction>();
+
+            // 2. Setup the Connection to return the Transaction
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            // Act
+            await _service.CommitSyncChangeAsync(modId, entity, SyncChangeType.Stale);
+
+            // Assert
+            _availableModRepoMock.Verify(r => r.DeleteAsync(
+                99,
+                It.IsAny<IDbConnection>(),
+                It.IsAny<IDbTransaction>(),
+                default),
+                Times.Once);
+
+            // 3. Verify the service committed the transaction
+            transactionMock.Verify(t => t.Commit(), Times.Once);
+        }
+
+        #endregion
+
+        [Fact]
+        public async Task CompareAndIdentifyChangesAsync_ShouldDetectNewAndStaleVersions()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+            var local = new List<AvailableMod> {
+        new AvailableMod { AvailableVersion = "1.0", DownloadUrl = "old.com" }
+    };
+
+            // Mock the GetAvailableVersions call
+            _shellModRepoMock.Setup(r => r.GetByAppIdAsync(1, It.IsAny<IDbConnection>()))
+                .ReturnsAsync(new List<Mod> { new Mod { Id = modId } });
+            _availableModRepoMock.Setup(r => r.FindByModIdAsync(modId, It.IsAny<IDbConnection>()))
+                .ReturnsAsync(local);
+
+            var web = new List<AvailableMod> {
+        new AvailableMod { AvailableVersion = "1.1", DownloadUrl = "new.com" } // New
+    };
+
+            // Act
+            var changes = await _service.CompareAndIdentifyChangesAsync(modId, 1, web);
+
+            // Assert
+            Assert.Contains(changes, c => c.Type == SyncChangeType.New);
+            Assert.Contains(changes, c => c.Type == SyncChangeType.Stale); // 1.0 is missing from web
+        }
 
     }
 }

@@ -9,6 +9,12 @@ namespace ModsAutomator.Core.Interfaces
 
         Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
 
-        Task<(int ActiveCount, int PotentialUpdatesCount)> GetWatcherSummaryStatsAsync(int appId, IDbConnection connection);
+        Task<(int ActiveCount, int PotentialUpdatesCount)> GetWatcherSummaryStatsAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null);
+
+        Task UpdateModWithConfigAsync(Mod mod, ModCrawlerConfig config, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<IEnumerable<Mod>> GetWatchableModsByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
     }
 }

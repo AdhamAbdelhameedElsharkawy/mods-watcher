@@ -66,7 +66,7 @@ namespace ModsAutomator.Data
                     entity.ReleaseDate,
                     entity.SizeMB,
                     entity.DownloadUrl,
-                    PackageType = (int)entity.PackageType,
+                    PackageType = (byte)entity.PackageType,
                     entity.PackageFilesNumber,
                     entity.SupportedAppVersions,
                     entity.LastCrawled,

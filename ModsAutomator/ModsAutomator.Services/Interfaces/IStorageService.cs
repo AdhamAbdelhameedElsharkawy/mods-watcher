@@ -15,10 +15,15 @@ namespace ModsAutomator.Services.Interfaces
 
         Task UpdateAppAsync(ModdedApp app);
 
-        // We'll add methods for the Library Screen (GetModsByAppId) 
-        Task<IEnumerable<(Mod Shell, InstalledMod Installed)>> GetModsByAppId(int appId);
+        Task<IEnumerable<(Mod Shell, InstalledMod? Installed, ModCrawlerConfig? Config)>> GetFullModsByAppId(int appId);
         Task AddModShellAsync(Mod shell);
         Task UpdateModShellAsync(Mod shell);
+
+        // Unified methods to handle both entities together
+        Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config);
+        Task UpdateModWithConfigAsync(Mod mod, ModCrawlerConfig config);
+
+        Task<(Mod? Shell, ModCrawlerConfig? Config)> GetModPackageAsync(Guid modId);
 
         //Retired Mods/UnusedModHistory
 
@@ -47,5 +52,20 @@ namespace ModsAutomator.Services.Interfaces
 
         // Inside IStorageService.cs
         Task CommitSyncChangeAsync(Guid modId, AvailableMod entity, SyncChangeType type);
+
+
+        //Crawl Configurations
+
+        Task<ModCrawlerConfig?> GetModCrawlerConfigByModIdAsync(Guid modId);
+
+        //Watcher logic
+
+        Task<IEnumerable<(Mod Shell, ModCrawlerConfig Config)>> GetWatchableBundleByAppIdAsync(int appId);
+
+        //Mod installation and uninstallation
+
+        Task SaveInstalledModAsync(InstalledMod installedMod);
+
+        Task UpdateInstalledModAsync(InstalledMod installedMod);
     }
 }

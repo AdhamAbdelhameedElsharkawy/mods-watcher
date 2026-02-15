@@ -17,7 +17,7 @@ namespace ModsAutomator.Core.Entities
         private DateOnly _lastUpdatedDate;
 
 
-        public int Id { get => this._id; init { this._id = value; } }
+        public int Id { get => this._id; set { this._id = value; } }
         public string Name { get => _name; set => _name = value; }
         public string? Description { get => _description; set => _description = value; }
         public string LatestVersion { get => _latestVersion; set => _latestVersion = value; }

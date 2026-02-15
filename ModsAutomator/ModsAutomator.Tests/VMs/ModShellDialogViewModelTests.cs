@@ -26,7 +26,6 @@ namespace ModsAutomator.Tests.VMs
 
             // Assert
             Assert.False(vm.IsEditMode);
-            Assert.True(vm.CanEditName);
             Assert.Equal("Register New Mod", vm.DialogTitle);
             Assert.Equal(TestAppId, vm.Shell.AppId);
             Assert.NotEqual(Guid.Empty, vm.Shell.Id);
@@ -43,7 +42,6 @@ namespace ModsAutomator.Tests.VMs
 
             // Assert
             Assert.True(vm.IsEditMode);
-            Assert.False(vm.CanEditName);
             Assert.Equal("Edit Mod Identity", vm.DialogTitle);
             Assert.Equal("Existing Mod", vm.Name);
         }
@@ -66,32 +64,41 @@ namespace ModsAutomator.Tests.VMs
         }
 
         [Fact]
-        public async Task SaveCommand_InAddMode_ShouldCallAddModShellAsync()
+        public async Task SaveCommand_InAddMode_ShouldCallSaveModWithConfigAsync()
         {
             // Arrange
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 10); // AppId = 10
             vm.Name = "Brand New Mod";
 
             // Act
-            try { vm.SaveCommand.Execute(null); } catch { /* Ignore WPF Window loop */ }
+            await ((RelayCommand)vm.SaveCommand).ExecuteAsync(null);
 
             // Assert
-            _serviceMock.Verify(s => s.AddModShellAsync(It.Is<Mod>(m => m.Name == "Brand New Mod" && m.AppId == TestAppId)), Times.Once);
+            // Match the new service method signature
+            _serviceMock.Verify(s => s.SaveModWithConfigAsync(
+                It.Is<Mod>(m => m.Name == "Brand New Mod" && m.AppId == 10),
+                It.IsAny<ModCrawlerConfig>()
+            ), Times.Once);
         }
 
         [Fact]
-        public async Task SaveCommand_InEditMode_ShouldCallUpdateModShellAsync()
+        public async Task SaveCommand_InEditMode_ShouldCallUpdateModWithConfigAsync()
         {
             // Arrange
-            var mod = new Mod { Id = Guid.NewGuid(), Name = "Old Mod", AppId = TestAppId };
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, mod);
+            var existingMod = new Mod { Id = Guid.NewGuid(), Name = "Old Name", AppId = 1 };
+            var existingConfig = new ModCrawlerConfig { ModId = existingMod.Id };
+
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, existingMod, existingConfig);
             vm.Name = "Updated Mod Name";
 
             // Act
-            try { vm.SaveCommand.Execute(null); } catch { /* Ignore WPF Window loop */ }
+            await ((RelayCommand)vm.SaveCommand).ExecuteAsync(null);
 
-            // Assert
-            _serviceMock.Verify(s => s.UpdateModShellAsync(It.Is<Mod>(m => m.Name == "Updated Mod Name")), Times.Once);
+            // Assert: Verify the new unified update method
+            _serviceMock.Verify(s => s.UpdateModWithConfigAsync(
+                It.Is<Mod>(m => m.Name == "Updated Mod Name"),
+                It.IsAny<ModCrawlerConfig>()
+            ), Times.Once);
         }
     }
 }

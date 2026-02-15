@@ -106,12 +106,27 @@
             CommandParameter="{Binding}" Padding="10,8" Background="#333" Foreground="White" BorderThickness="0"/>
 
                                     <Button Grid.Column="1" 
-            ToolTip="Sync &amp; Check for Updates (Hash Comparison)"
-            FontFamily="Segoe MDL2 Assets" 
-            Content="" 
-            Command="{Binding DataContext.SyncAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-            CommandParameter="{Binding}" 
-            Width="40" Margin="8,0,0,0" Background="#252525" Foreground="#FFC107" BorderBrush="#444"/>
+        ToolTip="Sync &amp; Check for Updates (Hash Comparison)"
+        FontFamily="Segoe MDL2 Assets" 
+        Content="" 
+        Command="{Binding DataContext.SyncAppModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+        CommandParameter="{Binding}" 
+        Width="40" Margin="8,0,0,0" 
+        Background="#252525" 
+        BorderBrush="#444">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Foreground" Value="#FFC107"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSyncing}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Foreground" Value="#555"/>
+                                                        <Setter Property="Content" Value=""/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </Grid>
 
                                 <StackPanel Grid.Row="4" Margin="0,15,0,0">

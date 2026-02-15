@@ -31,7 +31,7 @@ namespace ModsAutomator.Data
                 m.AppId, m.Name, m.RootSourceUrl, m.IsDeprecated, m.Description, m.IsUsed,
                 m.IsWatchable, m.IsCrawlable, m.LastWatched, m.WatcherStatus, m.LastWatcherHash,
                 im.InstalledVersion, im.InstalledDate, im.InstalledSizeMB,
-                im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.PriorityOrder
+                im.PackageType, im.PackageFilesNumber, im.SupportedAppVersions, im.DownloadUrl
             FROM InstalledMod im
             JOIN Mod m ON m.Id = im.ModId";
 
@@ -59,48 +59,48 @@ namespace ModsAutomator.Data
             }, false, connection, transaction);
 
         public Task<InstalledMod?> InsertAsync(InstalledMod entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
-            => ExecuteAsync(async (conn, trans) =>
-            {
-                var existingMod = await _modRepository.GetByIdAsync(entity.Id, conn, trans, cancellationToken);
-                if (existingMod == null)
-                {
-                    await _modRepository.InsertAsync(entity, conn, trans, cancellationToken);
-                }
+=> ExecuteAsync(async (conn, trans) =>
+{
+    var existingMod = await _modRepository.GetByIdAsync(entity.Id, conn, trans, cancellationToken);
+    if (existingMod == null)
+    {
+        await _modRepository.InsertAsync(entity, conn, trans, cancellationToken);
+    }
 
-                const string sql = @"
-                    INSERT INTO InstalledMod
-                    (ModId, InstalledVersion, InstalledDate, InstalledSizeMB, PackageType, PackageFilesNumber, SupportedAppVersions, PriorityOrder)
-                    VALUES
-                    (@ModId, @InstalledVersion, @InstalledDate, @InstalledSizeMB, @PackageType, @PackageFilesNumber, @SupportedAppVersions, @PriorityOrder);";
+    const string sql = @"
+        INSERT INTO InstalledMod (ModId, InstalledVersion, InstalledDate, InstalledSizeMB, PackageType, PackageFilesNumber, SupportedAppVersions, DownloadUrl)
+        VALUES (@ModId, @InstalledVersion, @InstalledDate, @InstalledSizeMB, @PackageType, @PackageFilesNumber, @SupportedAppVersions, @DownloadUrl);
+        SELECT last_insert_rowid();"; // Added this
 
-                await conn.ExecuteAsync(new CommandDefinition(sql, new
-                {
-                    ModId = entity.Id,
-                    entity.InstalledVersion,
-                    entity.InstalledDate,
-                    entity.InstalledSizeMB,
-                    PackageType = (int)entity.PackageType,
-                    entity.PackageFilesNumber,
-                    entity.SupportedAppVersions,
-                    entity.PriorityOrder
-                }, trans, cancellationToken: cancellationToken));
+    var internalId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
+    {
+        ModId = entity.Id,
+        entity.InstalledVersion,
+        entity.InstalledDate,
+        entity.InstalledSizeMB,
+        PackageType = (byte)entity.PackageType,
+        entity.PackageFilesNumber,
+        entity.SupportedAppVersions,
+        entity.DownloadUrl
+    }, trans, cancellationToken: cancellationToken));
 
-                return (InstalledMod?)entity;
-            }, true, connection, transaction);
+    entity.InternalId = internalId; // Set the autoincremented ID
+    return (InstalledMod?)entity;
+}, true, connection, transaction);
 
         public Task<InstalledMod?> UpdateAsync(InstalledMod entity, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
             => ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                    UPDATE InstalledMod SET
-                        InstalledVersion = @InstalledVersion,
-                        InstalledDate = @InstalledDate,
-                        InstalledSizeMB = @InstalledSizeMB,
-                        PackageType = @PackageType,
-                        PackageFilesNumber = @PackageFilesNumber,
-                        SupportedAppVersions = @SupportedAppVersions,
-                        PriorityOrder = @PriorityOrder
-                    WHERE ModId = @ModId;";
+            UPDATE InstalledMod SET
+                InstalledVersion = @InstalledVersion,
+                InstalledDate = @InstalledDate,
+                InstalledSizeMB = @InstalledSizeMB,
+                PackageType = @PackageType,
+                PackageFilesNumber = @PackageFilesNumber,
+                SupportedAppVersions = @SupportedAppVersions,
+                DownloadUrl = @DownloadUrl
+            WHERE ModId = @ModId;";
 
                 await conn.ExecuteAsync(new CommandDefinition(sql, new
                 {
@@ -108,10 +108,10 @@ namespace ModsAutomator.Data
                     entity.InstalledVersion,
                     entity.InstalledDate,
                     entity.InstalledSizeMB,
-                    PackageType = (int)entity.PackageType,
+                    PackageType = (byte)entity.PackageType, 
                     entity.PackageFilesNumber,
                     entity.SupportedAppVersions,
-                    entity.PriorityOrder
+                    entity.DownloadUrl
                 }, trans, cancellationToken: cancellationToken));
 
                 return (InstalledMod?)entity;

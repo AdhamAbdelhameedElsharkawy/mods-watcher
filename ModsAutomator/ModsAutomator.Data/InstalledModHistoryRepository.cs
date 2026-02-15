@@ -51,12 +51,13 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-                    INSERT INTO InstalledModHistory
-                    (ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget)
-                    VALUES
-                    (@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @LocalFilePath, @IsRollbackTarget);";
+            INSERT INTO InstalledModHistory
+            (ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget)
+            VALUES
+            (@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @LocalFilePath, @IsRollbackTarget);
+            SELECT last_insert_rowid();"; // Capture the new ID
 
-                await conn.ExecuteAsync(new CommandDefinition(sql, new
+                var internalId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
                 {
                     entity.ModId,
                     entity.Version,
@@ -67,6 +68,7 @@ namespace ModsAutomator.Data
                     entity.IsRollbackTarget
                 }, trans, cancellationToken: cancellationToken));
 
+                entity.InternalId = internalId; // Populate the entity
                 return (InstalledModHistory?)entity;
             }, true, connection, transaction);
         }

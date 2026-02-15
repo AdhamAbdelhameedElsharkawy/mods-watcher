@@ -1,99 +1,70 @@
-﻿using Moq;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
+using Moq;
 
 namespace ModsAutomator.Tests.VMs
 {
     public class RetiredModsViewModelTests
     {
-        private readonly Mock<IStorageService> _serviceMock;
+        private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
         private readonly RetiredModsViewModel _vm;
         private readonly ModdedApp _testApp;
 
         public RetiredModsViewModelTests()
         {
-            _serviceMock = new Mock<IStorageService>();
+            _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
-            _testApp = new ModdedApp { Id = 1, Name = "Skyrim" };
-
-            _vm = new RetiredModsViewModel(_navMock.Object, _serviceMock.Object);
+            _vm = new RetiredModsViewModel(_navMock.Object, _storageMock.Object);
+            _testApp = new ModdedApp { Id = 1, Name = "Test Game" };
         }
 
         [Fact]
         public async Task Initialize_ShouldPopulateRetiredMods()
         {
             // Arrange
-            var fakeRetired = new List<UnusedModHistory>
+            var retiredList = new List<UnusedModHistory>
             {
-                new UnusedModHistory { ModId = Guid.NewGuid(), AppVersion = "1.1.0" },
-                new UnusedModHistory { ModId = Guid.NewGuid(), AppVersion = "1.1.1" },
+                new UnusedModHistory { Name = "Old Mod 1" },
+                new UnusedModHistory { Name = "Old Mod 2" }
             };
-            _serviceMock.Setup(s => s.GetRetiredModsByAppIdAsync(_testApp.Id))
-                        .ReturnsAsync(fakeRetired);
+            _storageMock.Setup(s => s.GetRetiredModsByAppIdAsync(_testApp.Id))
+                        .ReturnsAsync(retiredList);
 
             // Act
             _vm.Initialize(_testApp);
-            await Task.Delay(50); // Wait for async LoadRetiredMods
+            await Task.Delay(50); // Wait for async void LoadRetiredMods
 
             // Assert
             Assert.Equal(2, _vm.RetiredMods.Count);
             Assert.False(_vm.HasNoRetiredMods);
-            Assert.Equal("1.1.0", _vm.RetiredMods[0].AppVersion);
+            Assert.Equal("Old Mod 1", _vm.RetiredMods[0].Name);
         }
 
         [Fact]
-        public async Task HasNoRetiredMods_ShouldBeTrue_WhenCollectionIsEmpty()
+        public async Task RestoreCommand_ShouldCallService_AndRefreshList()
         {
             // Arrange
-            _serviceMock.Setup(s => s.GetRetiredModsByAppIdAsync(It.IsAny<int>()))
-                        .ReturnsAsync(new List<UnusedModHistory>());
+            var itemToRestore = new UnusedModHistory { Name = "To Restore" };
+            _vm.Initialize(_testApp);
+            _vm.RetiredMods.Add(itemToRestore);
 
             // Act
-            _vm.Initialize(_testApp);
-            await Task.Delay(50);
+            // Using the Hybrid RelayCommand's ExecuteAsync
+            await ((RelayCommand)_vm.RestoreCommand).ExecuteAsync(itemToRestore);
 
             // Assert
-            Assert.Empty(_vm.RetiredMods);
-            Assert.True(_vm.HasNoRetiredMods);
-        }
-
-        [Fact]
-        public async Task RestoreCommand_ShouldCallServiceAndRefreshList()
-        {
-            // Arrange
-            var historyItem = new UnusedModHistory { Id = 5, AppVersion = "1.1.0" };
-            _serviceMock.Setup(s => s.GetRetiredModsByAppIdAsync(_testApp.Id))
-                        .ReturnsAsync(new List<UnusedModHistory> { historyItem });
-
-            _vm.Initialize(_testApp);
-            await Task.Delay(50);
-
-            // Mock the next load to return empty (simulating successful restoration/removal from list)
-            _serviceMock.Setup(s => s.GetRetiredModsByAppIdAsync(_testApp.Id))
-                        .ReturnsAsync(new List<UnusedModHistory>());
-
-            // Act
-            await Task.Run(() => _vm.RestoreCommand.Execute(historyItem));
-            await Task.Delay(50); // Wait for refresh
-
-            // Assert
-            _serviceMock.Verify(s => s.RestoreModFromHistoryAsync(historyItem), Times.Once);
-            Assert.True(_vm.HasNoRetiredMods);
+            _storageMock.Verify(s => s.RestoreModFromHistoryAsync(itemToRestore), Times.Once);
+            _storageMock.Verify(s => s.GetRetiredModsByAppIdAsync(_testApp.Id), Times.AtLeast(2));
         }
 
         [Fact]
         public void BackCommand_ShouldNavigateToLibrary()
         {
-            // Arrange
-            _vm.Initialize(_testApp);
-
             // Act
+            _vm.Initialize(_testApp);
             _vm.BackCommand.Execute(null);
 
             // Assert

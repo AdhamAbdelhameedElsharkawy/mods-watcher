@@ -9,6 +9,7 @@ using ModsAutomator.Desktop.Views;
 using ModsAutomator.Services;
 using ModsAutomator.Services.DI;
 using ModsAutomator.Services.Interfaces;
+using System.Runtime.InteropServices.JavaScript;
 using System.Windows;
 
 
@@ -60,6 +61,22 @@ namespace ModsAutomator.Desktop
                 await SqliteDbInitializer.InitializeAsync(connection);
             }
 
+            try
+            {
+                // Installs Chromium if it's missing. 
+                // This is a synchronous call that will block the UI until finished.
+                var exitCode = Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
+
+                if (exitCode != 0)
+                {
+                    MessageBox.Show("Playwright failed to install Chromium.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error initializing Playwright: {ex.Message}");
+            }
+
             // 2. Setup UI
             var mainWindow = new MainWindow();
             var mainVM = ServiceProvider.GetRequiredService<MainViewModel>();
@@ -70,6 +87,20 @@ namespace ModsAutomator.Desktop
 
             mainWindow.Show();
             base.OnStartup(e);
+        }
+
+        protected override async void OnExit(ExitEventArgs e)
+        {
+            if (ServiceProvider is IAsyncDisposable disposable)
+            {
+                await disposable.DisposeAsync();
+            }
+            else if (ServiceProvider is IDisposable syncDisposable)
+            {
+                syncDisposable.Dispose();
+            }
+
+            base.OnExit(e);
         }
     }
 

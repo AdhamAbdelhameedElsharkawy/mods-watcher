@@ -50,7 +50,7 @@ public class AppDialogViewModel : BaseViewModel
         App = existingApp ?? new ModdedApp { InstalledVersion = "0.0.0", LatestVersion = "0.0.0" };
 
         SaveCommand = new RelayCommand(async _ => await SaveAsync());
-        CancelCommand = new RelayCommand(_ => RequestClose?.Invoke());
+        CancelCommand = new RelayCommand(_ => Close(false));
     }
 
     private async Task SaveAsync()
@@ -63,12 +63,19 @@ public class AppDialogViewModel : BaseViewModel
         else
             await _storageService.AddAppAsync(App);
 
-        // Find the window and close it
+        Close(true);
+    }
+
+    private void Close(bool result)
+    {
+        // Add this guard clause for Unit Tests
+        if (Application.Current?.Windows == null) return;
+
         foreach (Window window in Application.Current.Windows)
         {
             if (window.DataContext == this)
             {
-                window.DialogResult = true;
+                window.DialogResult = result;
                 window.Close();
             }
         }

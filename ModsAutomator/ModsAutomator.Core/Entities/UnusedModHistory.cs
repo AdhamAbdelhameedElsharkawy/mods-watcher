@@ -7,7 +7,7 @@ namespace ModsAutomator.Core.Entities
 {
     public class UnusedModHistory
     {
-        public int Id { get; init; }
+        public int Id { get; set; }
 
         public Guid ModId { get; init; }
 

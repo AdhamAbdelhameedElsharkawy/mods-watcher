@@ -24,6 +24,7 @@ namespace ModsAutomator.Core.Entities
         private DateTime _lastWatched;
         private WatcherStatusType _watcherStatus;
         private string? _lastWatcherHash;
+        private int _priorityOrder;
 
         public Guid Id { get => _id; set => _id = value; }
         public int AppId { get => _appId; init => _appId = value; }
@@ -38,5 +39,6 @@ namespace ModsAutomator.Core.Entities
         public DateTime LastWatched { get => _lastWatched; set => _lastWatched = value; }
         public WatcherStatusType WatcherStatus { get => _watcherStatus; set => _watcherStatus = value; }
         public string? LastWatcherHash { get => _lastWatcherHash; set => _lastWatcherHash = value; }
+        public int PriorityOrder { get => _priorityOrder; set => _priorityOrder = value; }
     }
 }

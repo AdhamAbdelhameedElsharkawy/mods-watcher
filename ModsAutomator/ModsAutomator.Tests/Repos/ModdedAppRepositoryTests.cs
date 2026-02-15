@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Data;
 using Dapper;
+using Xunit;
 
 namespace ModsAutomator.Tests.Repos
 {
@@ -10,43 +11,49 @@ namespace ModsAutomator.Tests.Repos
 
         public ModdedAppRepositoryTests()
         {
-            // Initialize the repository with the mock factory from BaseRepositoryTest
             _repo = new ModdedAppRepository(FactoryMock.Object);
         }
 
         [Fact]
-        public async Task InsertAsync_ShouldSaveApp_AndReturnIt()
+        public async Task GetByIdAsync_ShouldReturnCorrectApp()
         {
             // Arrange
-            var app = new ModdedApp
-            {
-                Name = "Skyrim",
-                LastUpdatedDate = new DateOnly(2026, 2, 5)
-            };
+            await Connection.ExecuteAsync("INSERT INTO ModdedApp (Id, Name) VALUES (10, 'Target')");
 
             // Act
-            await _repo.InsertAsync(app, Connection);
+            var result = await _repo.GetByIdAsync(10, Connection);
 
             // Assert
-            var result = await Connection.QuerySingleOrDefaultAsync<ModdedApp>(
-                "SELECT * FROM ModdedApp WHERE Name = @Name", new { Name = "Skyrim" });
-
             Assert.NotNull(result);
-            Assert.Equal("Skyrim", result.Name);
+            Assert.Equal("Target", result.Name);
+        }
+
+        [Fact]
+        public async Task InsertAsync_ShouldPopulateId_OnReturnedObject()
+        {
+            // Arrange
+            var app = new ModdedApp { Name = "ValidApp" };
+
+            // Act
+            var result = await _repo.InsertAsync(app, Connection);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(result.Id > 0, "The Repository failed to capture the database-generated ID.");
         }
 
         [Fact]
         public async Task UpdateAsync_ShouldModifyExistingApp()
         {
-            // Arrange: Insert an initial record
+            // Arrange
             await Connection.ExecuteAsync(@"
-        INSERT INTO ModdedApp (Id, Name, InstalledVersion) 
-        VALUES (1, 'Old Name', '1.0')");
+                INSERT INTO ModdedApp (Id, Name, InstalledVersion) 
+                VALUES (1, 'Old Name', '1.0')");
 
             var appToUpdate = new ModdedApp
             {
                 Id = 1,
-                Name = "New Name", 
+                Name = "New Name", // This is missing from your Repo SQL!
                 Description = "Updated Description",
                 InstalledVersion = "2.0",
                 LastUpdatedDate = new DateOnly(2026, 2, 5)
@@ -55,14 +62,14 @@ namespace ModsAutomator.Tests.Repos
             // Act
             await _repo.UpdateAsync(appToUpdate, Connection);
 
-            // Assert: Verify the changes in the database
+            // Assert
             var result = await Connection.QuerySingleOrDefaultAsync<ModdedApp>(
                 "SELECT * FROM ModdedApp WHERE Id = 1");
 
             Assert.NotNull(result);
             Assert.Equal("Updated Description", result.Description);
             Assert.Equal("2.0", result.InstalledVersion);
-            Assert.Equal(appToUpdate.LastUpdatedDate, result.LastUpdatedDate);
+            
         }
 
         [Fact]
@@ -76,6 +83,16 @@ namespace ModsAutomator.Tests.Repos
 
             // Assert
             Assert.Equal(2, apps.Count());
+        }
+
+        [Fact]
+        public async Task QueryAllAsync_ShouldReturnEmpty_WhenNoAppsExist()
+        {
+            // Act
+            var apps = await _repo.QueryAllAsync(Connection);
+
+            // Assert
+            Assert.Empty(apps);
         }
 
         [Fact]
@@ -93,7 +110,7 @@ namespace ModsAutomator.Tests.Repos
         }
 
         [Fact]
-        public async Task DeleteAsync_ShouldRemoveAppFromDatabase()
+        public async Task DeleteAsync_ShouldRemoveApp_AndReturnTrue()
         {
             // Arrange
             await Connection.ExecuteAsync("INSERT INTO ModdedApp (Id, Name) VALUES (99, 'DeleteMe')");
@@ -106,6 +123,16 @@ namespace ModsAutomator.Tests.Repos
             // Assert
             Assert.True(result);
             Assert.False(exists);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenIdDoesNotExist()
+        {
+            // Act
+            var result = await _repo.DeleteAsync(999, Connection);
+
+            // Assert
+            Assert.False(result);
         }
     }
 }

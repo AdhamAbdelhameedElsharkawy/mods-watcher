@@ -2,10 +2,7 @@
 using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Text;
 
 namespace ModsAutomator.Data
 {
@@ -38,10 +35,11 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, AppName, AppVersion, RemovedAt, Reason, Description, RootSourceUrl)
-VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason, @Description, @RootSourceUrl);";
+            INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, AppName, AppVersion, RemovedAt, Reason, Description, RootSourceUrl)
+            VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason, @Description, @RootSourceUrl);
+            SELECT last_insert_rowid();"; // Added this
 
-                await conn.ExecuteAsync(new CommandDefinition(sql, new
+                var newId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
                 {
                     entity.ModId,
                     entity.ModdedAppId,
@@ -54,6 +52,7 @@ VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason,
                     entity.RootSourceUrl
                 }, trans, cancellationToken: cancellationToken));
 
+                entity.Id = newId; // Populate the ID back to the object
                 return (UnusedModHistory?)entity;
             }, true, connection, transaction);
         }
