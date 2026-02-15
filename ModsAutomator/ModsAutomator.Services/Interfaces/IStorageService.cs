@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.DTO;
 using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
+using System.Data;
 
 namespace ModsAutomator.Services.Interfaces
 {
@@ -46,13 +47,11 @@ namespace ModsAutomator.Services.Interfaces
         //Available Versions Screen
         Task<IEnumerable<(Mod Shell, IEnumerable<AvailableMod> Versions)>> GetAvailableVersionsByAppIdAsync(int appId, Guid? modId = null);
         Task SaveCrawledVersionsAsync(Guid modId, IEnumerable<AvailableMod> versions);
-        Task PromoteAvailableToInstalledAsync(AvailableMod selected, string appVersion);
-
-        Task<IEnumerable<(AvailableMod Entity, SyncChangeType Type)>> CompareAndIdentifyChangesAsync(Guid modId, int appId, List<AvailableMod> webVersions);
-
-        // Inside IStorageService.cs
-        Task CommitSyncChangeAsync(Guid modId, AvailableMod entity, SyncChangeType type);
-
+        Task PromoteAvailableToInstalledAsync(
+    AvailableMod selected,
+    string appVersion,
+    IDbConnection? connection = null,
+    IDbTransaction? transaction = null);
 
         //Crawl Configurations
 
@@ -61,6 +60,10 @@ namespace ModsAutomator.Services.Interfaces
         //Watcher logic
 
         Task<IEnumerable<(Mod Shell, ModCrawlerConfig Config)>> GetWatchableBundleByAppIdAsync(int appId);
+
+        Task ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods);
+
+
 
         //Mod installation and uninstallation
 

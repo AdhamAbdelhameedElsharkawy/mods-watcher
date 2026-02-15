@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS ModCrawlerConfig (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     ModId TEXT NOT NULL,
     WatcherXPath TEXT,
-    LinksCollectionXPath TEXT,
+    ModNameRegex TEXT,
     VersionXPath TEXT,
     ReleaseDateXPath TEXT,
     SizeXPath TEXT,

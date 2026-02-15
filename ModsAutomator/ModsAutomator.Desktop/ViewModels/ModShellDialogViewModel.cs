@@ -106,10 +106,10 @@ namespace ModsAutomator.Desktop.ViewModels
         }
 
         // STAGE 2: Link Discovery (Required if IsCrawlable)
-        public string LinksCollectionXPath
+        public string ModNameRegex
         {
-            get => Config.LinksCollectionXPath;
-            set { Config.LinksCollectionXPath = value; OnPropertyChanged(); }
+            get => Config.ModNameRegex;
+            set { Config.ModNameRegex = value; OnPropertyChanged(); }
         }
 
         // STAGE 3: Data Scraper (Optional/Advanced if IsCrawlable)

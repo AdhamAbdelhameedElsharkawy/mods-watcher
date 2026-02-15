@@ -14,7 +14,6 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
-        private readonly ICrawlerService _crawlerService;
 
         private Mod? _shell;
         private ModdedApp _parentApp;
@@ -37,8 +36,6 @@ namespace ModsAutomator.Desktop.ViewModels
             set => SetProperty(ref _isReviewOverlayVisible, value);
         }
 
-        public SyncReviewViewModel ReviewViewModel { get; }
-
         public ObservableCollection<ModGroupViewModel> GroupedMods { get; } = new();
 
         public ICommand CrawlAllCommand { get; }
@@ -49,27 +46,16 @@ namespace ModsAutomator.Desktop.ViewModels
 
         public AvailableVersionsViewModel(
             INavigationService navigationService,
-            ICrawlerService crawlerService,
-            IStorageService storageService,
-            SyncReviewViewModel reviewViewModel)
+            IStorageService storageService)
         {
             _navigationService = navigationService;
-            _crawlerService = crawlerService;
             _storageService = storageService;
-            ReviewViewModel = reviewViewModel;
 
-            CrawlAllCommand = new RelayCommand(async _ => await SyncAllUsedMods());
-            CrawlSingleModCommand = new RelayCommand(async id => await SyncSpecificMod((Guid)id, _parentApp.Id));
             PromoteToInstalledCommand = new RelayCommand(async mod => await PromoteToInstalled((AvailableMod)mod));
             OpenDownloadLinkCommand = new RelayCommand(url => OpenWebPage((string)url));
             BackCommand = new RelayCommand(_ => _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp));
 
-            // Bridge child VM back to this parent
-            ReviewViewModel.OnRequestClose += async () =>
-            {
-                IsReviewOverlayVisible = false;
-                await LoadInitialData();
-            };
+            
         }
 
         public void Initialize((Mod? Shell, ModdedApp App) data)
@@ -118,80 +104,41 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        private async Task SyncAllUsedMods()
-        {
-            try
-            {
-                IsScanning = true;
-                App.Current.Dispatcher.Invoke(() => ReviewViewModel.ReviewItems.Clear());
+        //private async Task SyncAllUsedMods()
+        //{
+        //    try
+        //    {
+        //        IsScanning = true;
+        //        App.Current.Dispatcher.Invoke(() => ReviewViewModel.ReviewItems.Clear());
 
-                var webResults = await _crawlerService.GetLatestVersionsForAppAsync(_parentApp);
+        //        var webResults = await _crawlerService.GetLatestVersionsForAppAsync(_parentApp);
 
-                foreach (var webMod in webResults)
-                {
-                    var changes = await _storageService.CompareAndIdentifyChangesAsync(webMod.ModId, _parentApp.Id, webMod.Versions);
+        //        foreach (var webMod in webResults)
+        //        {
+        //            var changes = await _storageService.CompareAndIdentifyChangesAsync(webMod.ModId, _parentApp.Id, webMod.Versions);
 
-                    foreach (var change in changes)
-                    {
-                        App.Current.Dispatcher.Invoke(() =>
-                        {
-                            ReviewViewModel.ReviewItems.Add(new SyncReviewItemViewModel(change.Entity, change.Type));
-                        });
-                    }
-                }
+        //            foreach (var change in changes)
+        //            {
+        //                App.Current.Dispatcher.Invoke(() =>
+        //                {
+        //                    ReviewViewModel.ReviewItems.Add(new SyncReviewItemViewModel(change.Entity, change.Type));
+        //                });
+        //            }
+        //        }
 
-                IsReviewOverlayVisible = ReviewViewModel.ReviewItems.Any();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Sync failed: {ex.Message}");
-            }
-            finally
-            {
-                IsScanning = false;
-            }
-        }
+        //        IsReviewOverlayVisible = ReviewViewModel.ReviewItems.Any();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Sync failed: {ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        IsScanning = false;
+        //    }
+        //}
 
-        private async Task SyncSpecificMod(Guid modId, int appId)
-        {
-            try
-            {
-                IsScanning = true;
-
-                var targetGroup = GroupedMods.FirstOrDefault(g => g.ModId == modId);
-                if (targetGroup == null) return;
-
-                App.Current.Dispatcher.Invoke(() => ReviewViewModel.ReviewItems.Clear());
-
-                var webVersions = new List<AvailableMod>();//   await _crawlerService.GetLatestVersionsForModAsync(targetGroup.ModId, targetGroup.RootSourceUrl);
-                var changes = await _storageService.CompareAndIdentifyChangesAsync(targetGroup.ModId, appId, webVersions);
-
-                foreach (var change in changes)
-                {
-                    App.Current.Dispatcher.Invoke(() =>
-                    {
-                        ReviewViewModel.ReviewItems.Add(new SyncReviewItemViewModel(change.Entity, change.Type));
-                    });
-                }
-
-                if (ReviewViewModel.ReviewItems.Any())
-                {
-                    IsReviewOverlayVisible = true;
-                }
-                else
-                {
-                    MessageBox.Show("No new updates found for this mod.", "Sync Complete");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error syncing mod: {ex.Message}");
-            }
-            finally
-            {
-                IsScanning = false;
-            }
-        }
+        
 
         private async Task PromoteToInstalled(AvailableMod selectedVersion)
         {

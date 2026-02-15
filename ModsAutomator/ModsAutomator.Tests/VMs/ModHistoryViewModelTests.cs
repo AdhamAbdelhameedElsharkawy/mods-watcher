@@ -10,6 +10,7 @@ namespace ModsAutomator.Tests.VMs
     {
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
+        private readonly Mock<IDialogService> _dialogServiceMock;
         private readonly ModHistoryViewModel _vm;
         private readonly Mod _testMod;
         private readonly ModdedApp _testApp;
@@ -18,7 +19,8 @@ namespace ModsAutomator.Tests.VMs
         {
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
-            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object);
+            _dialogServiceMock = new Mock<IDialogService>();
+            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object);
 
             _testMod = new Mod { Id = Guid.NewGuid(), Name = "UI Overhaul" };
             _testApp = new ModdedApp { Id = 1, InstalledVersion = "2.0" };

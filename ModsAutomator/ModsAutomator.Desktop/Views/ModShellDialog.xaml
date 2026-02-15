@@ -72,8 +72,8 @@
                     <Border Background="#251A2B" Padding="15" CornerRadius="8" Margin="0,0,0,15">
                         <StackPanel>
                             <TextBlock Text="STAGE 2: LINK DISCOVERY" FontSize="10" FontWeight="Bold" Foreground="#9C27B0" Margin="0,0,0,10"/>
-                            <TextBlock Text="Links Collection XPath" Foreground="#888" FontSize="11" Margin="0,0,0,5"/>
-                            <TextBox Text="{Binding LinksCollectionXPath, UpdateSourceTrigger=PropertyChanged}" 
+                            <TextBlock Text="Links Regex for filteration" Foreground="#888" FontSize="11" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding ModNameRegex, UpdateSourceTrigger=PropertyChanged}" 
                                      Background="#1E1E1E" Foreground="White" BorderBrush="#333" Padding="8" Margin="0,0,0,15" CaretBrush="White"/>
 
                             <TextBlock Text="STAGE 3: DATA SCRAPER (AUTO-FILL)" FontSize="10" FontWeight="Bold" Foreground="#4CAF50" Margin="0,0,0,10"/>

@@ -122,7 +122,7 @@
                                                             <Setter Property="Foreground" Value="#FF5252"/>
                                                             <Setter Property="FontWeight" Value="Bold"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Shell.WatcherStatus}" Value="UpdateAvailable">
+                                                        <DataTrigger Binding="{Binding Shell.WatcherStatus}" Value="UpdateFound">
                                                             <Setter Property="Foreground" Value="#FFAB40"/>
                                                             <Setter Property="FontWeight" Value="Bold"/>
                                                         </DataTrigger>

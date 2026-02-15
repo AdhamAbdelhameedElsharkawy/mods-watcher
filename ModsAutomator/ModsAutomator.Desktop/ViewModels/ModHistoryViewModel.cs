@@ -11,6 +11,7 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
+        private readonly IDialogService _dialogService;
         private Mod _mod;
         private ModdedApp _parentApp;
         private string _selectedModName = "Mod History";
@@ -44,12 +45,13 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService)
+        public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialog)
         {
             _navigationService = navigationService;
             _storageService = storageService;
 
             HistoryItems = new ObservableCollection<ModHistoryItemViewModel>();
+            _dialogService = dialog;
         }
 
         public void Initialize((Mod Mod, ModdedApp App) data)
@@ -85,15 +87,15 @@ namespace ModsAutomator.Desktop.ViewModels
                 // Safety check in case the command is triggered via shortcut/double-click
                 if (!wrapper.CanRollback) return;
 
-                var result = MessageBox.Show(
-                    $"Rollback to version {wrapper.History.Version}?\n\nCompatibility: {(wrapper.IsCompatible ? "Matched" : "Forced via Override")}",
-                    "Confirm Rollback", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                // Use the service instead of the static class!
+                string msg = $"Rollback to version {wrapper.History.Version}?\n\nCompatibility: {(wrapper.IsCompatible ? "Matched" : "Forced")}";
 
-                if (result == MessageBoxResult.Yes)
+                if (_dialogService.ShowConfirmation(msg, "Confirm Rollback"))
                 {
                     await _storageService.RollbackToVersionAsync(wrapper.History, this._parentApp.InstalledVersion);
                     BackCommand.Execute(null);
                 }
+                
             }
         });
 

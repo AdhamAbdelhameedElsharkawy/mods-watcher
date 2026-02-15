@@ -213,9 +213,9 @@ namespace ModsAutomator.Data
                 // 2. Insert Config
                 const string configSql = @"
             INSERT INTO ModCrawlerConfig 
-            (ModId, WatcherXPath, LinksCollectionXPath, VersionXPath, ReleaseDateXPath, SizeXPath, DownloadUrlXPath, SupportedAppVersionsXPath, PackageFilesNumberXPath)
+            (ModId, WatcherXPath, ModNameRegex, VersionXPath, ReleaseDateXPath, SizeXPath, DownloadUrlXPath, SupportedAppVersionsXPath, PackageFilesNumberXPath)
             VALUES 
-            (@ModId, @WatcherXPath, @LinksCollectionXPath, @VersionXPath, @ReleaseDateXPath, @SizeXPath, @DownloadUrlXPath, @SupportedAppVersionsXPath, @PackageFilesNumberXPath);";
+            (@ModId, @WatcherXPath, @ModNameRegex, @VersionXPath, @ReleaseDateXPath, @SizeXPath, @DownloadUrlXPath, @SupportedAppVersionsXPath, @PackageFilesNumberXPath);";
 
                 await conn.ExecuteAsync(new CommandDefinition(configSql, config, trans, cancellationToken: cancellationToken));
 
@@ -247,7 +247,7 @@ namespace ModsAutomator.Data
                 const string configSql = @"
             UPDATE ModCrawlerConfig SET
                 WatcherXPath = @WatcherXPath,
-                LinksCollectionXPath = @LinksCollectionXPath,
+                ModNameRegex = @ModNameRegex,
                 VersionXPath = @VersionXPath,
                 ReleaseDateXPath = @ReleaseDateXPath,
                 SizeXPath = @SizeXPath,

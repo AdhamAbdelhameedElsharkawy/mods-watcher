@@ -35,7 +35,7 @@ namespace ModsAutomator.Tests.Repos
             {
                 ModId = modId,
                 WatcherXPath = "//div[@id='version']",
-                LinksCollectionXPath = "//a[@class='download-link']",
+                ModNameRegex = "//a[@class='download-link']",
                 VersionXPath = "//span/text()"
             };
 
@@ -60,7 +60,7 @@ namespace ModsAutomator.Tests.Repos
             // Arrange
             var (_, modId) = await SeedParentHierarchyAsync();
             await Connection.ExecuteAsync(@"
-                INSERT INTO ModCrawlerConfig (ModId, WatcherXPath, LinksCollectionXPath) 
+                INSERT INTO ModCrawlerConfig (ModId, WatcherXPath, ModNameRegex) 
                 VALUES (@ModId, '//path1', '//path2')", new { ModId = modId });
 
             // Act
@@ -83,7 +83,7 @@ namespace ModsAutomator.Tests.Repos
             {
                 Id = id,
                 WatcherXPath = "new_watcher",
-                LinksCollectionXPath = "new_links"
+                ModNameRegex = "new_links"
             };
 
             // Act
@@ -93,7 +93,7 @@ namespace ModsAutomator.Tests.Repos
             var result = await Connection.QuerySingleAsync<ModCrawlerConfig>(
                 "SELECT * FROM ModCrawlerConfig WHERE Id = @Id", new { Id = id });
             Assert.Equal("new_watcher", result.WatcherXPath);
-            Assert.Equal("new_links", result.LinksCollectionXPath);
+            Assert.Equal("new_links", result.ModNameRegex);
         }
 
         [Fact]

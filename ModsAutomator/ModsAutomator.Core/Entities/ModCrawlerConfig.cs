@@ -13,9 +13,8 @@ namespace ModsAutomator.Core.Entities
         // This XPath points to a version string or a "Last Updated" text on the root page
         public string WatcherXPath { get; set; } = string.Empty;
 
-        // 2. The Link Discovery (The "Crawl List")
-        // XPath to find all potential Mod links on the root page
-        public string LinksCollectionXPath { get; set; } = string.Empty;
+        
+        public string ModNameRegex { get; set; } = string.Empty;
 
         // 3. The Data Scraper (Auto-filling AvailableMod)
         // These map directly to your AvailableMod properties

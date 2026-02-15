@@ -4,6 +4,7 @@ using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
 using ModsAutomator.Services.Interfaces;
+using System.Data;
 
 namespace ModsAutomator.Services
 {
@@ -431,16 +432,22 @@ namespace ModsAutomator.Services
             }
         }
 
-        public async Task PromoteAvailableToInstalledAsync(AvailableMod selected, string appVersion)
+        public async Task PromoteAvailableToInstalledAsync(
+    AvailableMod selected,
+    string appVersion,
+    IDbConnection? connection = null,
+    IDbTransaction? transaction = null)
         {
-            using var connection = _connectionFactory.CreateConnection();
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
+            // If no connection is passed, we create and manage our own
+            bool isInternalConn = connection == null;
+            var conn = connection ?? _connectionFactory.CreateConnection();
 
             try
             {
+                if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+
                 // 1. Archive current active mod to History
-                var currentActive = await _installedModRepo.FindByModIdAsync(selected.Id, connection, transaction);
+                var currentActive = await _installedModRepo.FindByModIdAsync(selected.Id, conn, transaction);
                 if (currentActive != null)
                 {
                     var history = new InstalledModHistory
@@ -451,7 +458,7 @@ namespace ModsAutomator.Services
                         InstalledAt = currentActive.InstalledDate,
                         RemovedAt = DateOnly.FromDateTime(DateTime.Now)
                     };
-                    await _installedModHistoryRepo.InsertAsync(history, connection, transaction);
+                    await _installedModHistoryRepo.InsertAsync(history, conn, transaction);
 
                     // 2. Update active record with new version info
                     currentActive.InstalledVersion = selected.AvailableVersion;
@@ -460,90 +467,16 @@ namespace ModsAutomator.Services
                     currentActive.PackageType = selected.PackageType;
                     currentActive.PackageFilesNumber = selected.PackageFilesNumber;
                     currentActive.SupportedAppVersions = selected.SupportedAppVersions;
+                    currentActive.DownloadUrl = selected.DownloadUrl;
 
-                    await _installedModRepo.UpdateAsync(currentActive, connection, transaction);
-                }
-
-                transaction.Commit();
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-        public async Task<IEnumerable<(AvailableMod Entity, SyncChangeType Type)>> CompareAndIdentifyChangesAsync(Guid modId, int appId, List<AvailableMod> webVersions)
-        {
-            var changes = new List<(AvailableMod Entity, SyncChangeType Type)>();
-
-            // 1. Get the current local state for this specific mod
-            var localData = await GetAvailableVersionsByAppIdAsync(appId, modId);
-            var localVersions = localData.SelectMany(x => x.Versions).ToList();
-
-            // 2. Identify NEW or MODIFIED items
-            foreach (var webMod in webVersions)
-            {
-                var localMatch = localVersions.FirstOrDefault(l => l.AvailableVersion == webMod.AvailableVersion);
-
-                if (localMatch == null)
-                {
-                    // Brand new version found online
-                    changes.Add((webMod, SyncChangeType.New));
-                }
-                else if (IsModChanged(localMatch, webMod))
-                {
-                    // Version exists but data (URL, Date, Compatibility) is different
-                    changes.Add((webMod, SyncChangeType.Modified));
+                    await _installedModRepo.UpdateAsync(currentActive, conn, transaction);
                 }
             }
-
-            // 3. Identify STALE items (in local storage but no longer on Web)
-            foreach (var localMod in localVersions)
+            finally
             {
-                if (!webVersions.Any(w => w.AvailableVersion == localMod.AvailableVersion))
-                {
-                    changes.Add((localMod, SyncChangeType.Stale));
-                }
-            }
-
-            return changes;
-        }
-
-        public async Task CommitSyncChangeAsync(Guid modId, AvailableMod entity, SyncChangeType type)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-                connection.Open();
-
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                entity.Id = modId;
-                entity.LastCrawled = DateTime.Now;
-
-                switch (type)
-                {
-                    case SyncChangeType.New:
-                        await _availableModRepo.InsertAsync(entity, connection, transaction);
-                        break;
-
-                    case SyncChangeType.Modified:
-                        await _availableModRepo.UpdateAsync(entity, connection, transaction);
-                        break;
-
-                    case SyncChangeType.Stale:
-                        await _availableModRepo.DeleteAsync(entity.InternalId, connection, transaction);
-                        break;
-                }
-
-                transaction.Commit();
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
+                // Only close/dispose if WE opened it. 
+                // If it was passed in, the caller (ProcessCrawlResultsAsync) owns it.
+                if (isInternalConn) conn.Dispose();
             }
         }
 
@@ -586,6 +519,49 @@ namespace ModsAutomator.Services
             return results;
         }
 
+        public async Task ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // 1. Get existing versions to avoid duplicates in the history/available list
+                var existingVersions = await _availableModRepo.FindByModIdAsync(shellId, connection, transaction);
+
+                foreach (var scraped in scrapedMods)
+                {
+                    if (!IsDuplicate(scraped, existingVersions))
+                    {
+                        // Ensure the Foreign Key / ID is set correctly
+                        scraped.Id = shellId;
+                        scraped.LastCrawled = DateTime.Now;
+                        await _availableModRepo.InsertAsync(scraped, connection, transaction);
+                    }
+                }
+
+                // 2. If a primary version was identified (the update), promote it
+                if (primary != null)
+                {
+                    
+                    // REUSE: Call the existing promotion logic
+                    // Note: Since we are already in a transaction, ensure Promote handles the passed connection/transaction
+                    await PromoteAvailableToInstalledAsync(primary, appVersion, connection, transaction);
+
+                   }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+
+
 
 
         #endregion
@@ -613,5 +589,34 @@ namespace ModsAutomator.Services
         }
 
         #endregion
+
+        /// <summary>
+        /// Comparison logic using URL, Version, and Compatibility metadata
+        /// </summary>
+        private bool IsDuplicate(AvailableMod scraped, IEnumerable<AvailableMod> existing)
+        {
+            return existing.Any(e =>
+                // Logic A: Same page and same version string
+                (e.CrawledModUrl == scraped.CrawledModUrl && e.AvailableVersion == scraped.AvailableVersion) ||
+
+                // Logic B: Normalized version (ignoring 'v' or spaces) and same game support
+                (NormalizeVersion(e.AvailableVersion) == NormalizeVersion(scraped.AvailableVersion) &&
+                 e.SupportedAppVersions == scraped.SupportedAppVersions) ||
+
+                // Logic C: The exact same download link
+                (!string.IsNullOrEmpty(e.DownloadUrl) && e.DownloadUrl == scraped.DownloadUrl)
+            );
+        }
+
+        private string NormalizeVersion(string? version)
+        {
+            // Return empty string if null to allow safe comparison
+            if (string.IsNullOrWhiteSpace(version)) return string.Empty;
+
+            // Standardize: trim, lowercase, and remove the 'v' prefix
+            return version.Trim().ToLower().Replace("v", "");
+        }
+
+        
     }
 }

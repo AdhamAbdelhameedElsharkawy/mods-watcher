@@ -11,6 +11,7 @@ namespace ModsAutomator.Tests.VMs
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IWatcherService> _watcherMock;
+        private readonly Mock<IDialogService> _dialogServiceMock;
         private readonly LibraryViewModel _vm;
         private readonly ModdedApp _testApp;
 
@@ -19,8 +20,9 @@ namespace ModsAutomator.Tests.VMs
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
             _watcherMock = new Mock<IWatcherService>();
+            _dialogServiceMock = new Mock<IDialogService>();
 
-            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object);
+            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
         }
 

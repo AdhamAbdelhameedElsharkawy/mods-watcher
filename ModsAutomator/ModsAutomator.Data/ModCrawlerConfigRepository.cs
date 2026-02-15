@@ -35,8 +35,8 @@ public class ModCrawlerConfigRepository : BaseRepository, IModCrawlerConfigRepos
         {
             const string sql = @"
                 INSERT INTO ModCrawlerConfig 
-                (ModId, WatcherXPath, LinksCollectionXPath, VersionXPath, ReleaseDateXPath, SizeXPath, DownloadUrlXPath, SupportedAppVersionsXPath, PackageFilesNumberXPath)
-                VALUES (@ModId, @WatcherXPath, @LinksCollectionXPath, @VersionXPath, @ReleaseDateXPath, @SizeXPath, @DownloadUrlXPath, @SupportedAppVersionsXPath, @PackageFilesNumberXPath);
+                (ModId, WatcherXPath, ModNameRegex, VersionXPath, ReleaseDateXPath, SizeXPath, DownloadUrlXPath, SupportedAppVersionsXPath, PackageFilesNumberXPath)
+                VALUES (@ModId, @WatcherXPath, @ModNameRegex, @VersionXPath, @ReleaseDateXPath, @SizeXPath, @DownloadUrlXPath, @SupportedAppVersionsXPath, @PackageFilesNumberXPath);
                 SELECT last_insert_rowid();";
 
             var newId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, entity, trans, cancellationToken: cancellationToken));
@@ -52,7 +52,7 @@ public class ModCrawlerConfigRepository : BaseRepository, IModCrawlerConfigRepos
             const string sql = @"
                 UPDATE ModCrawlerConfig SET
                     WatcherXPath = @WatcherXPath,
-                    LinksCollectionXPath = @LinksCollectionXPath,
+                    ModNameRegex = @ModNameRegex,
                     VersionXPath = @VersionXPath,
                     ReleaseDateXPath = @ReleaseDateXPath,
                     SizeXPath = @SizeXPath,

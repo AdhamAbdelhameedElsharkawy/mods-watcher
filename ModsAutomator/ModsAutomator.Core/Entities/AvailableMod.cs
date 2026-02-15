@@ -18,6 +18,7 @@ namespace ModsAutomator.Core.Entities
         private PackageType _packageType;
         private int? _packageFilesNumber;
         private string? _supportedAppVersions = string.Empty;
+        //Page where the mod was crawled, useful for debugging and tracking purposes
         private string? _crawledModUrl = string.Empty;
         private DateTime _lastCrawled;
 

@@ -39,13 +39,14 @@ namespace ModsAutomator.Desktop
             services.AddServicesLayer();
 
             // 3. Desktop Project (Local registrations)
+            services.AddTransient<IDialogService, WpfDialogService>();
+
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton<MainViewModel>();
             services.AddTransient<AppSelectionViewModel>();
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<RetiredModsViewModel>();
             services.AddTransient<ModHistoryViewModel>();
-            services.AddTransient<SyncReviewViewModel>();
             services.AddTransient<AvailableVersionsViewModel>();
             // ... other viewmodels
 
