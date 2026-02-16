@@ -480,6 +480,41 @@ namespace ModsAutomator.Services
             }
         }
 
+        public async Task DeleteAvailableModAsync(int internalId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open) connection.Open();
+
+            // Pattern: Service manages connection, Repository performs the action
+            await _availableModRepo.DeleteAsync(internalId, connection);
+        }
+
+        public async Task DeleteAvailableModsBatchAsync(IEnumerable<int> internalIds)
+        {
+            if (internalIds == null || !internalIds.Any()) return;
+
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open) connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Pattern: Loop through the batch using the repository within a transaction
+                foreach (var id in internalIds)
+                {
+                    await _availableModRepo.DeleteAsync(id, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
         private bool IsModChanged(AvailableMod local, AvailableMod web)
         {
             // Check if critical metadata has drifted

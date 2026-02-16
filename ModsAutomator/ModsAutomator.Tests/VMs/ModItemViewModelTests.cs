@@ -21,8 +21,8 @@ namespace ModsAutomator.Tests.VMs
         [Fact]
         public void InstalledMod_ShouldShowActiveSummary()
         {
-            var shell = new Mod { WatcherStatus = WatcherStatusType.Idle };
-            var installed = new InstalledMod { IsUsed = true, InstalledVersion = "1.0.0" };
+            var shell = new Mod { WatcherStatus = WatcherStatusType.Idle, IsUsed = true };
+            var installed = new InstalledMod { InstalledVersion = "1.0.0" };
             var vm = new ModItemViewModel(shell, installed, null, "1.0.0");
 
             // Matches: $"{activeStatus} | {compatibilityStatus} | {watcherResult}"
@@ -33,8 +33,8 @@ namespace ModsAutomator.Tests.VMs
         public void SettingIsUsed_ShouldRaiseNotificationsForIsUsedAndSummary()
         {
             // Arrange
-            var shell = new Mod { Name = "Toggle Mod" };
-            var installed = new InstalledMod { IsUsed = false };
+            var shell = new Mod { Name = "Toggle Mod", IsUsed = false };
+            var installed = new InstalledMod { };
             var vm = new ModItemViewModel(shell, installed, null, "1.0");
 
             var changedProperties = new List<string>();
@@ -44,7 +44,7 @@ namespace ModsAutomator.Tests.VMs
             vm.IsUsed = true;
 
             // Assert
-            Assert.True(installed.IsUsed);
+            Assert.True(shell.IsUsed);
 
             // Check that the necessary properties were notified at least once
             Assert.Contains(nameof(vm.IsUsed), changedProperties);

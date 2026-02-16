@@ -2,10 +2,10 @@
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ModsAutomator.Desktop.ViewModels
@@ -14,173 +14,105 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
+        private readonly IDialogService _dialogService;
 
-        private Mod? _shell;
-        private ModdedApp _parentApp;
+        private Mod? _targetShell;
+        private ModdedApp _selectedApp;
 
-        public string ViewTitle => _shell != null ? $"MOD: {_shell.Name}" : $"{_parentApp.Name} - ALL MODS";
+        public ObservableCollection<ModVersionGroupViewModel> GroupedAvailableMods { get; set; }
 
-        private bool _isScanning;
-        public bool IsScanning
-        {
-            get => _isScanning;
-            set => SetProperty(ref _isScanning, value);
-        }
-
-        public bool HasNoMods => !GroupedMods.Any();
-
-        private bool _isReviewOverlayVisible;
-        public bool IsReviewOverlayVisible
-        {
-            get => _isReviewOverlayVisible;
-            set => SetProperty(ref _isReviewOverlayVisible, value);
-        }
-
-        public ObservableCollection<ModGroupViewModel> GroupedMods { get; } = new();
-
-        public ICommand CrawlAllCommand { get; }
-        public ICommand CrawlSingleModCommand { get; }
-        public ICommand PromoteToInstalledCommand { get; }
-        public ICommand OpenDownloadLinkCommand { get; }
+        // --- Commands ---
+        public ICommand PromoteCommand { get; }
+        public ICommand DeleteSingleCommand { get; }
+        public ICommand DeleteSelectedCommand { get; }
         public ICommand BackCommand { get; }
 
-        public AvailableVersionsViewModel(
-            INavigationService navigationService,
-            IStorageService storageService)
+        public AvailableVersionsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService)
         {
             _navigationService = navigationService;
             _storageService = storageService;
+            _dialogService = dialogService;
 
-            PromoteToInstalledCommand = new RelayCommand(async mod => await PromoteToInstalled((AvailableMod)mod));
-            OpenDownloadLinkCommand = new RelayCommand(url => OpenWebPage((string)url));
-            BackCommand = new RelayCommand(_ => _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp));
+            GroupedAvailableMods = new ObservableCollection<ModVersionGroupViewModel>();
 
-            
+            // Following your RelayCommand pattern: (async obj => await Method(obj as Type))
+            PromoteCommand = new RelayCommand(async obj => await PromoteAsync(obj as AvailableVersionItemViewModel));
+            DeleteSingleCommand = new RelayCommand(async obj => await DeleteAsync(obj as AvailableVersionItemViewModel));
+            DeleteSelectedCommand = new RelayCommand(async obj => await DeleteSelectedInGroupAsync(obj as ModVersionGroupViewModel));
+
+            BackCommand = new RelayCommand(_ =>
+                _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_selectedApp));
         }
 
         public void Initialize((Mod? Shell, ModdedApp App) data)
         {
-            _shell = data.Shell;
-            _parentApp = data.App;
-
-            OnPropertyChanged(nameof(ViewTitle));
-
-            // Run async load without blocking
-            Task.Run(async () => await LoadInitialData());
+            _targetShell = data.Shell;
+            _selectedApp = data.App;
+            _ = LoadVersions();
         }
 
-        //TODO: calculate highest last crawled date across all versions and display in UI, maybe with a warning icon if it's been too long since last crawl
-        private async Task LoadInitialData()
+        private async Task LoadVersions()
         {
-            try
+            if (_selectedApp == null) return;
+
+            GroupedAvailableMods.Clear();
+
+            // Passing the optional _targetShell?.Id to filter at the DB level if coming from a specific mod
+            var results = await _storageService.GetAvailableVersionsByAppIdAsync(_selectedApp.Id, _targetShell?.Id);
+
+            foreach (var (Shell, Versions) in results)
             {
-                IsScanning = true;
-
-                App.Current.Dispatcher.Invoke(() => GroupedMods.Clear());
-
-                var data = await _storageService.GetAvailableVersionsByAppIdAsync(_parentApp.Id, _shell?.Id);
-
-                foreach (var group in data)
+                var group = new ModVersionGroupViewModel
                 {
-                    var groupVm = new ModGroupViewModel
-                    {
-                        ModId = group.Shell.Id,
-                        ModName = group.Shell.Name,
-                        RootSourceUrl = group.Shell.RootSourceUrl,
-                        AvailableVersions = new ObservableCollection<AvailableMod>(group.Versions)
-                    };
+                    ModId = Shell.Id,
+                    ModName = Shell.Name,
+                    RootSourceUrl = Shell.RootSourceUrl,
+                    Versions = new ObservableCollection<AvailableVersionItemViewModel>(
+                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion))
+                    )
+                };
 
-                    App.Current.Dispatcher.Invoke(() => GroupedMods.Add(groupVm));
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to load available versions: {ex.Message}");
-            }
-            finally
-            {
-                IsScanning = false;
-                OnPropertyChanged(nameof(HasNoMods));
+                GroupedAvailableMods.Add(group);
             }
         }
 
-        //private async Task SyncAllUsedMods()
-        //{
-        //    try
-        //    {
-        //        IsScanning = true;
-        //        App.Current.Dispatcher.Invoke(() => ReviewViewModel.ReviewItems.Clear());
-
-        //        var webResults = await _crawlerService.GetLatestVersionsForAppAsync(_parentApp);
-
-        //        foreach (var webMod in webResults)
-        //        {
-        //            var changes = await _storageService.CompareAndIdentifyChangesAsync(webMod.ModId, _parentApp.Id, webMod.Versions);
-
-        //            foreach (var change in changes)
-        //            {
-        //                App.Current.Dispatcher.Invoke(() =>
-        //                {
-        //                    ReviewViewModel.ReviewItems.Add(new SyncReviewItemViewModel(change.Entity, change.Type));
-        //                });
-        //            }
-        //        }
-
-        //        IsReviewOverlayVisible = ReviewViewModel.ReviewItems.Any();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Sync failed: {ex.Message}");
-        //    }
-        //    finally
-        //    {
-        //        IsScanning = false;
-        //    }
-        //}
-
-        
-
-        private async Task PromoteToInstalled(AvailableMod selectedVersion)
+        private async Task PromoteAsync(AvailableVersionItemViewModel? item)
         {
-            var result = MessageBox.Show(
-                $"Confirm installation of version {selectedVersion.AvailableVersion}?\n\nThis will update your local installation record.",
-                "Promote Version", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (item == null) return;
 
-            if (result == MessageBoxResult.Yes)
+            if (_dialogService.ShowConfirmation($"Promote version {item.Entity.AvailableVersion} to Installed status?", "Confirm Promotion"))
             {
-                try
-                {
-                    IsScanning = true;
-                    await _storageService.PromoteAvailableToInstalledAsync(selectedVersion, _parentApp.InstalledVersion);
-                    await LoadInitialData();
-                    MessageBox.Show("Successfully promoted to installed.", "Update Complete");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error during promotion: {ex.Message}");
-                }
-                finally
-                {
-                    IsScanning = false;
-                }
+                // This updates the InstalledMod record in the DB
+                await _storageService.PromoteAvailableToInstalledAsync(item.Entity, _selectedApp.InstalledVersion);
+                _dialogService.ShowInfo("Promotion successful.", "Success");
             }
         }
 
-        private void OpenWebPage(string url)
+        private async Task DeleteAsync(AvailableVersionItemViewModel? item)
         {
-            if (string.IsNullOrWhiteSpace(url)) return;
-            try
+            if (item == null) return;
+
+            if (_dialogService.ShowConfirmation("Delete this version entry?", "Confirm Delete"))
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                });
+                await _storageService.DeleteAvailableModAsync(item.Entity.InternalId);
+                await LoadVersions();
             }
-            catch (Exception ex)
+        }
+
+        private async Task DeleteSelectedInGroupAsync(ModVersionGroupViewModel? group)
+        {
+            if (group == null) return;
+
+            var selected = group.Versions.Where(v => v.IsSelected).ToList();
+            if (!selected.Any()) return;
+
+            if (_dialogService.ShowConfirmation($"Delete {selected.Count} selected versions for '{group.ModName}'?", "Bulk Delete"))
             {
-                MessageBox.Show($"Could not open browser: {ex.Message}");
+                var ids = selected.Select(v => v.Entity.InternalId).ToList();
+                await _storageService.DeleteAvailableModsBatchAsync(ids);
+                await LoadVersions();
             }
         }
     }
+
 }

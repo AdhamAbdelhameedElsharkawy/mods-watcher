@@ -53,6 +53,9 @@ namespace ModsAutomator.Services.Interfaces
     IDbConnection? connection = null,
     IDbTransaction? transaction = null);
 
+        Task DeleteAvailableModAsync(int internalId);
+        Task DeleteAvailableModsBatchAsync(IEnumerable<int> internalIds);
+
         //Crawl Configurations
 
         Task<ModCrawlerConfig?> GetModCrawlerConfigByModIdAsync(Guid modId);

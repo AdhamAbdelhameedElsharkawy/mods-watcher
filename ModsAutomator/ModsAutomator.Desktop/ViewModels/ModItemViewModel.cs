@@ -73,12 +73,12 @@ namespace ModsAutomator.Desktop.ViewModels
 
         public bool IsUsed
         {
-            get => Installed?.IsUsed ?? false;
+            get => Shell?.IsUsed ?? false;
             set
             {
-                if (Installed != null)
+                if (Shell != null)
                 {
-                    Installed.IsUsed = value;
+                    Shell.IsUsed = value;
                     OnPropertyChanged(); // Notifies the Badge/Toggle
                     RefreshSummary();    // Updates the status text
                 }
@@ -133,6 +133,8 @@ namespace ModsAutomator.Desktop.ViewModels
             Installed = installed;
             Config = config;
             AppVersion = appVersion;
+
+            RefreshSummary();
         }
     }
 }

@@ -27,7 +27,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 if (SetProperty(ref _selectedMod, value))
                 {
                     OnPropertyChanged(nameof(CanToggleActivation));
-                    OnPropertyChanged(nameof(CanCrawlSelectedMod));
+                    //OnPropertyChanged(nameof(CanCrawlSelectedMod));
                 }
             }
         }
@@ -43,11 +43,11 @@ namespace ModsAutomator.Desktop.ViewModels
                 }
             }
         }
-
-        public bool CanCrawlSelectedMod =>
-            SelectedMod != null &&
-            SelectedMod.Installed != null &&
-            SelectedMod.Installed.IsUsed;
+        //Not used anymore
+        //public bool CanCrawlSelectedMod =>
+        //    SelectedMod != null &&
+        //    SelectedMod.Installed != null &&
+        //    SelectedMod.Installed.IsUsed;
 
         public bool CanToggleActivation => SelectedMod?.Installed != null;
 
@@ -85,12 +85,25 @@ namespace ModsAutomator.Desktop.ViewModels
             SyncAllModsCommand = new RelayCommand(async _ => await SyncAllWatchableModsAsync());
             SyncSingleModCommand = new RelayCommand(async mod => await SyncSingleModAsync(mod as ModItemViewModel));
 
-            FullSyncSingleModCommand = new RelayCommand(async obj =>
-            {
-                var target = obj as ModItemViewModel ?? SelectedMod;
-                if (target == null || !target.IsUsed) return;
-                // Crawler implementation here
-            });
+            FullSyncSingleModCommand = new RelayCommand(
+    async obj =>
+    {
+        var target = obj as ModItemViewModel ?? SelectedMod;
+        if (target != null)
+        {
+            await RunFullSync(target);
+        }
+    },
+    obj =>
+    {
+        var target = obj as ModItemViewModel ?? SelectedMod;
+        return target != null &&
+               target.IsUsed &&
+               target.Shell.IsWatchable &&
+               target.Shell.IsCrawlable &&
+               target.Config != null;
+    }
+);
 
             // NEW: Installation Logic
             SetupManualInstallCommand = new RelayCommand(async _ => await SetupManualInstallationAsync());
@@ -225,29 +238,34 @@ namespace ModsAutomator.Desktop.ViewModels
             bool currentlyActive = SelectedMod.IsUsed;
             string action = currentlyActive ? "Deactivate" : "Activate";
 
-            var result = MessageBox.Show($"{action} {SelectedMod.Shell.Name}?",
-                $"{action} Mod", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            // Using the IDialogService pattern
+            if (_dialogService.ShowConfirmation($"{action} {SelectedMod.Shell.Name}?", $"{action} Mod"))
             {
+                // 1. Update the Shell property
                 SelectedMod.IsUsed = !currentlyActive;
-                await _storageService.UpdateInstalledModAsync(SelectedMod.Installed);
 
-                OnPropertyChanged(nameof(CanCrawlSelectedMod));
+                // 2. Persist to the correct table (Mod Shell)
+                await _storageService.UpdateModShellAsync(SelectedMod.Shell);
+
+                // 3. Refresh UI notifications
+                SelectedMod.RefreshSummary();
                 OnPropertyChanged(nameof(CanToggleActivation));
             }
+            
         }
 
         private async void HardWipeSelectedMod()
         {
             if (SelectedMod == null) return;
-            var result = MessageBox.Show($"Are you sure you want to HARD WIPE '{SelectedMod.Shell.Name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.Yes)
+
+            // Using your IDialogService for consistency
+            if (_dialogService.ShowConfirmation($"Are you sure you want to HARD WIPE '{SelectedMod.Shell.Name}'?", "Confirm Hard Wipe"))
             {
                 await _storageService.HardWipeModAsync(SelectedMod.Shell, SelectedApp);
                 SelectedMod = null;
                 await LoadLibrary();
             }
+            
         }
 
         private async Task RegisterNewMod()
@@ -312,79 +330,75 @@ namespace ModsAutomator.Desktop.ViewModels
 
         public async Task RunFullSync(ModItemViewModel modItem)
         {
-            // --- STEP 1: WATCHER GATEKEEPER ---
-            // Only run the watcher if it's been more than 6 hours
-            bool needsWatcher = DateTime.Now - modItem.Shell.LastWatched > TimeSpan.FromHours(6);
-
-            if (needsWatcher)
-            {
-                modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
-
-                // Bundle for the Watcher service
-                var watchBundle = new List<(Mod Shell, ModCrawlerConfig Config)> { (modItem.Shell, modItem.Config) };
-
-                // This triggers the Hash comparison logic we just finalized
-                await _watcherService.RunStatusCheckAsync(watchBundle);
-
-                // If no change in hash, we stop here
-                if (modItem.Shell.WatcherStatus != WatcherStatusType.UpdateFound)
-                {
-                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                    // Optional: Notify user or just log
-                    return;
-                }
-            }
-
             try
             {
-                // --- STEP 2: STAGE 1 CRAWL (Link Extraction) ---
-                // Status is already 'UpdateFound' or we are forcing a sync
-                modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
+                // 1. WATCHER CHECK
+                bool needsWatcher = DateTime.Now - modItem.Shell.LastWatched > TimeSpan.FromHours(6);
 
-                // Uses the QuerySelectorAllAsync logic that found your 144 links
-                var extractedLinks = await _watcherService.ExtractLinksAsync(modItem.Shell.RootSourceUrl, modItem.Config);
-
-                if (extractedLinks == null || !extractedLinks.Any())
+                if (needsWatcher)
                 {
-                    _dialogService.ShowInfo("No matching links found on the page.", "Scan Complete");
-                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                    return;
-                }
+                    modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
+                    var watchBundle = new List<(Mod, ModCrawlerConfig)> { (modItem.Shell, modItem.Config!) };
+                    await _watcherService.RunStatusCheckAsync(watchBundle);
 
-                // --- STEP 3: LINK SELECTION DIALOG ---
-                var selectedLinks = await _dialogService.ShowLinkSelectorAsync(extractedLinks);
-
-                if (selectedLinks == null || !selectedLinks.Any())
-                {
-                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                    return;
-                }
-
-                // --- STEP 4: STAGE 2 CRAWL (Deep Parse) ---
-                var availableMods = new List<AvailableMod>();
-                foreach (var link in selectedLinks)
-                {
-                    // Uses the Locator + 1s delay logic that worked for Jazzycat details
-                    var detail = await _watcherService.ParseModDetailsAsync(link.Url, modItem.Config);
-                    if (detail != null)
+                    if (modItem.Shell.WatcherStatus != WatcherStatusType.UpdateFound)
                     {
-                        availableMods.Add(detail);
+                        modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
+                        modItem.RefreshSummary(); // Update UI
+                        return;
                     }
                 }
 
-                // --- STEP 5: VERSION SELECTION & DB UPDATE ---
+                // 2. STAGE 1: LINK EXTRACTION
+                modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
+                var extractedLinks = await _watcherService.ExtractLinksAsync(modItem.Shell.RootSourceUrl, modItem.Config!);
+
+                if (extractedLinks == null || !extractedLinks.Any())
+                {
+                    _dialogService.ShowInfo("No matching links found.", "Scan Complete");
+                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
+                    modItem.RefreshSummary();
+                    return;
+                }
+
+                // 3. SELECTION DIALOG
+                var selectedLinks = await _dialogService.ShowLinkSelectorAsync(extractedLinks);
+                if (selectedLinks == null || !selectedLinks.Any())
+                {
+                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
+                    modItem.RefreshSummary();
+                    return;
+                }
+
+                // 4. STAGE 2: DEEP PARSE
+                var availableMods = new List<AvailableMod>();
+                foreach (var link in selectedLinks)
+                {
+                    var detail = await _watcherService.ParseModDetailsAsync(link.Url, modItem.Config!);
+                    if (detail != null) availableMods.Add(detail);
+                }
+
+                // 5. VERSION SELECTION & PROMOTION
                 if (availableMods.Any())
                 {
-                    // Deconstruct the tuple result
                     var (primary, chosenMods) = await _dialogService.ShowVersionSelectorAsync(availableMods);
 
-                    if (chosenMods.Any())
+                    if (chosenMods != null && chosenMods.Any())
                     {
-                        // Pass the specific primary and the full batch
-                        await _storageService.ProcessCrawlResultsAsync(SelectedApp.InstalledVersion, modItem.Shell.Id, primary, chosenMods);
+                        await _storageService.ProcessCrawlResultsAsync(
+                            SelectedApp.InstalledVersion,
+                            modItem.Shell.Id,
+                            primary,
+                            chosenMods);
 
                         modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
                         modItem.Shell.LastWatched = DateTime.Now;
+                        modItem.RefreshSummary();
+                    }
+                    else
+                    {
+                        // User backed out of the final selection
+                        modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
                         modItem.RefreshSummary();
                     }
                 }
@@ -392,6 +406,7 @@ namespace ModsAutomator.Desktop.ViewModels
             catch (Exception ex)
             {
                 modItem.Shell.WatcherStatus = WatcherStatusType.Error;
+                modItem.RefreshSummary();
                 _dialogService.ShowError($"Crawl failed: {ex.Message}");
             }
         }

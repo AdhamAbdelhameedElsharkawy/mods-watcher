@@ -61,8 +61,6 @@ namespace ModsAutomator.Tests.VMs
 
             // Assert
             Assert.Contains(nameof(_vm.CanToggleActivation), changedProps);
-            Assert.Contains(nameof(_vm.CanCrawlSelectedMod), changedProps);
-            Assert.True(_vm.CanCrawlSelectedMod);
         }
 
         [Fact]
