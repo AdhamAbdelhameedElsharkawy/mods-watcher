@@ -64,5 +64,18 @@ namespace ModsAutomator.Desktop.Services
                 return (null, new List<AvailableMod>());
             });
         }
+
+        public string? ShowPrompt(string message, string title)
+        {
+            var dialog = new InputDialog(message, title);
+            // Ensure the dialog appears over the main window
+            dialog.Owner = App.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                return dialog.ResponseText;
+            }
+            return null;
+        }
     }
 }

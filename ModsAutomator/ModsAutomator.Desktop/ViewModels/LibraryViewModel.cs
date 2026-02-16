@@ -89,20 +89,21 @@ namespace ModsAutomator.Desktop.ViewModels
     async obj =>
     {
         var target = obj as ModItemViewModel ?? SelectedMod;
-        if (target != null)
+        if (target == null) return;
+
+        // NEW: Check for config and inform user instead of just being disabled
+        if (target.Config == null)
         {
-            await RunFullSync(target);
+            _dialogService.ShowInfo(
+                $"Cannot sync '{target.Shell.Name}' because the Crawler Configuration is missing. " +
+                "Please click 'Edit Shell Metadata' to set it up.",
+                "Configuration Required");
+            return;
         }
+
+        await RunFullSync(target);
     },
-    obj =>
-    {
-        var target = obj as ModItemViewModel ?? SelectedMod;
-        return target != null &&
-               target.IsUsed &&
-               target.Shell.IsWatchable &&
-               target.Shell.IsCrawlable &&
-               target.Config != null;
-    }
+    obj => (obj as ModItemViewModel ?? SelectedMod)?.IsUsed ?? false // Only require IsUsed to be enabled
 );
 
             // NEW: Installation Logic
@@ -258,14 +259,24 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             if (SelectedMod == null) return;
 
-            // Using your IDialogService for consistency
-            if (_dialogService.ShowConfirmation($"Are you sure you want to HARD WIPE '{SelectedMod.Shell.Name}'?", "Confirm Hard Wipe"))
-            {
-                await _storageService.HardWipeModAsync(SelectedMod.Shell, SelectedApp);
-                SelectedMod = null;
-                await LoadLibrary();
-            }
-            
+            // Ask for the reason
+            string? reason = _dialogService.ShowPrompt(
+                $"Why are you retiring '{SelectedMod.Shell.Name}'?",
+                "Retirement Reason");
+
+            // If they close the dialog or hit cancel, reason is null. 
+            // We can either abort or proceed with a default.
+            if (reason == null) return;
+
+            await _storageService.HardWipeModAsync(
+                SelectedMod.Shell,
+                SelectedApp,
+                SelectedMod.Config,
+                string.IsNullOrWhiteSpace(reason) ? "No reason provided" : reason
+            );
+
+            SelectedMod = null;
+            await LoadLibrary();
         }
 
         private async Task RegisterNewMod()

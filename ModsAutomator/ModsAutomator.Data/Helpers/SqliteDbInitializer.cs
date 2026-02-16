@@ -93,7 +93,17 @@ CREATE TABLE IF NOT EXISTS UnusedModHistory (
     RemovedAt TEXT,
     Reason TEXT,
     Description TEXT,
-    RootSourceUrl TEXT
+    RootSourceUrl TEXT,
+    WatcherXPath TEXT,
+    ModNameRegex TEXT,
+    VersionXPath TEXT,
+    ReleaseDateXPath TEXT,
+    SizeXPath TEXT,
+    DownloadUrlXPath TEXT,
+    SupportedAppVersionsXPath TEXT,
+    PackageFilesNumberXPath TEXT,
+     Author TEXT
+
 );
 
 CREATE TABLE IF NOT EXISTS ModCrawlerConfig (

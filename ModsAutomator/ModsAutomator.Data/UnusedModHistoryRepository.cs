@@ -35,8 +35,8 @@ namespace ModsAutomator.Data
             return ExecuteAsync(async (conn, trans) =>
             {
                 const string sql = @"
-            INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, AppName, AppVersion, RemovedAt, Reason, Description, RootSourceUrl)
-            VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason, @Description, @RootSourceUrl);
+            INSERT INTO UnusedModHistory (ModId, ModdedAppId, Name, AppName, AppVersion, RemovedAt, Reason, Description, RootSourceUrl, WatcherXPath, ModNameRegex, VersionXPath, ReleaseDateXPath, SizeXPath, DownloadUrlXPath, SupportedAppVersionsXPath, PackageFilesNumberXPath,  Author)
+            VALUES (@ModId, @ModdedAppId, @Name, @AppName, @AppVersion, @RemovedAt, @Reason, @Description, @RootSourceUrl, @WatcherXPath, @ModNameRegex, @VersionXPath, @ReleaseDateXPath, @SizeXPath, @DownloadUrlXPath, @SupportedAppVersionsXPath, @PackageFilesNumberXPath, @Author);
             SELECT last_insert_rowid();"; // Added this
 
                 var newId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
@@ -49,7 +49,16 @@ namespace ModsAutomator.Data
                     entity.RemovedAt,
                     entity.Reason,
                     entity.Description,
-                    entity.RootSourceUrl
+                    entity.RootSourceUrl,
+                    entity.WatcherXPath,
+                    entity.ModNameRegex,
+                    entity.VersionXPath,
+                    entity.ReleaseDateXPath,
+                    entity.SizeXPath,
+                    entity.DownloadUrlXPath,
+                    entity.SupportedAppVersionsXPath,
+                    entity.PackageFilesNumberXPath,
+                    entity.Author
                 }, trans, cancellationToken: cancellationToken));
 
                 entity.Id = newId; // Populate the ID back to the object

@@ -22,6 +22,7 @@ namespace ModsAutomator.Desktop
 
     //TODO:Logging layer
     //TODO:Admin tools (for managing mods, users, etc.)
+    //TODO:Inatallation /Uninstallation logic (with progress reporting)
 
     public partial class App : Application
     {

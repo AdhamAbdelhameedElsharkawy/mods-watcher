@@ -42,7 +42,7 @@ namespace ModsAutomator.Services.Interfaces
 
         Task HardWipeAppAsync(int appId);
 
-        Task HardWipeModAsync(Mod mod, ModdedApp parentApp);
+        Task HardWipeModAsync(Mod mod, ModdedApp parentApp, ModCrawlerConfig modCrawlerConfig, string wipeReason);
 
         //Available Versions Screen
         Task<IEnumerable<(Mod Shell, IEnumerable<AvailableMod> Versions)>> GetAvailableVersionsByAppIdAsync(int appId, Guid? modId = null);

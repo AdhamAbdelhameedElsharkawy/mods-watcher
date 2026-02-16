@@ -384,6 +384,11 @@ namespace ModsAutomator.Tests.Services
                 InstalledVersion = "1.0.0"
             };
 
+            var config = new ModCrawlerConfig
+            {
+                ModId = mod.Id,
+            };
+
             var mockTransaction = new Mock<IDbTransaction>();
 
             // Ensure BeginTransaction does not return null
@@ -392,7 +397,7 @@ namespace ModsAutomator.Tests.Services
                 .Returns(mockTransaction.Object);
 
             // Act
-            await _service.HardWipeModAsync(mod, app);
+            await _service.HardWipeModAsync(mod, app, config, "");
 
             // Assert
             // 1. Verify Snapshot Insertion
@@ -447,6 +452,10 @@ namespace ModsAutomator.Tests.Services
             var modId = Guid.NewGuid();
             var mod = new Mod { Id = modId, AppId = 1, Name = "Dead Mod" };
             var app = new ModdedApp { Id = 1, Name = "Test Game" };
+            var config = new ModCrawlerConfig
+            {
+                ModId = mod.Id,
+            };
 
             // 1. Mock the Transaction and the Connection's use of it
             var transactionMock = new Mock<IDbTransaction>();
@@ -457,7 +466,7 @@ namespace ModsAutomator.Tests.Services
                 .ThrowsAsync(new Exception("Database Crash"));
 
             // Act & Assert
-            var ex = await Assert.ThrowsAsync<Exception>(() => _service.HardWipeModAsync(mod, app));
+            var ex = await Assert.ThrowsAsync<Exception>(() => _service.HardWipeModAsync(mod, app, config, ""));
             Assert.Equal("Database Crash", ex.Message);
 
             // 3. Verify Rollback was called because of the crash

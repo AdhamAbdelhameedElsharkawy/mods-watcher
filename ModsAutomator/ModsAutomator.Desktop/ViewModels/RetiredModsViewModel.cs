@@ -1,6 +1,5 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -11,16 +10,18 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
+        private readonly IDialogService _dialogService;
         private ModdedApp _parentApp;
 
         public ObservableCollection<UnusedModHistory> RetiredMods { get; } = new();
 
         public bool HasNoRetiredMods => RetiredMods.Count == 0;
 
-        public RetiredModsViewModel(INavigationService navigationService, IStorageService storageService)
+        public RetiredModsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService)
         {
             _navigationService = navigationService;
             _storageService = storageService;
+            _dialogService = dialogService;
         }
 
         public async void Initialize(ModdedApp app)
@@ -46,8 +47,22 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             if (o is UnusedModHistory historyItem)
             {
-                await _storageService.RestoreModFromHistoryAsync(historyItem);
-                await LoadRetiredMods(); // Refresh list
+                // Version Guard
+                if (_parentApp.InstalledVersion != historyItem.AppVersion)
+                {
+                    _dialogService.ShowError(
+                        $"Cannot restore mod. This mod was retired for app version {historyItem.AppVersion}, " +
+                        $"but the current app version is {_parentApp.InstalledVersion}.",
+                        "Version Mismatch");
+                    return;
+                }
+
+                // Confirmation before bringing it back
+                if (_dialogService.ShowConfirmation($"Restore '{historyItem.Name}' to your active library?", "Confirm Restoration"))
+                {
+                    await _storageService.RestoreModFromHistoryAsync(historyItem);
+                    await LoadRetiredMods(); // Refresh list
+                }
             }
         });
 

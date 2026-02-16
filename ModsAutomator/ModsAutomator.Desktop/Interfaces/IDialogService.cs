@@ -9,6 +9,8 @@ namespace ModsAutomator.Desktop.Interfaces
         void ShowError(string message, string title = "Error");
         void ShowInfo(string message, string title = "Information");
 
+        string? ShowPrompt(string message, string title);
+
         Task<List<CrawledLink>> ShowLinkSelectorAsync(IEnumerable<CrawledLink> links);
 
         Task<(AvailableMod? Primary, List<AvailableMod> Selected)> ShowVersionSelectorAsync(List<AvailableMod> availableMods);

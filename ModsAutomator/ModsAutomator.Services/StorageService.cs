@@ -231,11 +231,29 @@ namespace ModsAutomator.Services
                     AppId = history.ModdedAppId,
                     Name = history.Name,
                     RootSourceUrl = history.RootSourceUrl,
-                    Description = history.Description ?? "Restored from Retired History"
+                    Description = history.Description ?? "Restored from Retired History",
+                    Author = history.Author,
+                    PriorityOrder = int.MaxValue, // Default to lowest priority; user can adjust after restore
+
+                };
+
+                var restoredConfig = new ModCrawlerConfig
+                {
+                    ModId = history.ModId,
+                    WatcherXPath = history.WatcherXPath,
+                    ModNameRegex = history.ModNameRegex,
+                    VersionXPath = history.VersionXPath,
+                    ReleaseDateXPath = history.ReleaseDateXPath,
+                    SizeXPath = history.SizeXPath,
+                    DownloadUrlXPath = history.DownloadUrlXPath,
+                    SupportedAppVersionsXPath = history.SupportedAppVersionsXPath,
+                    PackageFilesNumberXPath = history.PackageFilesNumberXPath
                 };
 
                 // 2. Insert the restored shell into the active Mods table
                 await _modRepo.InsertAsync(restoredShell, connection, transaction);
+
+                await _modCrawlerConfigRepo.InsertAsync(restoredConfig, connection, transaction);
 
                 // 3. Remove the snapshot from history now that it is back in the library
                 await _unUsedModRepo.DeleteAsync(history.Id, connection, transaction);
@@ -340,7 +358,7 @@ namespace ModsAutomator.Services
             }
         }
 
-        public async Task HardWipeModAsync(Mod mod, ModdedApp parentApp)
+        public async Task HardWipeModAsync(Mod mod, ModdedApp parentApp, ModCrawlerConfig modConfig, string wipeReason)
         {
             using var connection = _connectionFactory.CreateConnection();
             connection.Open();
@@ -358,7 +376,19 @@ namespace ModsAutomator.Services
                     AppVersion = parentApp.InstalledVersion ?? "Unknown",
                     RootSourceUrl = mod.RootSourceUrl,
                     RemovedAt = DateOnly.FromDateTime(DateTime.Now),
-                    Reason = "User Hard Wipe" // Default until prompt is added
+                    Reason = wipeReason,
+                    Description = mod.Description,
+                    Author = mod.Author,
+
+                    WatcherXPath = modConfig?.WatcherXPath ?? string.Empty,
+                    ModNameRegex = modConfig?.ModNameRegex ?? string.Empty,
+                    VersionXPath = modConfig?.VersionXPath ?? string.Empty,
+                    ReleaseDateXPath = modConfig?.ReleaseDateXPath ?? string.Empty,
+                    SizeXPath = modConfig?.SizeXPath ?? string.Empty,
+                    DownloadUrlXPath = modConfig?.DownloadUrlXPath ?? string.Empty,
+                    SupportedAppVersionsXPath = modConfig?.SupportedAppVersionsXPath ?? string.Empty,
+                    PackageFilesNumberXPath = modConfig?.PackageFilesNumberXPath ?? string.Empty
+
                 };
 
                 await _unUsedModRepo.InsertAsync(history, connection, transaction);
