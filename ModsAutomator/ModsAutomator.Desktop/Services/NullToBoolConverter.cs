@@ -1,22 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace ModsAutomator.Desktop.Services
 {
+    using System.Windows; // Required for Visibility
+
     public class NullToBoolConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            // Returns true if the object is NOT null (Button becomes enabled)
-            return value != null;
+            bool isNotNull = value != null;
+            string mode = parameter as string;
+
+            // This handles the "Inverted" parameter for the Empty State icon
+            if (mode == "Inverted")
+            {
+                return isNotNull ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            // This handles the normal view for the Mod Detail
+            return isNotNull ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 }

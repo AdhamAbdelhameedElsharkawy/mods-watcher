@@ -22,14 +22,10 @@
 
                 <TextBlock Text="Mod Name" Foreground="#888" FontSize="12" Margin="0,0,0,8"/>
                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" 
-                         IsEnabled="{Binding CanEditIdentity}"
-                         Opacity="{Binding CanEditIdentity, Converter={StaticResource BoolToOpacityConverter}}"
                          Background="#252525" Foreground="White" BorderBrush="#444" Padding="10,8" Margin="0,0,0,15" CaretBrush="White"/>
 
                 <TextBlock Text="Author" Foreground="#888" FontSize="12" Margin="0,0,0,8"/>
                 <TextBox Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" 
-                         IsEnabled="{Binding CanEditIdentity}"
-                         Opacity="{Binding CanEditIdentity, Converter={StaticResource BoolToOpacityConverter}}"
                          Background="#252525" Foreground="White" BorderBrush="#444" Padding="10,8" Margin="0,0,0,15" CaretBrush="White"/>
 
                 <TextBlock Text="Root Source URL" Foreground="#888" FontSize="12" Margin="0,0,0,8"/>

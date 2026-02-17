@@ -64,6 +64,8 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand ToggleActivationCommand { get; }
         public ICommand HardWipeCommand { get; }
 
+        public ICommand NavToAppsCommand { get; }
+
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
 
@@ -114,6 +116,8 @@ namespace ModsAutomator.Desktop.ViewModels
             NavToVersionsManagerCommand = new RelayCommand(_ =>
                 _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((null, SelectedApp)));
             NavToSingleModVersionsCommand = new RelayCommand(obj => ExecuteNavToVersions(obj));
+
+            NavToAppsCommand = new RelayCommand(_ => _navigationService.NavigateTo<AppSelectionViewModel>());
 
             // Misc Actions
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
@@ -281,7 +285,7 @@ namespace ModsAutomator.Desktop.ViewModels
 
         private async Task RegisterNewMod()
         {
-            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id);
+            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService);
             var dialog = new Views.ModShellDialog { DataContext = vm, Owner = Application.Current.MainWindow };
             if (dialog.ShowDialog() == true) await LoadLibrary();
         }
@@ -290,7 +294,7 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             if (SelectedMod == null) return;
             var config = await _storageService.GetModCrawlerConfigByModIdAsync(SelectedMod.Shell.Id);
-            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, SelectedMod.Shell, config);
+            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService, SelectedMod.Shell, config);
             var dialog = new Views.ModShellDialog { DataContext = vm, Owner = Application.Current.MainWindow };
             if (dialog.ShowDialog() == true) await LoadLibrary();
         }
@@ -321,22 +325,25 @@ namespace ModsAutomator.Desktop.ViewModels
             int oldIndex = Mods.IndexOf(mod);
             int newIndex = oldIndex + direction;
 
-            // Boundary check
             if (newIndex < 0 || newIndex >= Mods.Count) return;
 
             var targetMod = Mods[newIndex];
 
-            // 1. Swap the PriorityOrder values in the Shell entities
+            // 1. Swap the PriorityOrder values
             int tempOrder = mod.Shell.PriorityOrder;
             mod.Shell.PriorityOrder = targetMod.Shell.PriorityOrder;
             targetMod.Shell.PriorityOrder = tempOrder;
 
-            // 2. Persist changes to DB
+            // 2. Persist changes
             await _storageService.UpdateModShellAsync(mod.Shell);
             await _storageService.UpdateModShellAsync(targetMod.Shell);
 
-            // 3. Update the UI collection (Swap positions)
+            // 3. Update the UI collection position
             Mods.Move(oldIndex, newIndex);
+
+            // 4. Refresh the properties so the UI stops showing "0"
+            // We notify the UI that the Shell property on these specific objects is updated
+            OnPropertyChanged(nameof(Mods));
         }
 
         public async Task RunFullSync(ModItemViewModel modItem)

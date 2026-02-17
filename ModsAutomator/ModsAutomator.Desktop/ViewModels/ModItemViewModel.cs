@@ -85,6 +85,21 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
+        public int PriorityOrder
+        {
+            get => Shell?.PriorityOrder ?? int.MaxValue; 
+            set
+            {
+                if (Shell != null)
+                {
+                    Shell.PriorityOrder = value;
+                    OnPropertyChanged();
+                    RefreshSummary();
+                }
+            }
+
+        }
+
         // --- UI Logic Methods ---
 
         /// <summary>
@@ -96,6 +111,7 @@ namespace ModsAutomator.Desktop.ViewModels
             OnPropertyChanged(nameof(IsCompatible));
             OnPropertyChanged(nameof(Version));
             OnPropertyChanged(nameof(IsUsed));
+            OnPropertyChanged(nameof(PriorityOrder));
         }
 
         /// <summary>

@@ -231,21 +231,27 @@ namespace ModsAutomator.Services
 
             try
             {
-                // Ensure the xpath= prefix is present (Matches Python: locator(f"xpath={xpath}"))
                 string selector = xpath.StartsWith("//") || xpath.StartsWith("/") ? $"xpath={xpath}" : xpath;
+                var locator = page.Locator(selector).First;
 
-                var locator = page.Locator(selector);
-
-                // Matches Python: if await element.count() > 0:
                 if (await locator.CountAsync() > 0)
                 {
-                    var text = await locator.First.InnerTextAsync();
-                    return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+                    // Get the tag name (e.g., "A", "DIV", "SPAN")
+                    string tagName = await locator.EvaluateAsync<string>("el => el.tagName");
+                    string text = (await locator.InnerTextAsync())?.Trim() ?? "";
+
+                    if (tagName == "A")
+                    {
+                        string? href = await locator.GetAttributeAsync("href");
+                        // Return as "Text,URL"
+                        return href?.Trim() ?? "";
+                    }
+
+                    return string.IsNullOrWhiteSpace(text) ? null : text;
                 }
             }
             catch
             {
-                // Matches Python: results[key] = "Error locating element"
                 return null;
             }
 

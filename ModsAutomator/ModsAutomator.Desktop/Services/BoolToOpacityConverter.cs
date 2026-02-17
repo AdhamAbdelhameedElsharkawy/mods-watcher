@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace ModsAutomator.Desktop.Services
@@ -10,8 +7,10 @@ namespace ModsAutomator.Desktop.Services
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // If true (editable), 100% opacity. If false (locked), 40% opacity.
-            return (value is bool b && b) ? 1.0 : 0.4;
+            // If the value is null or not a bool, we don't want a "half-faded" look
+            if (!(value is bool b)) return 0.0;
+
+            return b ? 1.0 : 0.4;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

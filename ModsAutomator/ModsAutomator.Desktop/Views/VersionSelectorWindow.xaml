@@ -27,6 +27,17 @@
                   BorderThickness="0"
                   GridLinesVisibility="Horizontal"
                   HorizontalGridLinesBrush="#333333">
+            <DataGrid.Resources>
+                <Style TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background" Value="#2D2D2D"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="10,5"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Setter Property="BorderBrush" Value="#444444"/>
+                    <Setter Property="Height" Value="32"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Save" 
                                         Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 

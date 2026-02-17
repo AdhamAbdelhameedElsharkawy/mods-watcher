@@ -21,12 +21,33 @@
             <ListBox ItemsSource="{Binding Links}" Background="Transparent" BorderThickness="0">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <CheckBox IsChecked="{Binding IsSelected}" Margin="5" VerticalContentAlignment="Center">
-                            <StackPanel Margin="8,0,0,0">
-                                <TextBlock Text="{Binding DisplayText}" Foreground="White" FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding Url}" Foreground="#2196F3" FontSize="10"/>
+                        <Grid Margin="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalContentAlignment="Center">
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding DisplayText}" Foreground="White" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Url}" Foreground="#2196F3" FontSize="10"/>
+                                </StackPanel>
+                            </CheckBox>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                        CommandParameter="{Binding Url}"
+                        Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="Copy URL" Margin="0,0,5,0">
+                                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#666" FontSize="14"/>
+                                </Button>
+
+                                <Button Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                        CommandParameter="{Binding Url}"
+                        Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="Open in Browser">
+                                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#666" FontSize="14"/>
+                                </Button>
                             </StackPanel>
-                        </CheckBox>
+                        </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

@@ -1,8 +1,7 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
+using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
-using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -11,6 +10,7 @@ namespace ModsAutomator.Desktop.ViewModels
     public class ModShellDialogViewModel : BaseViewModel
     {
         private readonly IStorageService _storageService;
+        private readonly IDialogService _dialogService;
         public Mod Shell { get; }
         public ModCrawlerConfig Config { get; }
         public bool IsEditMode { get; }
@@ -154,10 +154,11 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
-        public ModShellDialogViewModel(IStorageService storageService, int appId, Mod? existingMod = null, ModCrawlerConfig? existingConfig = null)
+        public ModShellDialogViewModel(IStorageService storageService, int appId, IDialogService dialogService, Mod? existingMod = null, ModCrawlerConfig? existingConfig = null)
         {
             _storageService = storageService;
             IsEditMode = existingMod != null;
+            _dialogService = dialogService;
 
             // Initialize Shell: Link to AppId and set default watcher state
             Shell = existingMod ?? new Mod
@@ -191,7 +192,9 @@ namespace ModsAutomator.Desktop.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowError($"Failed to save mod: {ex.Message}");
+
+                //MessageBox.Show($"Failed to save mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

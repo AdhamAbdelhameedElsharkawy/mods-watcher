@@ -162,6 +162,8 @@ namespace ModsAutomator.Data
             {
                 const string sql = @"
                 UPDATE Mod SET
+                    Name = @Name,
+                    Author = @Author,
                     RootSourceUrl = @RootSourceUrl,
                     IsDeprecated = @IsDeprecated,
                     Description = @Description,
@@ -178,6 +180,8 @@ namespace ModsAutomator.Data
                     new CommandDefinition(sql, new
                     {
                         entity.Id,
+                        entity.Name,
+                        entity.Author,
                         entity.RootSourceUrl,
                         entity.IsDeprecated,
                         entity.Description,

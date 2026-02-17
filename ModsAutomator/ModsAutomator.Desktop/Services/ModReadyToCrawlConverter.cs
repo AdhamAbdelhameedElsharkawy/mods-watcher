@@ -1,8 +1,6 @@
 ﻿using ModsAutomator.Desktop.ViewModels;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
+using System.Windows; // Required for Visibility
 using System.Windows.Data;
 
 namespace ModsAutomator.Desktop.Services
@@ -11,18 +9,26 @@ namespace ModsAutomator.Desktop.Services
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            // values[0] is SelectedMod (ModItemViewModel)
-            // values[1] is IsUsed (bool)
-
-            if (values[0] is ModItemViewModel modVM)
+            // 1. Check if we have enough values and values[0] is our specific VM
+            if (values.Length >= 2 && values[0] is ModItemViewModel modVM)
             {
                 bool isUsed = values[1] is bool b && b;
 
-                // Button is only ready if the mod is active AND the shell supports crawling
-                return isUsed && modVM.Shell.IsCrawlable;
+                // Logic: Mod must be active AND the shell must allow crawling
+                bool isReady = isUsed && modVM.Shell.IsCrawlable;
+
+                // 2. Return Visibility if the XAML is binding to a Visibility property
+                if (targetType == typeof(Visibility))
+                {
+                    return isReady ? Visibility.Visible : Visibility.Collapsed;
+                }
+
+                // Fallback for IsEnabled bindings
+                return isReady;
             }
 
-            return false;
+            // 3. If anything is null or wrong type, collapse the element
+            return targetType == typeof(Visibility) ? Visibility.Collapsed : false;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

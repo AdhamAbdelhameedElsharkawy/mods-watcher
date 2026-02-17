@@ -68,40 +68,65 @@
                                                         <TextBlock Text="{Binding Entity.AvailableVersion}" FontSize="16" FontWeight="Bold" Foreground="White"/>
 
                                                         <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" 
-                                                                Background="#3F51B5" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                Background="#3F51B5" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
                                                             <TextBlock Text="INSTALLED" FontSize="9" FontWeight="Black" Foreground="White"/>
                                                         </Border>
 
                                                         <Border Visibility="{Binding IsCompatible, Converter={StaticResource BoolToVis}}" 
-                                                                Background="#4CAF50" CornerRadius="4" Padding="6,2" Margin="5,0,0,0" VerticalAlignment="Center">
+                Background="#4CAF50" CornerRadius="4" Padding="6,2" Margin="5,0,0,0" VerticalAlignment="Center">
                                                             <TextBlock Text="COMPATIBLE" FontSize="9" FontWeight="Black" Foreground="White"/>
                                                         </Border>
                                                     </StackPanel>
 
-                                                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                                                    <WrapPanel Margin="0,4">
                                                         <TextBlock Text="{Binding Entity.ReleaseDate, StringFormat='Released: {0:d}'}" Foreground="#666" FontSize="11"/>
                                                         <TextBlock Text=" | " Foreground="#333" Margin="5,0"/>
+
                                                         <TextBlock Text="{Binding Entity.SizeMB, StringFormat='{}{0:N1} MB'}" Foreground="#666" FontSize="11"/>
                                                         <TextBlock Text=" | " Foreground="#333" Margin="5,0"/>
+
+                                                        <TextBlock Text="{Binding Entity.PackageFilesNumber, StringFormat='{}{0} Files'}" Foreground="#666" FontSize="11"/>
+                                                        <TextBlock Text=" | " Foreground="#333" Margin="5,0"/>
+
                                                         <TextBlock Text="{Binding Entity.PackageType}" Foreground="#555" FontSize="11" FontStyle="Italic"/>
-                                                    </StackPanel>
+
+                                                        <TextBlock Text=" | " Foreground="#333" Margin="5,0"/>
+                                                        <TextBlock Text="{Binding Entity.SupportedAppVersions, StringFormat='Supports: {0}'}" Foreground="#007ACC" FontSize="11"/>
+
+                                                        <TextBlock Text=" | " Foreground="#333" Margin="5,0"/>
+                                                        <TextBlock Text="{Binding Entity.DownloadUrl}" Foreground="#4CAF50" FontSize="10" Opacity="0.8"/>
+                                                    </WrapPanel>
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            CommandParameter="{Binding Entity.DownloadUrl}"
+            ToolTip="Copy Download Link"
+            Background="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                                        <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="14"/>
+                                                    </Button>
+
+                                                    <Button Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            CommandParameter="{Binding Entity.DownloadUrl}"
+            ToolTip="Open in Browser"
+            Background="Transparent" BorderThickness="0" Margin="0,0,12,0">
+                                                        <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="14"/>
+                                                    </Button>
+
                                                     <Button Content="PROMOTE" 
-        Command="{Binding DataContext.PromoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-        CommandParameter="{Binding}"
-        IsEnabled="{Binding IsCompatible}" 
-        Padding="15,6" 
-        Background="#3F51B5" 
-        Foreground="White" 
-        FontWeight="Bold" 
-        Margin="0,0,10,0"/>
+            Command="{Binding DataContext.PromoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            CommandParameter="{Binding}"
+            IsEnabled="{Binding IsCompatible}" 
+            Padding="15,6" 
+            Background="#3F51B5" 
+            Foreground="White" 
+            FontWeight="Bold" 
+            Margin="0,0,10,0"/>
 
                                                     <Button Content="" FontFamily="Segoe MDL2 Assets"
-                                                            Command="{Binding DataContext.DeleteSingleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}"
-                                                            Background="Transparent" Foreground="#666" BorderThickness="0" FontSize="14"/>
+            Command="{Binding DataContext.DeleteSingleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            CommandParameter="{Binding}"
+            Background="Transparent" Foreground="#C62828" BorderThickness="0" FontSize="14"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>

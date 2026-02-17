@@ -9,10 +9,17 @@ namespace ModsAutomator.Desktop.Services
 {
     public class InverseBoolToVisConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return (value is bool b && !b) ? Visibility.Visible : Visibility.Collapsed;
+            if (value is bool b)
+            {
+                // If Active (true), hide the Activate button (Collapsed)
+                return b ? Visibility.Collapsed : Visibility.Visible;
+            }
+            return Visibility.Collapsed;
         }
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
     }
 }

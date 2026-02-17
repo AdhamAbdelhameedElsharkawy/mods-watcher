@@ -19,6 +19,11 @@ namespace ModsAutomator.Desktop.ViewModels
             set => SetProperty(ref _activeModsCount, value);
         }
 
+        public string LatestVersion => App.LatestVersion;
+
+        // Convert DateOnly to DateTime so WPF StringFormat works correctly
+        public DateTime LastUpdatedDate => App.LastUpdatedDate.ToDateTime(TimeOnly.MinValue);
+
         // Row 2 Stats: Potential Updates (Replaced Size/Incompatible logic)
         private int _potentialUpdatesCount;
         public int PotentialUpdatesCount

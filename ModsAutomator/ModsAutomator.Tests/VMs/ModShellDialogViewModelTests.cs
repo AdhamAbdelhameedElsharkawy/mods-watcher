@@ -1,21 +1,21 @@
-﻿using Moq;
-using ModsAutomator.Core.Entities;
+﻿using ModsAutomator.Core.Entities;
+using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
-using System;
-using System.Threading.Tasks;
-using Xunit;
+using Moq;
 
 namespace ModsAutomator.Tests.VMs
 {
     public class ModShellDialogViewModelTests
     {
         private readonly Mock<IStorageService> _serviceMock;
+        private readonly Mock<IDialogService> _dialogMock;
         private const int TestAppId = 10;
 
         public ModShellDialogViewModelTests()
         {
             _serviceMock = new Mock<IStorageService>();
+            _dialogMock = new Mock<IDialogService>();
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace ModsAutomator.Tests.VMs
             var existingMod = new Mod { Id = Guid.NewGuid(), Name = "Existing Mod", AppId = TestAppId };
 
             // Act
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, existingMod);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, existingMod);
 
             // Assert
             Assert.True(vm.IsEditMode);
@@ -50,7 +50,7 @@ namespace ModsAutomator.Tests.VMs
         public void Properties_ShouldUpdateUnderlyingEntity()
         {
             // Arrange
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object);
 
             // Act
             vm.Name = "New Texture Mod";
@@ -67,7 +67,7 @@ namespace ModsAutomator.Tests.VMs
         public async Task SaveCommand_InAddMode_ShouldCallSaveModWithConfigAsync()
         {
             // Arrange
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, 10); // AppId = 10
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 10, _dialogMock.Object); // AppId = 10
             vm.Name = "Brand New Mod";
 
             // Act
@@ -88,7 +88,7 @@ namespace ModsAutomator.Tests.VMs
             var existingMod = new Mod { Id = Guid.NewGuid(), Name = "Old Name", AppId = 1 };
             var existingConfig = new ModCrawlerConfig { ModId = existingMod.Id };
 
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, existingMod, existingConfig);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, _dialogMock.Object, existingMod, existingConfig);
             vm.Name = "Updated Mod Name";
 
             // Act

@@ -27,6 +27,9 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand DeleteSelectedCommand { get; }
         public ICommand BackCommand { get; }
 
+        public ICommand CopyUrlCommand { get; }
+        public ICommand OpenUrlCommand { get; }
+
         public AvailableVersionsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService)
         {
             _navigationService = navigationService;
@@ -42,6 +45,9 @@ namespace ModsAutomator.Desktop.ViewModels
 
             BackCommand = new RelayCommand(_ =>
                 _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_selectedApp));
+
+            CopyUrlCommand = new RelayCommand(obj => ExecuteCopyUrl(obj as string));
+            OpenUrlCommand = new RelayCommand(obj => ExecuteOpenUrl(obj as string));
         }
 
         public void Initialize((Mod? Shell, ModdedApp App) data)
@@ -112,6 +118,30 @@ namespace ModsAutomator.Desktop.ViewModels
                 await _storageService.DeleteAvailableModsBatchAsync(ids);
                 await LoadVersions();
             }
+        }
+
+        private void ExecuteCopyUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Windows.Clipboard.SetText(url);
+            }
+            catch { /* Handle clipboard access issues if necessary */ }
+        }
+
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch { /* Handle missing protocol handler/browser issues */ }
         }
     }
 
