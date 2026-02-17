@@ -69,6 +69,9 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
 
+        public ICommand OpenUrlCommand { get; }
+        public ICommand CopyUrlCommand { get; }
+
         // NEW: Installation Management Commands
         public ICommand SetupManualInstallCommand { get; }
         public ICommand EditInstallationCommand { get; }
@@ -128,6 +131,8 @@ namespace ModsAutomator.Desktop.ViewModels
                 _navigationService.NavigateTo<RetiredModsViewModel, ModdedApp>(SelectedApp));
             MoveUpCommand = new RelayCommand(async obj => await MoveModOrder(obj as ModItemViewModel, -1));
             MoveDownCommand = new RelayCommand(async obj => await MoveModOrder(obj as ModItemViewModel, 1));
+            OpenUrlCommand = new RelayCommand(obj => ExecuteOpenUrl(obj as string));
+            CopyUrlCommand = new RelayCommand(obj => ExecuteCopyUrl(obj as string));
 
         }
 
@@ -467,6 +472,29 @@ namespace ModsAutomator.Desktop.ViewModels
                 IsBusy = false;
                 BusyMessage = "Loading..."; // Reset for next use
             }
+        }
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Could not open browser: {ex.Message}");
+            }
+        }
+
+        private void ExecuteCopyUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            Clipboard.SetText(url);
+            // Optional: You could add a temporary 'Copied!' status message here if you have a status bar
         }
     }
 }

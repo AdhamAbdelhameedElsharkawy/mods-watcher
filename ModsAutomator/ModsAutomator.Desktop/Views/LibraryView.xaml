@@ -206,15 +206,14 @@
                                         <DockPanel>
                                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                                 <Button Style="{StaticResource ActionIconButtonStyle}" 
-                        ToolTip="Open in Browser"
-                        Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
+        Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+        CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
                                                     <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#4CAF50" FontSize="14"/>
                                                 </Button>
+
                                                 <Button Style="{StaticResource ActionIconButtonStyle}" 
-                        ToolTip="Copy Link"
-                        Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
+        Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+        CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
                                                     <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="14"/>
                                                 </Button>
                                             </StackPanel>
