@@ -1,7 +1,4 @@
 ﻿using ModsAutomator.Core.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ModsAutomator.Core.Entities
 {

@@ -34,10 +34,34 @@
             </Grid>
 
             <TextBlock Text="Package Type" Foreground="#888" FontSize="11"/>
-            <ComboBox ItemsSource="{Binding PackageTypes}" SelectedItem="{Binding Entity.PackageType}" Margin="0,5,0,15" Background="#252525" Foreground="White"/>
+            <ComboBox ItemsSource="{Binding PackageTypes}" 
+                      SelectedItem="{Binding Entity.PackageType}" 
+                      Margin="0,5,0,15" 
+                      Padding="5"
+                      Background="#252525" 
+                      Foreground="White" 
+                      BorderBrush="#444">
+                <ComboBox.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#252525" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="White" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3F51B5" />
+                </ComboBox.Resources>
+            </ComboBox>
 
             <TextBlock Text="Download Source URL" Foreground="#888" FontSize="11"/>
-            <TextBox Text="{Binding Entity.DownloadUrl}" Margin="0,5,0,15" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
+            <Grid Margin="0,5,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding Entity.DownloadUrl}" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
+                <Button Grid.Column="1" 
+                        Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                        CommandParameter="{Binding Entity.DownloadUrl}"
+                        Background="Transparent" BorderThickness="0" Margin="5,0,0,0">
+                    <TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets" Foreground="#2196F3" FontSize="14" VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
 
             <TextBlock Text="Supported App Versions" Foreground="#888" FontSize="11"/>
             <TextBox Text="{Binding Entity.SupportedAppVersions}" Margin="0,5,0,0" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>

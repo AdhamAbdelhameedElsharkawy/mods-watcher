@@ -6,6 +6,8 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         public AvailableMod Entity { get; }
 
+        public bool IsInstalled { get; }
+
         private bool _isSelected;
         public bool IsSelected
         {
@@ -15,7 +17,7 @@ namespace ModsAutomator.Desktop.ViewModels
 
         public bool IsCompatible { get; }
 
-        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion)
+        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion, string? installedVersion)
         {
             Entity = entity;
 
@@ -30,6 +32,9 @@ namespace ModsAutomator.Desktop.ViewModels
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Any(v => v.Trim().Equals(currentAppVersion, StringComparison.OrdinalIgnoreCase));
             }
+
+            IsInstalled = !string.IsNullOrEmpty(installedVersion) &&
+                      entity.AvailableVersion == installedVersion;
         }
     }
 }

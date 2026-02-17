@@ -61,10 +61,16 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             if (_selectedApp == null) return;
 
+            string installedVersion = string.Empty;
+
             GroupedAvailableMods.Clear();
 
             // Passing the optional _targetShell?.Id to filter at the DB level if coming from a specific mod
             var results = await _storageService.GetAvailableVersionsByAppIdAsync(_selectedApp.Id, _targetShell?.Id);
+
+            InstalledMod currentInstalledMod = await _storageService.GetInstalledModsByModIdAsync(_targetShell.Id);
+
+         installedVersion = currentInstalledMod?.InstalledVersion ?? string.Empty;
 
             foreach (var (Shell, Versions) in results)
             {
@@ -74,7 +80,7 @@ namespace ModsAutomator.Desktop.ViewModels
                     ModName = Shell.Name,
                     RootSourceUrl = Shell.RootSourceUrl,
                     Versions = new ObservableCollection<AvailableVersionItemViewModel>(
-                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion))
+                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion))
                     )
                 };
 

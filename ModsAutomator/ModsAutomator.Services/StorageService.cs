@@ -189,6 +189,20 @@ namespace ModsAutomator.Services
 
         #endregion
 
+
+        #region Installed Mods Query Methods
+
+        public async Task<InstalledMod> GetInstalledModsByModIdAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+            // This method fetches all active installed mods for a given app
+            return await _installedModRepo.FindByModIdAsync(modId, connection);
+        }
+
+        #endregion
+
         #region Mod config Methods
 
         public async Task<ModCrawlerConfig?> GetModCrawlerConfigByModIdAsync(Guid modId)
@@ -471,6 +485,7 @@ namespace ModsAutomator.Services
             // If no connection is passed, we create and manage our own
             bool isInternalConn = connection == null;
             var conn = connection ?? _connectionFactory.CreateConnection();
+            bool isNew = false;
 
             try
             {
@@ -478,7 +493,10 @@ namespace ModsAutomator.Services
 
                 // 1. Archive current active mod to History
                 var currentActive = await _installedModRepo.FindByModIdAsync(selected.Id, conn, transaction);
-                if (currentActive != null)
+
+                isNew = currentActive == null;
+
+                if (!isNew)
                 {
                     var history = new InstalledModHistory
                     {
@@ -490,15 +508,31 @@ namespace ModsAutomator.Services
                     };
                     await _installedModHistoryRepo.InsertAsync(history, conn, transaction);
 
-                    // 2. Update active record with new version info
-                    currentActive.InstalledVersion = selected.AvailableVersion;
-                    currentActive.InstalledDate = DateOnly.FromDateTime(DateTime.Now);
-                    currentActive.InstalledSizeMB = selected.SizeMB;
-                    currentActive.PackageType = selected.PackageType;
-                    currentActive.PackageFilesNumber = selected.PackageFilesNumber;
-                    currentActive.SupportedAppVersions = selected.SupportedAppVersions;
-                    currentActive.DownloadUrl = selected.DownloadUrl;
+                }
+                else
+                {
+                    currentActive = new InstalledMod
+                    {
+                        Id = selected.Id
+                        
+                    };
+                }
 
+                // 2. Update active record with new version info
+                currentActive.InstalledVersion = selected.AvailableVersion;
+                currentActive.InstalledDate = DateOnly.FromDateTime(DateTime.Now);
+                currentActive.InstalledSizeMB = selected.SizeMB;
+                currentActive.PackageType = selected.PackageType;
+                currentActive.PackageFilesNumber = selected.PackageFilesNumber;
+                currentActive.SupportedAppVersions = selected.SupportedAppVersions;
+                currentActive.DownloadUrl = selected.DownloadUrl;
+
+                if (isNew)
+                {
+                    await _installedModRepo.InsertAsync(currentActive, conn, transaction);
+                }
+                else
+                {
                     await _installedModRepo.UpdateAsync(currentActive, conn, transaction);
                 }
             }

@@ -12,6 +12,13 @@ namespace ModsAutomator.Desktop.ViewModels
         public string ModName { get; set; }
         public string RootSourceUrl { get; set; }
 
+        private bool _isOverrideEnabled;
+        public bool IsOverrideEnabled
+        {
+            get => _isOverrideEnabled;
+            set => SetProperty(ref _isOverrideEnabled, value);
+        }
+
         // The collection of wrapped versions
         public ObservableCollection<AvailableVersionItemViewModel> Versions { get; set; } = new();
     }

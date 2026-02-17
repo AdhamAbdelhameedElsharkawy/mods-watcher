@@ -7,6 +7,8 @@ namespace ModsAutomator.Desktop.ViewModels
 
     public abstract class BaseViewModel : INotifyPropertyChanged
     {
+        
+        
         public event PropertyChangedEventHandler? PropertyChanged;
 
         // This method handles the 'notification' logic
@@ -22,6 +24,21 @@ namespace ModsAutomator.Desktop.ViewModels
             storage = value;
             OnPropertyChanged(propertyName);
             return true;
+        }
+
+        private bool _isBusy;
+        private string _busyMessage = "Loading...";
+
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set => SetProperty(ref _isBusy, value);
+        }
+
+        public string BusyMessage
+        {
+            get => _busyMessage;
+            set => SetProperty(ref _busyMessage, value);
         }
     }
 }

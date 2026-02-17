@@ -70,6 +70,8 @@ namespace ModsAutomator.Services.Interfaces
 
         //Mod installation and uninstallation
 
+        Task<InstalledMod> GetInstalledModsByModIdAsync(Guid modId);
+
         Task SaveInstalledModAsync(InstalledMod installedMod);
 
         Task UpdateInstalledModAsync(InstalledMod installedMod);
