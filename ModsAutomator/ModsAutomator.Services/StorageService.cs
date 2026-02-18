@@ -192,13 +192,18 @@ namespace ModsAutomator.Services
 
         #region Installed Mods Query Methods
 
-        public async Task<InstalledMod> GetInstalledModsByModIdAsync(Guid modId)
+        public async Task<InstalledMod?> GetInstalledModsByModIdAsync(Guid? modId)
         {
+
+            if (modId == null)
+                return null;
+            
             using var connection = _connectionFactory.CreateConnection();
             if (connection.State != System.Data.ConnectionState.Open)
                 connection.Open();
             // This method fetches all active installed mods for a given app
-            return await _installedModRepo.FindByModIdAsync(modId, connection);
+           Guid nonNullableGuid = modId.Value;
+            return await _installedModRepo.FindByModIdAsync(nonNullableGuid, connection);
         }
 
         #endregion
@@ -618,11 +623,13 @@ namespace ModsAutomator.Services
             return results;
         }
 
-        public async Task ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods)
+        public async Task<InstalledMod?> ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods)
         {
             using var connection = _connectionFactory.CreateConnection();
             connection.Open();
             using var transaction = connection.BeginTransaction();
+
+            InstalledMod? result = null;
 
             try
             {
@@ -643,19 +650,26 @@ namespace ModsAutomator.Services
                 // 2. If a primary version was identified (the update), promote it
                 if (primary != null)
                 {
-                    
+
                     // REUSE: Call the existing promotion logic
                     // Note: Since we are already in a transaction, ensure Promote handles the passed connection/transaction
                     await PromoteAvailableToInstalledAsync(primary, appVersion, connection, transaction);
 
-                   }
+                    result = await _installedModRepo.FindByModIdAsync(shellId, connection, transaction);
+
+                }
 
                 transaction.Commit();
+
+                return result;
             }
             catch
             {
                 transaction.Rollback();
                 throw;
+            }
+            finally {
+            
             }
         }
 

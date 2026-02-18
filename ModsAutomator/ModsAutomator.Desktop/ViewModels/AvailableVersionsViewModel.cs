@@ -68,7 +68,7 @@ namespace ModsAutomator.Desktop.ViewModels
             // Passing the optional _targetShell?.Id to filter at the DB level if coming from a specific mod
             var results = await _storageService.GetAvailableVersionsByAppIdAsync(_selectedApp.Id, _targetShell?.Id);
 
-            InstalledMod currentInstalledMod = await _storageService.GetInstalledModsByModIdAsync(_targetShell.Id);
+            InstalledMod? currentInstalledMod = await _storageService.GetInstalledModsByModIdAsync(_targetShell?.Id);
 
          installedVersion = currentInstalledMod?.InstalledVersion ?? string.Empty;
 

@@ -21,7 +21,6 @@ namespace ModsAutomator.Core.Entities
 
         public DateOnly? RemovedAt { get; set; }
 
-        //TODO:Prompet for adding a reason
         public string? Reason { get; set; } = "";
 
         public string? Description { get; set; } = "";

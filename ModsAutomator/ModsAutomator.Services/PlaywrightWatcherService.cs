@@ -82,10 +82,11 @@ namespace ModsAutomator.Services
                     {
                         shell.LastWatcherHash = currentHash;
                         shell.WatcherStatus = WatcherStatusType.UpdateFound;
-                        shell.LastWatched = DateTime.UtcNow;
 
-                        await _storageService.UpdateModShellAsync(shell);
                     }
+                    
+                    shell.LastWatched = DateTime.UtcNow;
+                    await _storageService.UpdateModShellAsync(shell);
                 }
                 catch (Exception ex)
                 {
@@ -104,7 +105,7 @@ namespace ModsAutomator.Services
 
             await using var context = await _browser!.NewContextAsync(new BrowserNewContextOptions
             {
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"//these userAgent values alters the result for some reason.
             });
 
             var page = await context.NewPageAsync();
@@ -172,7 +173,7 @@ namespace ModsAutomator.Services
             // Using a fresh context for each deep scrape to avoid cache/state issues
             await using var context = await _browser!.NewContextAsync(new BrowserNewContextOptions
             {
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"//"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             });
 
             var page = await context.NewPageAsync();
@@ -243,8 +244,27 @@ namespace ModsAutomator.Services
                     if (tagName == "A")
                     {
                         string? href = await locator.GetAttributeAsync("href");
-                        // Return as "Text,URL"
-                        return href?.Trim() ?? "";
+
+                        if (IsValidUrl(href))
+                        {
+                            // Return as "Text,URL"
+                            return href?.Trim() ?? "";
+                        }
+                        else
+                        {
+                            // 2. Generic Scan: Check common 'hidden' attributes
+                            string[] attributesToScan = { "title", "data-url", "data-link", "value" };
+
+                            foreach (var attr in attributesToScan)
+                            {
+                                var val = await locator.GetAttributeAsync(attr);
+                                if (string.IsNullOrEmpty(val)) continue;
+
+                                // Use Regex to find any string starting with http/https within the attribute
+                                var match = Regex.Match(val, @"https?://[^\s""']+");
+                                if (match.Success) return match.Value;
+                            }
+                        }
                     }
 
                     return string.IsNullOrWhiteSpace(text) ? null : text;
@@ -294,5 +314,8 @@ namespace ModsAutomator.Services
                 _ => PackageType.Unknown
             };
         }
+
+        private bool IsValidUrl(string url) =>
+    !string.IsNullOrEmpty(url) && url.StartsWith("http") && Uri.IsWellFormedUriString(url, UriKind.Absolute);
     }
 }

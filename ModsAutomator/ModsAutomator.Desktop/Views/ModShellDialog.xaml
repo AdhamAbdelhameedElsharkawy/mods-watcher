@@ -28,6 +28,20 @@
                 <TextBox Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" 
                          Background="#252525" Foreground="White" BorderBrush="#444" Padding="10,8" Margin="0,0,0,15" CaretBrush="White"/>
 
+                <TextBlock Text="Description" Foreground="#888" FontSize="12" Margin="0,0,0,8"/>
+                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+         Background="#252525" 
+         Foreground="White" 
+         BorderBrush="#444" 
+         Padding="10,8" 
+         Margin="0,0,0,15" 
+         CaretBrush="White"
+         AcceptsReturn="True"
+         TextWrapping="Wrap"
+         Height="80"
+         VerticalScrollBarVisibility="Auto"
+         AcceptsTab="True"/>
+
                 <TextBlock Text="Root Source URL" Foreground="#888" FontSize="12" Margin="0,0,0,8"/>
                 <TextBox Text="{Binding RootSourceUrl, UpdateSourceTrigger=PropertyChanged}" 
                          Background="#252525" Foreground="#2196F3" BorderBrush="#444" Padding="10,8" Margin="0,0,0,10" CaretBrush="White"/>

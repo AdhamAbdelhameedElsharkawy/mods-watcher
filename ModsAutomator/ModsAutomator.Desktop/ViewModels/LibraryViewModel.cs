@@ -192,6 +192,8 @@ namespace ModsAutomator.Desktop.ViewModels
                 // 3. Persist new record
                 await _storageService.SaveInstalledModAsync(newInstallation);
 
+                await FinalizeSyncState(SelectedMod, WatcherStatusType.Idle);
+
                 // 4. Full reload to rebuild the triad in the UI
                 await LoadLibrary();
             }
@@ -206,6 +208,8 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 // Persist updates
                 await _storageService.UpdateInstalledModAsync(SelectedMod.Installed);
+
+                await FinalizeSyncState(SelectedMod, WatcherStatusType.Idle);
 
                 // Refresh UI components
                 SelectedMod.RefreshSummary();
@@ -244,7 +248,7 @@ namespace ModsAutomator.Desktop.ViewModels
 
         private async void ToggleModActivation()
         {
-            if (SelectedMod?.Installed == null) return;
+            if (SelectedMod?.Shell == null) return;
 
             bool currentlyActive = SelectedMod.IsUsed;
             string action = currentlyActive ? "Deactivate" : "Activate";
@@ -307,13 +311,68 @@ namespace ModsAutomator.Desktop.ViewModels
 
         private async Task SyncAllWatchableModsAsync()
         {
-            var targetMods = Mods.Where(m => m.IsUsed && m.Shell.IsWatchable && m.Config != null).ToList();
-            if (targetMods.Any())
+            try
             {
-                var watchList = targetMods.Select(m => (m.Shell, m.Config)).ToList();
-                await _watcherService.RunStatusCheckAsync(watchList);
-                foreach (var mod in targetMods) mod.RefreshSummary();
+                IsBusy = true;
+                BusyMessage = "Retrieving watchable mods...";
+
+                var targetMods = Mods.Where(m => m.IsUsed && m.Shell.IsWatchable && m.Config != null).ToList();
+                if (targetMods.Any())
+                {
+                    BusyMessage = $"Checking for updates for {targetMods.Count} Mods...";
+
+                    var watchList = targetMods.Select(m => (m.Shell, m.Config)).ToList();
+                    var nonCheckedMods = new List<(Mod, ModCrawlerConfig)>();
+
+                    if (watchList.Any())
+                    {
+                        foreach (var (mod, config) in watchList)
+                        {
+                            bool canCheck = CanCheckModWatcherStatus(mod);
+
+                            if (canCheck)
+                            {
+                                nonCheckedMods.Add((mod, config));
+                            }
+                            else
+                            {
+                                bool forceCheck = _dialogService.ShowConfirmation(
+                                    $"Mod: {mod.Name} was checked recently ({mod.LastWatched:t}). Check anyway?",
+                                    "Recent Check Detected");
+
+                                if (forceCheck)
+                                {
+                                    nonCheckedMods.Add((mod, config));
+                                }
+                            }
+                        }
+
+                        await _watcherService.RunStatusCheckAsync(nonCheckedMods);
+                        foreach (var mod in targetMods) mod.RefreshSummary();
+                        BusyMessage = $"Checking for updates for {targetMods.Count} Mods Completed...";
+                    }
+                }
             }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                IsBusy = false;
+                BusyMessage = "Not Busy...";
+            }
+        }
+
+        private bool CanCheckModWatcherStatus(Mod shell)
+        {
+            BusyMessage = "Checking watcher status...";
+            //TODO:add to admin logic
+            bool isRecentlyChecked = DateTime.Now - shell.LastWatched < TimeSpan.FromHours(6);
+
+
+            return !isRecentlyChecked;
         }
 
         private async Task SyncSingleModAsync(ModItemViewModel? mod)
@@ -364,10 +423,9 @@ namespace ModsAutomator.Desktop.ViewModels
                 IsBusy = true;
                 bool forceSync = false;
                 BusyMessage = "Analyzing watcher status...";
-                //TODO:add to admin logic
-                bool isRecentlyChecked = DateTime.Now - modItem.Shell.LastWatched < TimeSpan.FromHours(6);
+                bool canCheck = CanCheckModWatcherStatus(modItem.Shell);
 
-                if (!isRecentlyChecked)
+                if (canCheck)
                 {
 
                     BusyMessage = "Checking for updates...";
@@ -378,30 +436,34 @@ namespace ModsAutomator.Desktop.ViewModels
 
                     if (modItem.Shell.WatcherStatus != WatcherStatusType.UpdateFound)
                     {
-                        IsBusy = false; // Unlock to show dialog
+                       
                         forceSync = _dialogService.ShowConfirmation(
                                             "No new update detected by the watcher. Perform a deep scan anyway?",
                                             "No Update Found");
 
                         if (!forceSync)
                         {
-                            modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                            modItem.RefreshSummary();
+                            await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                            IsBusy = false; // Unlock to show dialog
                             return;
                         }
-                        IsBusy = true;
                     }
                 }
                 else
                 {
                     // If recently checked, ask before jumping into the deep crawl
-                    IsBusy = false;
+                    IsBusy = true;
                     forceSync = _dialogService.ShowConfirmation(
                         $"This mod was checked recently ({modItem.Shell.LastWatched:t}). Run full scan anyway?",
                         "Recent Check Detected");
 
-                    if (!forceSync) return;
-                    IsBusy = true;
+                    if (!forceSync) {
+
+                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                        IsBusy = false;
+                        return;
+                    }
+                    
                 }
 
 
@@ -422,8 +484,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 var selectedLinks = await _dialogService.ShowLinkSelectorAsync(extractedLinks);
                 if (selectedLinks == null || !selectedLinks.Any())
                 {
-                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                    modItem.RefreshSummary();
+                    await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                     return;
                 }
 
@@ -433,7 +494,11 @@ namespace ModsAutomator.Desktop.ViewModels
                 foreach (var link in selectedLinks)
                 {
                     var detail = await _watcherService.ParseModDetailsAsync(link.Url, modItem.Config!);
-                    if (detail != null) availableMods.Add(detail);
+                    if (detail != null) 
+                    { 
+                        detail.Id = modItem.Shell.Id; // Link to the Shell for easier processing later
+
+                        availableMods.Add(detail); }
                 }
 
                 // 5. VERSION SELECTION & PROMOTION
@@ -443,28 +508,31 @@ namespace ModsAutomator.Desktop.ViewModels
 
                     if (chosenMods != null && chosenMods.Any())
                     {
-                        await _storageService.ProcessCrawlResultsAsync(
+                        InstalledMod? result = await _storageService.ProcessCrawlResultsAsync(
                             SelectedApp.InstalledVersion,
                             modItem.Shell.Id,
                             primary,
                             chosenMods);
 
-                        modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                        modItem.Shell.LastWatched = DateTime.Now;
-                        modItem.RefreshSummary();
+                        if (result != null)
+                        {
+                            _dialogService.ShowInfo($"Mod '{modItem.Name}' has been updated to version {result.InstalledVersion}.", "Update Successful");
+                        }
+
+
+
+                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                     }
                     else
                     {
                         // User backed out of the final selection
-                        modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                        modItem.RefreshSummary();
+                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                     }
                 }
             }
             catch (Exception ex)
             {
-                modItem.Shell.WatcherStatus = WatcherStatusType.Error;
-                modItem.RefreshSummary();
+                await FinalizeSyncState(modItem, WatcherStatusType.Error);
                 _dialogService.ShowError($"Crawl failed: {ex.Message}");
             }
             finally
@@ -472,6 +540,19 @@ namespace ModsAutomator.Desktop.ViewModels
                 IsBusy = false;
                 BusyMessage = "Loading..."; // Reset for next use
             }
+        }
+
+        private async Task FinalizeSyncState(ModItemViewModel modItem, WatcherStatusType status)
+        {
+            modItem.Shell.WatcherStatus = status;
+            // We only update LastWatched if it wasn't an error
+            if (status == WatcherStatusType.Idle)
+            {
+                modItem.Shell.LastWatched = DateTime.Now;
+            }
+
+            await _storageService.UpdateModShellAsync(modItem.Shell);
+            modItem.RefreshSummary();
         }
         private void ExecuteOpenUrl(string? url)
         {

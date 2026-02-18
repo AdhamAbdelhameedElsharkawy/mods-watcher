@@ -234,7 +234,9 @@ namespace ModsAutomator.Data
                 // 1. Update Mod
                 const string modSql = @"
             UPDATE Mod SET
-                RootSourceUrl = @RootSourceUrl,
+Name = @Name,
+Author = @Author,
+RootSourceUrl = @RootSourceUrl,
                 Description = @Description,
                 IsUsed = @IsUsed,
                 IsWatchable = @IsWatchable,

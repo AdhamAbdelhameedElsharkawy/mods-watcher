@@ -64,13 +64,13 @@ namespace ModsAutomator.Services.Interfaces
 
         Task<IEnumerable<(Mod Shell, ModCrawlerConfig Config)>> GetWatchableBundleByAppIdAsync(int appId);
 
-        Task ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods);
+        Task<InstalledMod?> ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods);
 
 
 
         //Mod installation and uninstallation
 
-        Task<InstalledMod> GetInstalledModsByModIdAsync(Guid modId);
+        Task<InstalledMod?> GetInstalledModsByModIdAsync(Guid? modId);
 
         Task SaveInstalledModAsync(InstalledMod installedMod);
 

@@ -2,6 +2,7 @@
 using ModsAutomator.Core.Enums;
 using System;
 using System.IO;
+using System.Windows.Markup;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
@@ -33,10 +34,14 @@ namespace ModsAutomator.Desktop.ViewModels
 
         public string Name => Shell.Name;
 
+        public string Author => Shell.Author;
+
         /// <summary>
         /// Returns the locally installed version or a placeholder if no installation exists.
         /// </summary>
         public string Version => Installed?.InstalledVersion ?? "Not Installed";
+
+        public string Description => Shell.Description ?? "";
 
         /// <summary>
         /// Logic: Returns true if:
@@ -107,11 +112,11 @@ namespace ModsAutomator.Desktop.ViewModels
         /// </summary>
         public void RefreshSummary()
         {
-            OnPropertyChanged(nameof(Summary));
             OnPropertyChanged(nameof(IsCompatible));
             OnPropertyChanged(nameof(Version));
             OnPropertyChanged(nameof(IsUsed));
             OnPropertyChanged(nameof(PriorityOrder));
+            OnPropertyChanged(nameof(Summary));
         }
 
         /// <summary>
@@ -122,22 +127,44 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             get
             {
-                if (Installed == null)
-                    return "Pending Setup";
+                if (Installed != null) {
+                    string activeStatus = IsUsed ? "Active" : "Disabled";
+                    string compatibilityStatus = IsCompatible ? "Ok" : "VERSION MISMATCH";
 
-                string activeStatus = IsUsed ? "Active" : "Disabled";
-                string compatibilityStatus = IsCompatible ? "Ok" : "VERSION MISMATCH";
+                    string watcherResult = Shell.WatcherStatus switch
+                    {
+                        WatcherStatusType.UpdateFound => "UPDATE FOUND",
+                        WatcherStatusType.Error => "Watcher: ERROR",
+                        WatcherStatusType.Checking => "Watcher: SYNCING...",
+                        _ => "Up to date"
+                    };
 
-                // Using your existing WatcherStatus Enum logic
-                string watcherResult = Shell.WatcherStatus switch
+                    // Header line with statuses
+                    string statusLine = $"{activeStatus} | {compatibilityStatus} | {watcherResult}";
+
+                    // Add description on a new line if it exists
+                    if (!string.IsNullOrWhiteSpace(Description))
+                    {
+                        return $"{statusLine}{Environment.NewLine}{Description}";
+                    }
+
+                    return statusLine;
+                }
+                else
                 {
-                    WatcherStatusType.UpdateFound => "UPDATE FOUND",
-                    WatcherStatusType.Error => "Watcher: ERROR",
-                    WatcherStatusType.Checking => "Watcher: SYNCING...",
-                    _ => "Up to date"
-                };
+                    string pending = "Pending Setup";
+                    // Add description on a new line if it exists
+                    if (!string.IsNullOrWhiteSpace(Description))
+                    {
+                        return $"{pending}{Environment.NewLine}{Description}";
+                    }
 
-                return $"{activeStatus} | {compatibilityStatus} | {watcherResult}";
+                    return pending;
+                }
+
+
+
+                
             }
         }
 

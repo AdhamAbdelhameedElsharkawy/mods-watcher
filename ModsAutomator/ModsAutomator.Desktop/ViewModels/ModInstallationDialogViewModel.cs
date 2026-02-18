@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,12 +15,16 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
+        public ICommand OpenUrlCommand { get; }
+
         public ModInstallationDialogViewModel(InstalledMod entity)
         {
             Entity = entity;
 
             SaveCommand = new RelayCommand(_ => Close(true));
             CancelCommand = new RelayCommand(_ => Close(false));
+
+            OpenUrlCommand = new RelayCommand(url => ExecuteOpenUrl(url?.ToString()));
         }
 
         private void Close(bool result)
@@ -38,6 +43,20 @@ namespace ModsAutomator.Desktop.ViewModels
                     break;
                 }
             }
+        }
+
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch { /* Handle missing browser/protocol handler */ }
         }
     }
 }
