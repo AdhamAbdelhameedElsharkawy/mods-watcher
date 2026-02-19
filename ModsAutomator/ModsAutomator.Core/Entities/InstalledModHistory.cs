@@ -14,8 +14,7 @@
 
         public DateOnly? RemovedAt { get; set; }
 
-        //TODO:Unused, consider removing or repurposing
-        public string? LocalFilePath { get; set; } = "";
+        public string? DownloadUrl { get; set; } = "";
         //TODO:Unused, consider removing or repurposing
         public bool IsRollbackTarget { get; set; }
     }

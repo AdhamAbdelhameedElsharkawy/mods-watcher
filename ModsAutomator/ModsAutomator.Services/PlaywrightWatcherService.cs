@@ -2,6 +2,7 @@
 using ModsAutomator.Core.DTO;
 using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,15 +13,17 @@ namespace ModsAutomator.Services
     public class PlaywrightWatcherService : IWatcherService, IAsyncDisposable
     {
         private readonly IStorageService _storageService;
+        private readonly CommonUtils _utils;
 
         // Singleton instances to avoid process bloat
         private static IPlaywright? _playwright;
         private static IBrowser? _browser;
         private static readonly SemaphoreSlim _lock = new(1, 1);
 
-        public PlaywrightWatcherService(IStorageService storageService)
+        public PlaywrightWatcherService(IStorageService storageService, CommonUtils commonUtils)
         {
             _storageService = storageService;
+            _utils = commonUtils;
         }
 
         private async Task EnsureBrowserAsync()
@@ -76,7 +79,7 @@ namespace ModsAutomator.Services
                     });
 
                     string content = (await locator.InnerTextAsync()).Trim();
-                    string currentHash = GenerateMd5Hash(content);
+                    string currentHash = _utils.GenerateMd5Hash(content);
 
                     if (shell.LastWatcherHash != currentHash)
                     {
@@ -198,11 +201,11 @@ namespace ModsAutomator.Services
                 mod.DownloadUrl = await GetXPathText(page, config.DownloadUrlXPath) ?? url;
 
                 // New: Determine PackageType from the DownloadUrl
-                mod.PackageType = GetPackageTypeFromUrl(mod.DownloadUrl);
+                mod.PackageType = _utils.GetPackageTypeFromUrl(mod.DownloadUrl);
 
                 // Size Parsing (Python results[key] = await element.inner_text())
                 var sizeStr = await GetXPathText(page, config.SizeXPath);
-                mod.SizeMB = ParseSize(sizeStr);
+                mod.SizeMB = _utils.ParseSize(sizeStr);
 
                 // Date Parsing
                 var dateStr = await GetXPathText(page, config.ReleaseDateXPath);
@@ -245,7 +248,7 @@ namespace ModsAutomator.Services
                     {
                         string? href = await locator.GetAttributeAsync("href");
 
-                        if (IsValidUrl(href))
+                        if (_utils.IsValidUrl(href))
                         {
                             // Return as "Text,URL"
                             return href?.Trim() ?? "";
@@ -278,44 +281,11 @@ namespace ModsAutomator.Services
             return null;
         }
 
-        // Utility for safe size conversion
-        private decimal ParseSize(string? input)
-        {
-            if (string.IsNullOrEmpty(input)) return 0;
-            // Basic cleaning (removing 'MB', 'GB', spaces)
-            var cleaned = new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
-            return decimal.TryParse(cleaned, out var result) ? result : 0;
-        }
-
-        private string GenerateMd5Hash(string input)
-        {
-            byte[] hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(input));
-            return Convert.ToHexString(hashBytes).ToLower(); // Lowercase matches Python's hashlib
-        }
-
         public async ValueTask DisposeAsync()
         {
             // Optional: Close browser when service is disposed if not intended to stay resident
             if (_browser != null) await _browser.CloseAsync();
             _playwright?.Dispose();
         }
-
-        private PackageType GetPackageTypeFromUrl(string? url)
-        {
-            if (string.IsNullOrWhiteSpace(url)) return PackageType.Unknown;
-
-            var extension = System.IO.Path.GetExtension(url).ToLower().Replace(".", "");
-
-            return extension switch
-            {
-                "zip" => PackageType.Zip,
-                "rar" => PackageType.Rar,
-                "scs" => PackageType.Scs,
-                _ => PackageType.Unknown
-            };
-        }
-
-        private bool IsValidUrl(string url) =>
-    !string.IsNullOrEmpty(url) && url.StartsWith("http") && Uri.IsWellFormedUriString(url, UriKind.Absolute);
     }
 }

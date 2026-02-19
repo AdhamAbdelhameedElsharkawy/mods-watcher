@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
+using ModsAutomator.Desktop.Services;
 using System;
 using System.IO;
 using System.Windows.Markup;
@@ -8,6 +9,9 @@ namespace ModsAutomator.Desktop.ViewModels
 {
     public class ModItemViewModel : BaseViewModel
     {
+        
+        private readonly CommonUtils _commonUtils;
+
         // --- Core Triad Properties ---
         public Mod Shell { get; set; }
         public InstalledMod Installed { get; set; } // Can be null if not setup
@@ -60,7 +64,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 // 2. If the string is empty/null in DB, we assume unknown/incompatible 
                 // (or return true if you prefer a "don't care" approach)
                 if (string.IsNullOrEmpty(Installed.SupportedAppVersions))
-                    return Installed.InstalledVersion == AppVersion;
+                    return false;
 
                 // 3. Split the CSV and check for an exact match on any of the versions
                 var supportedList = Installed.SupportedAppVersions
@@ -68,7 +72,7 @@ namespace ModsAutomator.Desktop.ViewModels
 
                 foreach (var version in supportedList)
                 {
-                    if (version.Trim().Equals(AppVersion, StringComparison.OrdinalIgnoreCase))
+                    if (_commonUtils.IsModCompatibleWithAppVersion(version, AppVersion))
                         return true;
                 }
 
@@ -170,12 +174,14 @@ namespace ModsAutomator.Desktop.ViewModels
 
         // --- Constructor ---
 
-        public ModItemViewModel(Mod shell, InstalledMod installed, ModCrawlerConfig config, string appVersion)
+        public ModItemViewModel(Mod shell, InstalledMod installed, ModCrawlerConfig config, string appVersion, CommonUtils commonUtils)
         {
             Shell = shell;
             Installed = installed;
             Config = config;
             AppVersion = appVersion;
+            _commonUtils = commonUtils;
+
 
             RefreshSummary();
         }

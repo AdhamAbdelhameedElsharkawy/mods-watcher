@@ -2,6 +2,7 @@
 using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services;
 using Moq;
 using System.Data;
@@ -19,6 +20,7 @@ namespace ModsAutomator.Tests.Services
         private readonly Mock<IAvailableModRepository> _availableModRepoMock;
         private readonly Mock<IModCrawlerConfigRepository> _configRepoMock;
         private readonly Mock<IDbConnection> _connectionMock;
+        private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly StorageService _service;
 
         public StorageServiceTests()
@@ -32,6 +34,8 @@ namespace ModsAutomator.Tests.Services
             _availableModRepoMock = new Mock<IAvailableModRepository>();
             _configRepoMock = new Mock<IModCrawlerConfigRepository>();
             _connectionMock = new Mock<IDbConnection>();
+            _commonUtilsMock = new Mock<CommonUtils>();
+
 
             // 1. SETUP: When the service asks for a connection, give it our mock connection
             _factoryMock.Setup(f => f.CreateConnection()).Returns(_connectionMock.Object);
@@ -44,7 +48,8 @@ namespace ModsAutomator.Tests.Services
                 _unusedModRepoMock.Object,
                 _installedModHistoryRepoMock.Object,
                 _configRepoMock.Object,
-                _availableModRepoMock.Object
+                _availableModRepoMock.Object,
+                _commonUtilsMock.Object
             );
         }
 
@@ -344,7 +349,7 @@ namespace ModsAutomator.Tests.Services
         public async Task RollbackToVersionAsync_ShouldCompleteSuccessfully()
         {
             // Arrange
-            var target = new InstalledModHistory { Version = "1.0.0", LocalFilePath = "C:\\mods\\backup.zip" };
+            var target = new InstalledModHistory { Version = "1.0.0", DownloadUrl = "C:\\mods\\backup.zip" };
 
             // Ensure BeginTransaction does not return null
             var mockTransaction = new Mock<IDbTransaction>();

@@ -1,9 +1,12 @@
 ﻿using ModsAutomator.Core.Entities;
+using ModsAutomator.Desktop.Services;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
     public class AvailableVersionItemViewModel : BaseViewModel
     {
+        private readonly CommonUtils _commonUtils;
+        
         public AvailableMod Entity { get; }
 
         public bool IsInstalled { get; }
@@ -14,12 +17,12 @@ namespace ModsAutomator.Desktop.ViewModels
             get => _isSelected;
             set => SetProperty(ref _isSelected, value);
         }
-
         public bool IsCompatible { get; }
 
-        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion, string? installedVersion)
+        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion, string? installedVersion, CommonUtils commonUtils)
         {
             Entity = entity;
+            _commonUtils = commonUtils;
 
             // UI Trigger: Calculate compatibility once on load
             if (string.IsNullOrEmpty(entity.SupportedAppVersions) || string.IsNullOrEmpty(currentAppVersion))
@@ -30,7 +33,7 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 IsCompatible = entity.SupportedAppVersions
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Any(v => v.Trim().Equals(currentAppVersion, StringComparison.OrdinalIgnoreCase));
+                    .Any(v => _commonUtils.IsModCompatibleWithAppVersion(v, currentAppVersion));
             }
 
             IsInstalled = !string.IsNullOrEmpty(installedVersion) &&

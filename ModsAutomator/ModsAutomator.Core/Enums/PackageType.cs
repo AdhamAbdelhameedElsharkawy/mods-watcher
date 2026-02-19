@@ -12,6 +12,7 @@ namespace ModsAutomator.Core.Enums
         Unknown = 0,
         Zip = 1,
         Rar = 2,
-        Scs = 3 //ATS and ETS2 native package format
+        Scs = 3, //ATS and ETS2 native package format
+        SevenZip = 4,
     }
 }

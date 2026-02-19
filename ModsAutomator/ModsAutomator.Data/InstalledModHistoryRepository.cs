@@ -14,7 +14,7 @@ namespace ModsAutomator.Data
         private const string BaseSelectSql = @"
             SELECT 
                 Id AS InternalId, 
-                ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget
+                ModId, Version, AppVersion, InstalledAt, RemovedAt, DownloadUrl, IsRollbackTarget
             FROM InstalledModHistory";
 
         public Task<InstalledModHistory?> GetByIdAsync(int id, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
@@ -52,9 +52,9 @@ namespace ModsAutomator.Data
             {
                 const string sql = @"
             INSERT INTO InstalledModHistory
-            (ModId, Version, AppVersion, InstalledAt, RemovedAt, LocalFilePath, IsRollbackTarget)
+            (ModId, Version, AppVersion, InstalledAt, RemovedAt, DownloadUrl, IsRollbackTarget)
             VALUES
-            (@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @LocalFilePath, @IsRollbackTarget);
+            (@ModId, @Version, @AppVersion, @InstalledAt, @RemovedAt, @DownloadUrl, @IsRollbackTarget);
             SELECT last_insert_rowid();"; // Capture the new ID
 
                 var internalId = await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
@@ -64,7 +64,7 @@ namespace ModsAutomator.Data
                     entity.AppVersion,
                     entity.InstalledAt,
                     entity.RemovedAt,
-                    entity.LocalFilePath,
+                    entity.DownloadUrl,
                     entity.IsRollbackTarget
                 }, trans, cancellationToken: cancellationToken));
 

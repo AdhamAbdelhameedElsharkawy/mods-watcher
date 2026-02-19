@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.DirectoryServices.ActiveDirectory;
@@ -13,6 +14,8 @@ namespace ModsAutomator.Desktop.ViewModels
         private readonly IStorageService _storageService;
         private readonly INavigationService _navigationService;
         private readonly IWatcherService _watcherService;
+        private readonly IDialogService _dialogService;
+        private readonly CommonUtils _commonUtils;
 
         public ObservableCollection<ModdedAppItemViewModel> ModdedApps { get; } = new();
 
@@ -25,11 +28,14 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand SelectAppCommand { get; }
         public ICommand SyncAppModsCommand { get; }
 
-        public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService, IWatcherService watcherService)
+        public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService, IWatcherService watcherService,
+            IDialogService dialogService, CommonUtils commonUtils)
         {
             _storageService = storageService;
             _navigationService = navigationService;
             _watcherService = watcherService;
+            _dialogService = dialogService;
+            _commonUtils = commonUtils;
 
             // 1. Navigation to Library
             SelectAppCommand = new RelayCommand(o =>
@@ -43,34 +49,32 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 if (o is ModdedAppItemViewModel wrapper)
                 {
-                    // Confirmation Dialog
-                    var result = MessageBox.Show(
-                        $"Are you sure you want to HARD WIPE '{wrapper.App.Name}'?\n\n" +
+
+
+
+                    if (_dialogService.ShowConfirmation($"Are you sure you want to HARD WIPE '{wrapper.App.Name}'?\n\n" +
                         "This will permanently delete:\n" +
                         "• The App record\n" +
                         "• All Mod Shells\n" +
                         "• All Installation History\n" +
                         "• All Unused/Retired Mod snapshots\n\n" +
                         "This action cannot be undone.",
-                        "Point of No Return",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    if (result == MessageBoxResult.Yes)
+                        "Point of No Return"))
                     {
                         try
                         {
                             // Trigger the bulk wipe logic 
                             await _storageService.HardWipeAppAsync(wrapper.App.Id);
-
                             // Remove from the UI collection
                             ModdedApps.Remove(wrapper);
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"Failed to wipe app: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            _dialogService.ShowError($"Failed to wipe app: {ex.Message}", "Error");
                         }
                     }
+
+
                 }
             });
 
@@ -146,18 +150,43 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 // 1. UI Feedback: Start loading state on the app card
                 item.IsSyncing = true;
+                this.IsBusy = true;
+
+                BusyMessage = $"Checking All Watchable Mods for '{item.Name}'...";
 
                 // 2. Data Fetch: Use the bundle logic we just finalized
                 var bundle = await _storageService.GetWatchableBundleByAppIdAsync(item.App.Id);
+                List<(Mod mod, ModCrawlerConfig config)> modsToCheck = new List<(Mod mod, ModCrawlerConfig config)>();
 
                 if (bundle.Any())
                 {
                     // 3. Execution: Run Stage 1 (Hash comparison & Status Update)
-                    // This service should internally call _storageService.UpdateModShellAsync
-                    await _watcherService.RunStatusCheckAsync(bundle);
+                   
+                    foreach (var (mod, config) in bundle)
+                    {
+                        bool canCheck = _commonUtils.CanCheckModWatcherStatus(mod);
+
+                        if (canCheck)
+                        {
+                            modsToCheck.Add((mod, config));
+                        }
+                        else
+                        {
+                            bool forceCheck = _dialogService.ShowConfirmation(
+                                $"Mod: {mod.Name} was checked recently ({mod.LastWatched:t}). Check anyway?",
+                                "Recent Check Detected");
+
+                            if (forceCheck)
+                            {
+                                modsToCheck.Add((mod, config));
+                            }
+                        }
+                    }
+                    await _watcherService.RunStatusCheckAsync(modsToCheck);
                 }
 
                 // 4. Refresh: Update the UI to show new PotentialUpdatesCount/ActiveCount
+                BusyMessage = $"Checking Completed for {modsToCheck.Count} Mods...";
                 await LoadApps();
             }
             catch (Exception ex)
@@ -168,6 +197,8 @@ namespace ModsAutomator.Desktop.ViewModels
             {
                 // 5. UI Feedback: Stop loading state
                 item.IsSyncing = false;
+                this.IsBusy = false;
+                BusyMessage = string.Empty;
             }
         }
     }

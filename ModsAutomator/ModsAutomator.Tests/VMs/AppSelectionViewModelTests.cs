@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.DTO;
 using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
 using Moq;
@@ -12,12 +13,16 @@ namespace ModsAutomator.Tests.VMs
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IWatcherService> _watcherMock;
+        private readonly Mock<IDialogService> _dialogMock;
+        private readonly Mock<CommonUtils> _commonUtilsMock;
 
         public AppSelectionViewModelTests()
         {
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
             _watcherMock = new Mock<IWatcherService>();
+            _dialogMock = new Mock<IDialogService>();
+            _commonUtilsMock = new Mock<CommonUtils>();
 
             // Default setup for LoadApps in constructor
             _storageMock.Setup(s => s.GetAllAppSummariesAsync())
@@ -36,7 +41,7 @@ namespace ModsAutomator.Tests.VMs
             _storageMock.Setup(s => s.GetAllAppSummariesAsync()).ReturnsAsync(summaries);
 
             // Act
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object);
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
             // Since LoadApps is called in ctor, we need to wait for it or trigger it
             await Task.Delay(50); // Small delay for the ctor-initiated task
 
@@ -50,7 +55,7 @@ namespace ModsAutomator.Tests.VMs
         public void SelectAppCommand_ShouldInvokeNavigationService()
         {
             // Arrange
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object);
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
             var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 10, Name = "Test" });
 
             // Act
@@ -66,7 +71,7 @@ namespace ModsAutomator.Tests.VMs
         public async Task SyncAppModsCommand_ShouldToggleSyncingState_WhileExecuting()
         {
             // Arrange
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object);
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
             var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 1 });
             var bundle = new List<(Mod, ModCrawlerConfig)> { (new Mod(), new ModCrawlerConfig()) };
 

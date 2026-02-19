@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS InstalledModHistory (
     AppVersion TEXT,
     InstalledAt TEXT,
     RemovedAt TEXT,
-    LocalFilePath TEXT,
+    DownloadUrl TEXT,
     IsRollbackTarget INTEGER,
     FOREIGN KEY(ModId) REFERENCES Mod(Id)
 );

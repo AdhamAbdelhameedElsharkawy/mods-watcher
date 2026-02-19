@@ -3,6 +3,7 @@ using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
 using ModsAutomator.Core.Interfaces;
 using ModsAutomator.Data.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System.Data;
 
@@ -18,6 +19,7 @@ namespace ModsAutomator.Services
         private readonly IInstalledModHistoryRepository _installedModHistoryRepo;
         private readonly IModCrawlerConfigRepository _modCrawlerConfigRepo;
         private readonly IAvailableModRepository _availableModRepo;
+        private readonly CommonUtils _commonUtils;
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
@@ -28,7 +30,8 @@ namespace ModsAutomator.Services
             IUnusedModHistoryRepository unUsedModRepo,
             IInstalledModHistoryRepository installedModHistoryRepo,
             IModCrawlerConfigRepository modCrawlerConfigRepo,
-            IAvailableModRepository availableModRepo)
+            IAvailableModRepository availableModRepo,
+            CommonUtils commonUtils)
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
@@ -38,6 +41,7 @@ namespace ModsAutomator.Services
             _installedModHistoryRepo = installedModHistoryRepo;
             _modCrawlerConfigRepo = modCrawlerConfigRepo;
             _availableModRepo = availableModRepo;
+            _commonUtils = commonUtils;
         }
 
 
@@ -189,7 +193,6 @@ namespace ModsAutomator.Services
 
         #endregion
 
-
         #region Installed Mods Query Methods
 
         public async Task<InstalledMod?> GetInstalledModsByModIdAsync(Guid? modId)
@@ -322,13 +325,17 @@ namespace ModsAutomator.Services
                         Version = currentActive.InstalledVersion,
                         AppVersion = appVersion,
                         InstalledAt = currentActive.InstalledDate,
-                        RemovedAt = DateOnly.FromDateTime(DateTime.Now)
+                        RemovedAt = DateOnly.FromDateTime(DateTime.Now),
+                        DownloadUrl = currentActive.DownloadUrl,
+
                     };
                     await _installedModHistoryRepo.InsertAsync(archiveRecord, connection, transaction);
 
                     // 3. Promote the target history version back to the active record
-                    //TODO:R2, refine logic (thorugh AvailableMods?) to get accurate InstalledDate, Size, PackageType, etc. or drive InstalledModHistory from InstalledMod records instead of just snapshots of version/appversion?
                     currentActive.InstalledVersion = target.Version;
+                    currentActive.InstalledDate = DateOnly.FromDateTime(DateTime.Now);
+                    currentActive.DownloadUrl = target.DownloadUrl;
+
 
                     await _installedModRepo.UpdateAsync(currentActive, connection, transaction);
                 }
@@ -509,7 +516,9 @@ namespace ModsAutomator.Services
                         Version = currentActive.InstalledVersion,
                         AppVersion = appVersion,
                         InstalledAt = currentActive.InstalledDate,
-                        RemovedAt = DateOnly.FromDateTime(DateTime.Now)
+                        RemovedAt = DateOnly.FromDateTime(DateTime.Now),
+                        DownloadUrl = currentActive.DownloadUrl
+
                     };
                     await _installedModHistoryRepo.InsertAsync(history, conn, transaction);
 
@@ -673,10 +682,6 @@ namespace ModsAutomator.Services
             }
         }
 
-
-
-
-
         #endregion
 
         #region Installed Mod Methods
@@ -703,9 +708,7 @@ namespace ModsAutomator.Services
 
         #endregion
 
-        /// <summary>
-        /// Comparison logic using URL, Version, and Compatibility metadata
-        /// </summary>
+       
         private bool IsDuplicate(AvailableMod scraped, IEnumerable<AvailableMod> existing)
         {
             return existing.Any(e =>
@@ -713,7 +716,7 @@ namespace ModsAutomator.Services
                 (e.CrawledModUrl == scraped.CrawledModUrl && e.AvailableVersion == scraped.AvailableVersion) ||
 
                 // Logic B: Normalized version (ignoring 'v' or spaces) and same game support
-                (NormalizeVersion(e.AvailableVersion) == NormalizeVersion(scraped.AvailableVersion) &&
+                (_commonUtils.NormalizeVersion(e.AvailableVersion) == _commonUtils.NormalizeVersion(scraped.AvailableVersion) &&
                  e.SupportedAppVersions == scraped.SupportedAppVersions) ||
 
                 // Logic C: The exact same download link
@@ -721,14 +724,7 @@ namespace ModsAutomator.Services
             );
         }
 
-        private string NormalizeVersion(string? version)
-        {
-            // Return empty string if null to allow safe comparison
-            if (string.IsNullOrWhiteSpace(version)) return string.Empty;
-
-            // Standardize: trim, lowercase, and remove the 'v' prefix
-            return version.Trim().ToLower().Replace("v", "");
-        }
+        
 
         
     }

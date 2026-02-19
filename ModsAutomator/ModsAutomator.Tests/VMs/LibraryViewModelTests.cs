@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
 using Moq;
@@ -12,6 +13,7 @@ namespace ModsAutomator.Tests.VMs
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IWatcherService> _watcherMock;
         private readonly Mock<IDialogService> _dialogServiceMock;
+        private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly LibraryViewModel _vm;
         private readonly ModdedApp _testApp;
 
@@ -21,8 +23,9 @@ namespace ModsAutomator.Tests.VMs
             _navMock = new Mock<INavigationService>();
             _watcherMock = new Mock<IWatcherService>();
             _dialogServiceMock = new Mock<IDialogService>();
+            _commonUtilsMock = new Mock<CommonUtils>();
 
-            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object);
+            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
         }
 
@@ -52,7 +55,7 @@ namespace ModsAutomator.Tests.VMs
         public void SelectedMod_SettingValue_ShouldNotifyDependentProperties()
         {
             // Arrange
-            var modItem = new ModItemViewModel(new Mod(), new InstalledMod { IsUsed = true }, null, "1.0");
+            var modItem = new ModItemViewModel(new Mod(), new InstalledMod { IsUsed = true }, null, "1.0", _commonUtilsMock.Object);
             List<string> changedProps = new();
             _vm.PropertyChanged += (s, e) => changedProps.Add(e.PropertyName);
 
@@ -67,8 +70,8 @@ namespace ModsAutomator.Tests.VMs
         public async Task MoveModOrder_ShouldSwapPriority_AndPersistToStorage()
         {
             // Arrange
-            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0");
-            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0");
+            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object);
+            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object);
             _vm.Mods.Add(mod1);
             _vm.Mods.Add(mod2);
 
@@ -89,7 +92,7 @@ namespace ModsAutomator.Tests.VMs
             // Arrange
             var shell = new Mod { Id = Guid.NewGuid() };
             _vm.SelectedApp = _testApp;
-            _vm.SelectedMod = new ModItemViewModel(shell, null, null, "1.0");
+            _vm.SelectedMod = new ModItemViewModel(shell, null, null, "1.0", _commonUtilsMock.Object);
 
             // Act
             _vm.ShowHistoryCommand.Execute(null);

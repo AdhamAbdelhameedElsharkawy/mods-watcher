@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace ModsAutomator.Desktop.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
+        private readonly CommonUtils _commonUtils;
 
         private Mod? _targetShell;
         private ModdedApp _selectedApp;
@@ -30,11 +32,13 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand CopyUrlCommand { get; }
         public ICommand OpenUrlCommand { get; }
 
-        public AvailableVersionsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService)
+        public AvailableVersionsViewModel(INavigationService navigationService, IStorageService storageService, 
+            IDialogService dialogService, CommonUtils commonUtils)
         {
             _navigationService = navigationService;
             _storageService = storageService;
             _dialogService = dialogService;
+            _commonUtils = commonUtils;
 
             GroupedAvailableMods = new ObservableCollection<ModVersionGroupViewModel>();
 
@@ -80,7 +84,7 @@ namespace ModsAutomator.Desktop.ViewModels
                     ModName = Shell.Name,
                     RootSourceUrl = Shell.RootSourceUrl,
                     Versions = new ObservableCollection<AvailableVersionItemViewModel>(
-                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion))
+                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion, _commonUtils))
                     )
                 };
 

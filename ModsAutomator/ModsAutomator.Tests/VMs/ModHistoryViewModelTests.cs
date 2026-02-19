@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Desktop.ViewModels;
 using ModsAutomator.Services.Interfaces;
 using Moq;
@@ -11,6 +12,7 @@ namespace ModsAutomator.Tests.VMs
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IDialogService> _dialogServiceMock;
+        private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly ModHistoryViewModel _vm;
         private readonly Mod _testMod;
         private readonly ModdedApp _testApp;
@@ -20,7 +22,8 @@ namespace ModsAutomator.Tests.VMs
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
             _dialogServiceMock = new Mock<IDialogService>();
-            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object);
+            _commonUtilsMock = new Mock<CommonUtils>();
+            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object);
 
             _testMod = new Mod { Id = Guid.NewGuid(), Name = "UI Overhaul" };
             _testApp = new ModdedApp { Id = 1, InstalledVersion = "2.0" };

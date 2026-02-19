@@ -1,4 +1,5 @@
 ﻿using ModsAutomator.Core.Entities;
+using ModsAutomator.Desktop.Services;
 
 namespace ModsAutomator.Desktop.ViewModels
 {
@@ -6,18 +7,20 @@ namespace ModsAutomator.Desktop.ViewModels
     {
         private readonly string _currentAppVersion;
         private readonly Func<bool> _isOverrideActive;
+        private readonly CommonUtils _commonUtils;
 
         public InstalledModHistory History { get; }
 
-        public ModHistoryItemViewModel(InstalledModHistory history, string currentAppVersion, Func<bool> isOverrideActive)
+        public ModHistoryItemViewModel(InstalledModHistory history, string currentAppVersion, Func<bool> isOverrideActive, CommonUtils commonUtils)
         {
             History = history;
             _currentAppVersion = currentAppVersion;
             _isOverrideActive = isOverrideActive;
+            _commonUtils = commonUtils;
         }
 
         // Logical Check: Does this history entry match the current game version?
-        public bool IsCompatible => History.AppVersion == _currentAppVersion;
+        public bool IsCompatible => _commonUtils.IsModCompatibleWithAppVersion(History.AppVersion, _currentAppVersion);
 
         // UI Logic: Should the rollback button be clickable?
         public bool CanRollback => IsCompatible || _isOverrideActive();

@@ -1,5 +1,6 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -12,6 +13,7 @@ namespace ModsAutomator.Desktop.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
+        private readonly CommonUtils _commonUtils;
         private Mod _mod;
         private ModdedApp _parentApp;
         private string _selectedModName = "Mod History";
@@ -45,10 +47,12 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialog)
+        public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService,
+            IDialogService dialog, CommonUtils commonUtils)
         {
             _navigationService = navigationService;
             _storageService = storageService;
+            _commonUtils = commonUtils;
 
             HistoryItems = new ObservableCollection<ModHistoryItemViewModel>();
             _dialogService = dialog;
@@ -73,7 +77,7 @@ namespace ModsAutomator.Desktop.ViewModels
             foreach (var entry in historyData)
             {
                 // Create the wrapper, passing the current app version and a link to the override status
-                var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules);
+                var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules, _commonUtils);
                 HistoryItems.Add(wrapper);
             }
 

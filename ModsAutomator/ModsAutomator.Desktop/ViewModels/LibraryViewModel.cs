@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
 using ModsAutomator.Desktop.Interfaces;
+using ModsAutomator.Desktop.Services;
 using ModsAutomator.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -14,6 +15,7 @@ namespace ModsAutomator.Desktop.ViewModels
         private readonly IStorageService _storageService;
         private readonly IWatcherService _watcherService;
         private readonly IDialogService _dialogService;
+        private readonly CommonUtils _commonUtils;
         private ModdedApp _selectedApp;
         private ModItemViewModel _selectedMod;
 
@@ -76,12 +78,14 @@ namespace ModsAutomator.Desktop.ViewModels
         public ICommand SetupManualInstallCommand { get; }
         public ICommand EditInstallationCommand { get; }
 
-        public LibraryViewModel(INavigationService navigationService, IStorageService storageService, IWatcherService watcherService, IDialogService dialogService)
+        public LibraryViewModel(INavigationService navigationService, IStorageService storageService, IWatcherService watcherService, 
+            IDialogService dialogService, CommonUtils commonUtils)
         {
             _navigationService = navigationService;
             _storageService = storageService;
             _watcherService = watcherService;
             _dialogService = dialogService;
+            _commonUtils = commonUtils;
             Mods = new ObservableCollection<ModItemViewModel>();
 
             // Initialization & Setup
@@ -157,7 +161,7 @@ namespace ModsAutomator.Desktop.ViewModels
             foreach (var (shell, installed, config) in sortedData)
             {
                 // Use SelectedApp.Version (or your specific property name) for the constructor
-                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion));
+                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils));
             }
         }
 
@@ -328,7 +332,7 @@ namespace ModsAutomator.Desktop.ViewModels
                     {
                         foreach (var (mod, config) in watchList)
                         {
-                            bool canCheck = CanCheckModWatcherStatus(mod);
+                            bool canCheck = _commonUtils.CanCheckModWatcherStatus(mod);
 
                             if (canCheck)
                             {
@@ -365,15 +369,7 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        private bool CanCheckModWatcherStatus(Mod shell)
-        {
-            BusyMessage = "Checking watcher status...";
-            //TODO:add to admin logic
-            bool isRecentlyChecked = DateTime.Now - shell.LastWatched < TimeSpan.FromHours(6);
-
-
-            return !isRecentlyChecked;
-        }
+       
 
         private async Task SyncSingleModAsync(ModItemViewModel? mod)
         {
@@ -423,7 +419,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 IsBusy = true;
                 bool forceSync = false;
                 BusyMessage = "Analyzing watcher status...";
-                bool canCheck = CanCheckModWatcherStatus(modItem.Shell);
+                bool canCheck = _commonUtils.CanCheckModWatcherStatus(modItem.Shell);
 
                 if (canCheck)
                 {
