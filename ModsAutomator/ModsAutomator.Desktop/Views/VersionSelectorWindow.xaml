@@ -56,7 +56,7 @@
 
                 <DataGridTextColumn Header="Version" 
                                     Binding="{Binding Mod.AvailableVersion}" 
-                                    Width="120" IsReadOnly="True"/>
+                                    Width="80" IsReadOnly="True"/>
 
                 <DataGridTextColumn Header="Size" 
                                     Binding="{Binding Mod.SizeMB, StringFormat={}{0} MB}" 
@@ -64,11 +64,15 @@
 
                 <DataGridTextColumn Header="Date" 
                                     Binding="{Binding Mod.ReleaseDate}" 
+                                    Width="80" IsReadOnly="True"/>
+
+                <DataGridTextColumn Header="Crawled URL" 
+                                    Binding="{Binding Mod.CrawledModUrl}" 
                                     Width="100" IsReadOnly="True"/>
 
-                <DataGridTextColumn Header="Source URL" 
-                                    Binding="{Binding Mod.CrawledModUrl}" 
-                                    Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Download URL" 
+                    Binding="{Binding Mod.DownloadUrl}" 
+                    Width="*" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
 

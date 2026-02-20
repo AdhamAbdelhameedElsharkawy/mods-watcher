@@ -16,7 +16,7 @@
 
         <StackPanel Grid.Row="1">
             <TextBlock Text="Installed Version" Foreground="#888" FontSize="11"/>
-            <TextBox Text="{Binding Entity.InstalledVersion}" Margin="0,5,0,15" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
+            <TextBox Text="{Binding InstalledVersion}" Margin="0,5,0,15" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
 
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -54,7 +54,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Text="{Binding Entity.DownloadUrl}" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
+                <TextBox Text="{Binding DownloadUrl}" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
                 <Button Grid.Column="1" 
                         Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
                         CommandParameter="{Binding Entity.DownloadUrl}"
@@ -64,7 +64,7 @@
             </Grid>
 
             <TextBlock Text="Supported App Versions" Foreground="#888" FontSize="11"/>
-            <TextBox Text="{Binding Entity.SupportedAppVersions}" Margin="0,5,0,0" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
+            <TextBox Text="{Binding SupportedAppVersions}" Margin="0,5,0,0" Background="#252525" Foreground="White" BorderBrush="#444" Padding="5"/>
         </StackPanel>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">

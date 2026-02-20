@@ -1,6 +1,7 @@
 ﻿using ModsAutomator.Core.Entities;
 using ModsAutomator.Core.Enums;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -10,6 +11,30 @@ namespace ModsAutomator.Desktop.ViewModels
     public class ModInstallationDialogViewModel : BaseViewModel
     {
         public InstalledMod Entity { get; }
+
+        [Required(ErrorMessage = "Version is required.")]
+        public string InstalledVersion
+        {
+            get => Entity.InstalledVersion;
+            set { Entity.InstalledVersion = value; ValidateProperty(value); OnPropertyChanged(); }
+        }
+
+        [Required(ErrorMessage = "URL is required.")]
+        [Url(ErrorMessage = "Invalid URL format.")]
+        public string? DownloadUrl
+        {
+            get => Entity.DownloadUrl;
+            set { Entity.DownloadUrl = value; ValidateProperty(value); OnPropertyChanged(); }
+        }
+
+        [Required(ErrorMessage = "Supported App Versions is required. Format must be X.X,X.X or X.X.X,X.X.X")]
+        [RegularExpression(@"^(\d+\.\d+(\.\d+)?)(,\s*\d+\.\d+(\.\d+)?)*$", ErrorMessage = "Format must be X.X,X.X or X.X.X,X.X.X")]
+        public string? SupportedAppVersions
+        {
+            get => Entity.SupportedAppVersions;
+            set { Entity.SupportedAppVersions = value; ValidateProperty(value); OnPropertyChanged(); }
+        }
+
         public Array PackageTypes => Enum.GetValues(typeof(PackageType));
 
         public ICommand SaveCommand { get; }
@@ -21,10 +46,12 @@ namespace ModsAutomator.Desktop.ViewModels
         {
             Entity = entity;
 
-            SaveCommand = new RelayCommand(_ => Close(true));
+            SaveCommand = new RelayCommand(_ => Close(true), _ => !HasErrors);
             CancelCommand = new RelayCommand(_ => Close(false));
 
             OpenUrlCommand = new RelayCommand(url => ExecuteOpenUrl(url?.ToString()));
+
+            ValidateAll(); 
         }
 
         private void Close(bool result)

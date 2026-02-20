@@ -32,7 +32,7 @@ namespace ModsAutomator.Tests.Repos
         {
             // Arrange
             var ids = await SeedDatabaseAsync();
-            var history = new InstalledModHistory { ModId = ids.ModId, Version = "1.0.0" };
+            var history = new InstalledModHistory { ModId = ids.ModId, Version = "1.0.0", DownloadUrl = "http://google.com" };
 
             // Act
             var result = await _repo.InsertAsync(history, Connection);
@@ -40,6 +40,7 @@ namespace ModsAutomator.Tests.Repos
             // Assert
             Assert.NotNull(result);
             Assert.Equal("1.0.0", result.Version);
+            Assert.Equal("http://google.com", result.DownloadUrl);
         }
 
         [Fact]

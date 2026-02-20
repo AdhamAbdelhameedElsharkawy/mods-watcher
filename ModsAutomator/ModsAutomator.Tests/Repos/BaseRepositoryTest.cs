@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
-using ModsAutomator.Data;
 using ModsAutomator.Data.Helpers;
 using ModsAutomator.Data.Interfaces;
 using Moq;

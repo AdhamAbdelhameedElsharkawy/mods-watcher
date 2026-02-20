@@ -2,6 +2,7 @@
 using ModsAutomator.Core.Enums;
 using ModsAutomator.Desktop.Interfaces;
 using ModsAutomator.Services.Interfaces;
+using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Input;
 
@@ -21,10 +22,11 @@ namespace ModsAutomator.Desktop.ViewModels
 
         #region Editable Properties
 
+        [Required(ErrorMessage = "Mod Name is required.")]
         public string Name
         {
             get => Shell.Name;
-            set { Shell.Name = value; OnPropertyChanged(); }
+            set { Shell.Name = value; ValidateProperty(value); OnPropertyChanged(); }
         }
 
         public string? Author
@@ -33,10 +35,12 @@ namespace ModsAutomator.Desktop.ViewModels
             set { Shell.Author = value; OnPropertyChanged(); }
         }
 
+        [Required(ErrorMessage = "URL is required.")]
+        [Url(ErrorMessage = "Invalid URL format.")]
         public string RootSourceUrl
         {
             get => Shell.RootSourceUrl;
-            set { Shell.RootSourceUrl = value; OnPropertyChanged(); }
+            set { Shell.RootSourceUrl = value; ValidateProperty(value); OnPropertyChanged(); }
         }
 
         public string? Description
@@ -74,6 +78,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 {
                     Shell.IsWatchable = value;
                     OnPropertyChanged();
+                    ValidateWatcherXpath();
 
                     // Cascade: If not watchable, it cannot be crawled
                     if (!value) IsCrawlable = false;
@@ -89,6 +94,7 @@ namespace ModsAutomator.Desktop.ViewModels
                 if (Shell.IsCrawlable != value)
                 {
                     Shell.IsCrawlable = value;
+                    ValidateCrawlableConfigs();
                     OnPropertyChanged();
                 }
             }
@@ -99,10 +105,11 @@ namespace ModsAutomator.Desktop.ViewModels
         #region Config Properties (Stage-Wise)
 
         // STAGE 1: The Watcher (Required if IsWatchable)
+        
         public string WatcherXPath
         {
             get => Config.WatcherXPath;
-            set { Config.WatcherXPath = value; OnPropertyChanged(); }
+            set { Config.WatcherXPath = value; ValidateWatcherXpath(); OnPropertyChanged(); }
         }
 
         // STAGE 2: Link Discovery (Required if IsCrawlable)
@@ -116,13 +123,13 @@ namespace ModsAutomator.Desktop.ViewModels
         public string? VersionXPath
         {
             get => Config.VersionXPath;
-            set { Config.VersionXPath = value; OnPropertyChanged(); }
+            set { Config.VersionXPath = value; ValidateCrawlableConfigs(); OnPropertyChanged(); }
         }
 
         public string? DownloadUrlXPath
         {
             get => Config.DownloadUrlXPath;
-            set { Config.DownloadUrlXPath = value; OnPropertyChanged(); }
+            set { Config.DownloadUrlXPath = value; ValidateCrawlableConfigs(); OnPropertyChanged(); }
         }
 
         public string? ReleaseDateXPath
@@ -140,7 +147,7 @@ namespace ModsAutomator.Desktop.ViewModels
         public string? SupportedAppVersionsXPath
         {
             get => Config.SupportedAppVersionsXPath;
-            set { Config.SupportedAppVersionsXPath = value; OnPropertyChanged(); }
+            set { Config.SupportedAppVersionsXPath = value; ValidateCrawlableConfigs(); OnPropertyChanged(); }
         }
 
         public string? PackageFilesNumberXPath
@@ -172,8 +179,10 @@ namespace ModsAutomator.Desktop.ViewModels
             // Ensure Config is linked to ModId
             Config = existingConfig ?? new ModCrawlerConfig { ModId = Shell.Id };
 
-            SaveCommand = new RelayCommand(async _ => await SaveAsync());
+            SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !HasErrors);
             CancelCommand = new RelayCommand(_ => Close(false));
+
+            ValidateAll();
         }
 
         private async Task SaveAsync()
@@ -209,5 +218,49 @@ namespace ModsAutomator.Desktop.ViewModels
                 }
             }
         }
+
+        private void ValidateWatcherXpath()
+        {
+            const string errorMsg = "Watcher Xpath is required.";
+
+            if (IsWatchable && string.IsNullOrEmpty(WatcherXPath))
+            {
+                    AddCustomError(nameof(WatcherXPath), errorMsg);
+            }
+            else
+            {
+                RemoveCustomError(nameof(WatcherXPath), errorMsg);
+            }
+        }
+
+
+        private void ValidateCrawlableConfigs()
+        {
+            const string errorMsg = "At least one XPath is required when Crawlable is enabled.";
+
+            // 1. Always clear the error from all three properties first
+            RemoveCustomError(nameof(VersionXPath), errorMsg);
+            RemoveCustomError(nameof(DownloadUrlXPath), errorMsg);
+            RemoveCustomError(nameof(SupportedAppVersionsXPath), errorMsg);
+
+            // 2. If IsCrawlable is checked, verify the "At least one" rule
+            if (IsCrawlable)
+            {
+                bool anyFilled = !string.IsNullOrWhiteSpace(VersionXPath) ||
+                                 !string.IsNullOrWhiteSpace(DownloadUrlXPath) ||
+                                 !string.IsNullOrWhiteSpace(SupportedAppVersionsXPath);
+
+                if (!anyFilled)
+                {
+                    // 3. Mark all three as invalid so the user sees red borders on all 
+                    // OR just pick one to host the message.
+                    AddCustomError(nameof(VersionXPath), errorMsg);
+                    AddCustomError(nameof(DownloadUrlXPath), errorMsg);
+                    AddCustomError(nameof(SupportedAppVersionsXPath), errorMsg);
+                }
+            }
+        }
+
+        
     }
 }

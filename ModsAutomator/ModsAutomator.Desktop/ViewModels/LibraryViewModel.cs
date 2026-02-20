@@ -441,6 +441,7 @@ namespace ModsAutomator.Desktop.ViewModels
                         {
                             await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                             IsBusy = false; // Unlock to show dialog
+                            BusyMessage = string.Empty;
                             return;
                         }
                     }
@@ -457,73 +458,83 @@ namespace ModsAutomator.Desktop.ViewModels
 
                         await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                         IsBusy = false;
+                        BusyMessage = string.Empty;
                         return;
                     }
                     
                 }
 
+                BusyMessage = "Analyzing watcher status Completed...";
+                IsBusy = false;
 
-                BusyMessage = "Extracting Links...";
-                // 2. STAGE 1: LINK EXTRACTION
-                modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
-                var extractedLinks = await _watcherService.ExtractLinksAsync(modItem.Shell.RootSourceUrl, modItem.Config!);
 
-                if (extractedLinks == null || !extractedLinks.Any())
+
+                if (modItem.Shell.IsCrawlable)
                 {
-                    _dialogService.ShowInfo("No matching links found.", "Scan Complete");
-                    modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
-                    modItem.RefreshSummary();
-                    return;
-                }
+                    IsBusy = true;
+                    BusyMessage = "Extracting Links...";
+                    // 2. STAGE 1: LINK EXTRACTION
+                    modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
+                    var extractedLinks = await _watcherService.ExtractLinksAsync(modItem.Shell.RootSourceUrl, modItem.Config!);
 
-                // 3. SELECTION DIALOG
-                var selectedLinks = await _dialogService.ShowLinkSelectorAsync(extractedLinks);
-                if (selectedLinks == null || !selectedLinks.Any())
-                {
-                    await FinalizeSyncState(modItem, WatcherStatusType.Idle);
-                    return;
-                }
-
-                // 4. STAGE 2: DEEP PARSE
-                BusyMessage = $"Deep-parsing {selectedLinks.Count()} items...";
-                var availableMods = new List<AvailableMod>();
-                foreach (var link in selectedLinks)
-                {
-                    var detail = await _watcherService.ParseModDetailsAsync(link.Url, modItem.Config!);
-                    if (detail != null) 
-                    { 
-                        detail.Id = modItem.Shell.Id; // Link to the Shell for easier processing later
-
-                        availableMods.Add(detail); }
-                }
-
-                // 5. VERSION SELECTION & PROMOTION
-                if (availableMods.Any())
-                {
-                    var (primary, chosenMods) = await _dialogService.ShowVersionSelectorAsync(availableMods);
-
-                    if (chosenMods != null && chosenMods.Any())
+                    if (extractedLinks == null || !extractedLinks.Any())
                     {
-                        InstalledMod? result = await _storageService.ProcessCrawlResultsAsync(
-                            SelectedApp.InstalledVersion,
-                            modItem.Shell.Id,
-                            primary,
-                            chosenMods);
+                        _dialogService.ShowInfo("No matching links found.", "Scan Complete");
+                        modItem.Shell.WatcherStatus = WatcherStatusType.Idle;
+                        modItem.RefreshSummary();
+                        return;
+                    }
 
-                        if (result != null)
+                    // 3. SELECTION DIALOG
+                    var selectedLinks = await _dialogService.ShowLinkSelectorAsync(extractedLinks);
+                    if (selectedLinks == null || !selectedLinks.Any())
+                    {
+                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                        return;
+                    }
+
+                    // 4. STAGE 2: DEEP PARSE
+                    BusyMessage = $"Deep-parsing {selectedLinks.Count()} items...";
+                    var availableMods = new List<AvailableMod>();
+                    foreach (var link in selectedLinks)
+                    {
+                        var detail = await _watcherService.ParseModDetailsAsync(link.Url, modItem.Config!);
+                        if (detail != null)
                         {
-                            _dialogService.ShowInfo($"Mod '{modItem.Name}' has been updated to version {result.InstalledVersion}.", "Update Successful");
+                            detail.Id = modItem.Shell.Id; // Link to the Shell for easier processing later
+
+                            availableMods.Add(detail);
                         }
-
-
-
-                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                     }
-                    else
+
+                    // 5. VERSION SELECTION & PROMOTION
+                    if (availableMods.Any())
                     {
-                        // User backed out of the final selection
-                        await FinalizeSyncState(modItem, WatcherStatusType.Idle);
-                    }
+                        var (primary, chosenMods) = await _dialogService.ShowVersionSelectorAsync(availableMods);
+
+                        if (chosenMods != null && chosenMods.Any())
+                        {
+                            InstalledMod? result = await _storageService.ProcessCrawlResultsAsync(
+                                SelectedApp.InstalledVersion,
+                                modItem.Shell.Id,
+                                primary,
+                                chosenMods);
+
+                            if (result != null)
+                            {
+                                _dialogService.ShowInfo($"Mod '{modItem.Name}' has been updated to version {result.InstalledVersion}.", "Update Successful");
+                            }
+
+
+
+                            await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                        }
+                        else
+                        {
+                            // User backed out of the final selection
+                            await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                        }
+                    } 
                 }
             }
             catch (Exception ex)
@@ -534,7 +545,7 @@ namespace ModsAutomator.Desktop.ViewModels
             finally
             {
                 IsBusy = false;
-                BusyMessage = "Loading..."; // Reset for next use
+                BusyMessage = string.Empty;
             }
         }
 

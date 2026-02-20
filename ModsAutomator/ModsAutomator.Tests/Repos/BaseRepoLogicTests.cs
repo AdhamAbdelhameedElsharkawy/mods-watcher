@@ -2,7 +2,6 @@
 using ModsAutomator.Data.Interfaces;
 using Moq;
 using System.Data;
-using Xunit;
 
 namespace ModsAutomator.Tests.Repos
 {

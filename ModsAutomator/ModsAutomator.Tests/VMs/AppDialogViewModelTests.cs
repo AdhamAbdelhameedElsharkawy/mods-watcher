@@ -64,6 +64,8 @@ namespace ModsAutomator.Tests.VMs
             // Arrange
             var vm = new AppDialogViewModel(_storageMock.Object, null);
             vm.Name = "Test Game";
+            vm.InstalledVersion = "1.0";
+            vm.LatestVersion = "1.0";
 
             // Act - CAST to RelayCommand to use the Task-returning ExecuteAsync
             if (vm.SaveCommand is RelayCommand relayCommand)
@@ -80,7 +82,7 @@ namespace ModsAutomator.Tests.VMs
         public async Task SaveCommand_InEditMode_ShouldCallUpdateAppAsync()
         {
             // Arrange
-            var existing = new ModdedApp { Id = 5, Name = "Old Name" };
+            var existing = new ModdedApp { Id = 5, Name = "Old Name", InstalledVersion = "1.0", LatestVersion = "2.0" };
             var vm = new AppDialogViewModel(_storageMock.Object, existing);
             vm.Name = "Updated Name";
 

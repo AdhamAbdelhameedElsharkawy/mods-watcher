@@ -69,6 +69,7 @@ namespace ModsAutomator.Tests.VMs
             // Arrange
             var vm = new ModShellDialogViewModel(_serviceMock.Object, 10, _dialogMock.Object); // AppId = 10
             vm.Name = "Brand New Mod";
+            vm.RootSourceUrl = "https://nexusmods.com/test";
 
             // Act
             await ((RelayCommand)vm.SaveCommand).ExecuteAsync(null);
@@ -90,6 +91,7 @@ namespace ModsAutomator.Tests.VMs
 
             var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, _dialogMock.Object, existingMod, existingConfig);
             vm.Name = "Updated Mod Name";
+            vm.RootSourceUrl = "https://nexusmods.com/updated";
 
             // Act
             await ((RelayCommand)vm.SaveCommand).ExecuteAsync(null);
