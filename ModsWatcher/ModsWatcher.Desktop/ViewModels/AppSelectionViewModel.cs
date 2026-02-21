@@ -157,7 +157,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
                 BusyMessage = $"Checking All Watchable Mods for '{item.Name}'...";
 
-                // 2. Data Fetch: Use the bundle logic we just finalized
+                // 2. Data Fetch: 
                 var bundle = await _storageService.GetWatchableBundleByAppIdAsync(item.App.Id);
                 List<(Mod mod, ModCrawlerConfig config)> modsToCheck = new List<(Mod mod, ModCrawlerConfig config)>();
 

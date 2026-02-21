@@ -10,6 +10,7 @@ using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Desktop.Views;
 using ModsWatcher.Services.DI;
 using Serilog;
+using Serilog.Events;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -26,26 +27,36 @@ namespace ModsWatcher.Desktop
 
         public App()
         {
-            // 1. Configure Serilog immediately
+            // 1. Configuration
+            var configuration = new ConfigurationBuilder()
+.SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+.Build();
+
+            // 2. Extract Logging values (with defaults as backups)
+            var logSettings = configuration.GetSection("LoggingSettings");
+            string minLevel = logSettings["MinimumLevel"] ?? "Information";
+            string logFileName = logSettings["LogFileName"] ?? "log-.txt";
+            long fileSize = long.Parse(logSettings["FileSizeLimitBytes"] ?? "5242880");
+            int retainedFiles = int.Parse(logSettings["RetainedFileCountLimit"] ?? "10");
+            bool rollOnSize = bool.Parse(logSettings["RollOnFileSizeLimit"] ?? "true");
+            string template = logSettings["OutputTemplate"] ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+
             string logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-            string logFilePath = Path.Combine(logDirectory, "log-.txt");
+            string logFilePath = Path.Combine(logDirectory, logFileName);
 
-            //var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ModsAutomator", "logs.txt");
-
+            // 3. Configure Serilog using those values
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Is(Enum.Parse<Serilog.Events.LogEventLevel>(minLevel))
                 .WriteTo.File(logFilePath,
                     rollingInterval: RollingInterval.Day,
-                    fileSizeLimitBytes: 5 * 1024 * 1024,
-                    rollOnFileSizeLimit: true,
-                    retainedFileCountLimit: 10,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                    fileSizeLimitBytes: fileSize,
+                    rollOnFileSizeLimit: rollOnSize,
+                    retainedFileCountLimit: retainedFiles,
+                    outputTemplate: template)
                 .CreateLogger();
 
-            var configuration = new ConfigurationBuilder()
-    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .Build();
+
 
             var services = new ServiceCollection();
 

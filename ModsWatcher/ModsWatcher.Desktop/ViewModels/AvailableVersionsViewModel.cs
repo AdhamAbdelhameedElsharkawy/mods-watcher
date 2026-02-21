@@ -39,7 +39,6 @@ namespace ModsWatcher.Desktop.ViewModels
 
             GroupedAvailableMods = new ObservableCollection<ModVersionGroupViewModel>();
 
-            // Following your RelayCommand pattern: (async obj => await Method(obj as Type))
             PromoteCommand = new RelayCommand(async obj => await PromoteAsync(obj as AvailableVersionItemViewModel));
             DeleteSingleCommand = new RelayCommand(async obj => await DeleteAsync(obj as AvailableVersionItemViewModel));
             DeleteSelectedCommand = new RelayCommand(async obj => await DeleteSelectedInGroupAsync(obj as ModVersionGroupViewModel));

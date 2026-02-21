@@ -102,6 +102,13 @@ namespace ModsWatcher.Desktop.ViewModels
         var target = obj as ModItemViewModel ?? SelectedMod;
         if (target == null) return;
 
+        if (!target.Shell.IsWatchable)
+        {
+            _dialogService.ShowInfo($"'{target.Shell.Name}' is not watchable, so it cannot be synced. Please check the configuration (Is Watchable) or refer to the documentation.", "Not Watchable");
+            return;
+
+        }
+
         // NEW: Check for config and inform user instead of just being disabled
         if (target.Config == null)
         {
@@ -129,6 +136,7 @@ namespace ModsWatcher.Desktop.ViewModels
             NavToAppsCommand = new RelayCommand(_ => _navigationService.NavigateTo<AppSelectionViewModel>());
 
             // Misc Actions
+            //TODO: not binding to anything currently, but we can add a "View History" button in the UI if we want to surface this more prominently instead of hiding it in the versions dialog
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
             ToggleActivationCommand = new RelayCommand(_ => ToggleModActivation());
             HardWipeCommand = new RelayCommand(_ => HardWipeSelectedMod());

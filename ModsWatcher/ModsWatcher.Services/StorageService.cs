@@ -469,7 +469,10 @@ namespace ModsWatcher.Services
             {
                 // 2. Fetch crawled versions for each shell
                 var versions = await _availableModRepo.FindByModIdAsync(shell.Id, connection);
-                results.Add((shell, versions));
+                if (versions != null && versions.Count() > 0)
+                {
+                    results.Add((shell, versions));
+                }
             }
 
             return results;
