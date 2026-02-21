@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ModsAutomator.Core\ModsWatcher.Core.csproj" />
+    <ProjectReference Include="..\ModsWatcher.Core\ModsWatcher.Core.csproj" />
   </ItemGroup>
 
 </Project>

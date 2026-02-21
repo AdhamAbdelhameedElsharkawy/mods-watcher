@@ -18,10 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ModsAutomator.Core\ModsWatcher.Core.csproj" />
-    <ProjectReference Include="..\ModsAutomator.Data\ModsWatcher.Data.csproj" />
-    <ProjectReference Include="..\ModsAutomator.Desktop\ModsWatcher.Desktop.csproj" />
-    <ProjectReference Include="..\ModsAutomator.Services\ModsWatcher.Services.csproj" />
+    <ProjectReference Include="..\ModsWatcher.Core\ModsWatcher.Core.csproj" />
+    <ProjectReference Include="..\ModsWatcher.Data\ModsWatcher.Data.csproj" />
+    <ProjectReference Include="..\ModsWatcher.Desktop\ModsWatcher.Desktop.csproj" />
+    <ProjectReference Include="..\ModsWatcher.Services\ModsWatcher.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

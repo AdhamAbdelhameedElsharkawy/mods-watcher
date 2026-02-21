@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ModsWatcher.Core/ModsWatcher.Core.csproj" />
+  <Project Path="ModsWatcher.Data/ModsWatcher.Data.csproj" />
+  <Project Path="ModsWatcher.Desktop/ModsWatcher.Desktop.csproj" />
+  <Project Path="ModsWatcher.Services/ModsWatcher.Services.csproj" />
+  <Project Path="ModsWatcher.Tests/ModsWatcher.Tests.csproj" Id="13589ed5-ae8d-4d76-bcf6-7380a3412178" />
+</Solution>
