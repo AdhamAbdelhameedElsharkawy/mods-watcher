@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging; 
 using ModsWatcher.Data.DI;
 using ModsWatcher.Data.Helpers;
@@ -41,6 +42,11 @@ namespace ModsWatcher.Desktop
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
 
+            var configuration = new ConfigurationBuilder()
+    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
+
             var services = new ServiceCollection();
 
             // 2. Add Logging to DI
@@ -48,10 +54,10 @@ namespace ModsWatcher.Desktop
 
             services.AddTransient<Microsoft.Extensions.Logging.ILogger>(sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger("App"));
 
-            string connectionString = "Data Source=mods.db";
+            //string connectionString = "Data Source=mods.db";
 
-            services.AddDataServices(connectionString);
-            services.AddServicesLayer();
+            services.AddDataServices(configuration);
+            services.AddServicesLayer(configuration);
 
             services.AddTransient<IDialogService, WpfDialogService>();
             services.AddSingleton<INavigationService, NavigationService>();

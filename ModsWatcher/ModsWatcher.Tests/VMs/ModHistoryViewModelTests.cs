@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services;
+using ModsWatcher.Services.Config;
 using ModsWatcher.Services.Interfaces;
 using Moq;
 
@@ -24,7 +26,8 @@ namespace ModsWatcher.Tests.VMs
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
             _dialogServiceMock = new Mock<IDialogService>();
-            _commonUtilsMock = new Mock<CommonUtils>();
+            var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<ModHistoryViewModel>>();
             _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
 

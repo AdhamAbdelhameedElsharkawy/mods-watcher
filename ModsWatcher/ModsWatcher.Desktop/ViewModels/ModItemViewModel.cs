@@ -1,10 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
-using ModsWatcher.Desktop.Services;
-using System;
-using System.IO;
-using System.Windows.Markup;
+using ModsWatcher.Services;
 
 namespace ModsWatcher.Desktop.ViewModels
 {

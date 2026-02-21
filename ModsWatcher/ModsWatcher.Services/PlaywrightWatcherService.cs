@@ -3,7 +3,6 @@ using Microsoft.Playwright;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
 using System.Text.RegularExpressions;
 

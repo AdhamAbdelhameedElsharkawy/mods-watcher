@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Core.Interfaces;
 using ModsWatcher.Data.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services;
+using ModsWatcher.Services.Config;
 using Moq;
 using System.Data;
 
@@ -23,6 +25,7 @@ namespace ModsWatcher.Tests.Services
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly Mock<ILogger<StorageService>> _loggerMock;
+
         private readonly StorageService _service;
 
         public StorageServiceTests()
@@ -36,7 +39,8 @@ namespace ModsWatcher.Tests.Services
             _availableModRepoMock = new Mock<IAvailableModRepository>();
             _configRepoMock = new Mock<IModCrawlerConfigRepository>();
             _connectionMock = new Mock<IDbConnection>();
-            _commonUtilsMock = new Mock<CommonUtils>();
+            var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<StorageService>>();
 
 

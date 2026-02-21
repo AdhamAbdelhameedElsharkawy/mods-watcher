@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.Entities;
-using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services;
 
 namespace ModsWatcher.Desktop.ViewModels
 {

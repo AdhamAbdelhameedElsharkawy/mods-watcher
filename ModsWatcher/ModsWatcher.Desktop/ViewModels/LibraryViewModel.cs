@@ -2,7 +2,7 @@
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
-using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services;
 using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows;

@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
-using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services;
 using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
-using System.DirectoryServices.ActiveDirectory;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels

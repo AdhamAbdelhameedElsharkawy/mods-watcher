@@ -1,12 +1,23 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Options;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
+using ModsWatcher.Services.Config;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ModsWatcher.Desktop.Services
+namespace ModsWatcher.Services
 {
     public class CommonUtils
     {
+
+        private readonly WatcherSettings _watcherConfig;
+
+        public CommonUtils(IOptions<WatcherSettings> watcherConfig)
+        {
+            _watcherConfig = watcherConfig.Value;
+        }
+
+
         // Utility for safe size conversion
         public decimal ParseSize(string? input)
         {
@@ -55,7 +66,7 @@ namespace ModsWatcher.Desktop.Services
 
         public bool CanCheckModWatcherStatus(Mod shell)
         {
-            bool isRecentlyChecked = DateTime.Now - shell.LastWatched < TimeSpan.FromHours(6);
+            bool isRecentlyChecked = DateTime.Now - shell.LastWatched < TimeSpan.FromHours(_watcherConfig.CheckingThresholdHours);
 
 
             return !isRecentlyChecked;

@@ -1,17 +1,18 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using ModsWatcher.Core.Entities;
-using ModsWatcher.Core.Interfaces;
-using ModsWatcher.Data;
-using ModsWatcher.Data.Interfaces;
-using ModsWatcher.Desktop.Services;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using ModsWatcher.Services.Config;
 using ModsWatcher.Services.Interfaces;
 
 namespace ModsWatcher.Services.DI
 {
     public static class ServicesDependencyInjection
     {
-        public static IServiceCollection AddServicesLayer(this IServiceCollection services)
+        public static IServiceCollection AddServicesLayer(this IServiceCollection services, IConfiguration configuration)
         {
+
+            // Register specific nodes from the config
+            services.Configure<WatcherSettings>(configuration.GetSection("WatcherSettings"));
+
             // Register all your services here
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IWatcherService, PlaywrightWatcherService>();

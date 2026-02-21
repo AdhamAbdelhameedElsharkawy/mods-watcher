@@ -1,8 +1,9 @@
-﻿using Castle.Core.Logging;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services;
+using ModsWatcher.Services.Config;
 using Moq;
 
 namespace ModsWatcher.Tests.VMs
@@ -15,8 +16,9 @@ namespace ModsWatcher.Tests.VMs
 
         public ModHistoryItemViewModelTests()
         {
-                _commonUtilsMock = new Mock<CommonUtils>();
-                _loggerMock = new Mock<ILogger<ModHistoryItemViewModel>>();
+            var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
+            _loggerMock = new Mock<ILogger<ModHistoryItemViewModel>>();
         }
 
 

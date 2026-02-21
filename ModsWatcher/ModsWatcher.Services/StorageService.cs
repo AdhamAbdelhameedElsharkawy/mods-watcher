@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
-using ModsWatcher.Core.Enums;
 using ModsWatcher.Core.Interfaces;
 using ModsWatcher.Data.Interfaces;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
 using System.Data;
 

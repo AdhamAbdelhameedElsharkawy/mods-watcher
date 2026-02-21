@@ -1,9 +1,10 @@
-﻿using Castle.Core.Logging;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services;
+using ModsWatcher.Services.Config;
 using ModsWatcher.Services.Interfaces;
 using Moq;
 
@@ -26,7 +27,8 @@ namespace ModsWatcher.Tests.VMs
             _navMock = new Mock<INavigationService>();
             _watcherMock = new Mock<IWatcherService>();
             _dialogServiceMock = new Mock<IDialogService>();
-            _commonUtilsMock = new Mock<CommonUtils>();
+            var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<LibraryViewModel>>();
 
             _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);

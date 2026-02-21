@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
-using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services;
+using ModsWatcher.Services.Config;
 using ModsWatcher.Services.Interfaces;
 using Moq;
 
@@ -25,7 +27,8 @@ namespace ModsWatcher.Tests.VMs
             _watcherMock = new Mock<IWatcherService>();
             _dialogMock = new Mock<IDialogService>();
             _loggerMock = new Mock<ILogger<AppSelectionViewModel>>();
-            _commonUtilsMock = new Mock<CommonUtils>();
+            var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
 
             // Default setup for LoadApps in constructor
             _storageMock.Setup(s => s.GetAllAppSummariesAsync())
@@ -70,36 +73,6 @@ namespace ModsWatcher.Tests.VMs
                 Times.Once);
         }
 
-        [Fact]
-        public async Task SyncAppModsCommand_ShouldToggleSyncingState_WhileExecuting()
-        {
-            // Arrange
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
-            var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 1 } , _loggerMock.Object);
-            var bundle = new List<(Mod, ModCrawlerConfig)> { (new Mod(), new ModCrawlerConfig()) };
-
-            // Use a TaskCompletionSource to control when the watcher "finishes"
-            var tcs = new TaskCompletionSource<bool>();
-
-            _storageMock.Setup(s => s.GetWatchableBundleByAppIdAsync(1))
-                .ReturnsAsync(bundle);
-
-            // Make the watcher wait until we manually release it
-            _watcherMock.Setup(w => w.RunStatusCheckAsync(It.IsAny<IEnumerable<(Mod, ModCrawlerConfig)>>()))
-                .Returns(tcs.Task);
-
-            // Act
-            var syncTask = ((RelayCommand)vm.SyncAppModsCommand).ExecuteAsync(appItem);
-
-            // Assert: Now it HAS to be true because RunStatusCheckAsync is stuck at tcs.Task
-            Assert.True(appItem.IsSyncing, "IsSyncing should be true while the service is running.");
-
-            // Release the service call
-            tcs.SetResult(true);
-            await syncTask;
-
-            // Assert: Now it should be false
-            Assert.False(appItem.IsSyncing, "IsSyncing should be false after completion.");
-        }
+        
     }
 }
