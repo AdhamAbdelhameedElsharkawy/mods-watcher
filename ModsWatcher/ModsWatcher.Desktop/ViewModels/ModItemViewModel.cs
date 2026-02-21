@@ -110,6 +110,10 @@ namespace ModsWatcher.Desktop.ViewModels
 
         }
 
+        public bool HasUpdate => Shell.WatcherStatus == WatcherStatusType.UpdateFound;
+
+       
+
         // --- UI Logic Methods ---
 
         /// <summary>
@@ -121,57 +125,87 @@ namespace ModsWatcher.Desktop.ViewModels
             OnPropertyChanged(nameof(Version));
             OnPropertyChanged(nameof(IsUsed));
             OnPropertyChanged(nameof(PriorityOrder));
-            OnPropertyChanged(nameof(Summary));
+            OnPropertyChanged(nameof(HasUpdate));
+            OnPropertyChanged(nameof(ModDescription));
+            OnPropertyChanged(nameof(Installed));
+            OnPropertyChanged(nameof(WatcherError));
         }
 
-        /// <summary>
-        /// Aggregated status string for the UI Card.
-        /// Format: [Active/Disabled] | [Compatibility] | [Watcher Status]
-        /// </summary>
-        public string Summary
-        {
-            get
-            {
-                if (Installed != null) {
-                    string activeStatus = IsUsed ? "Active" : "Disabled";
-                    string compatibilityStatus = IsCompatible ? "Ok" : "VERSION MISMATCH";
+        ///// <summary>
+        ///// Aggregated status string for the UI Card.
+        ///// Format: [Active/Disabled] | [Compatibility] | [Watcher Status]
+        ///// </summary>
+        //public string Summary
+        //{
+        //    get
+        //    {
+        //        if (Installed != null) {
+        //            string activeStatus = IsUsed ? "Active" : "Disabled";
+        //            string compatibilityStatus = IsCompatible ? "Ok" : "VERSION MISMATCH";
 
-                    string watcherResult = Shell.WatcherStatus switch
-                    {
-                        WatcherStatusType.UpdateFound => "UPDATE FOUND",
-                        WatcherStatusType.Error => "Watcher: ERROR",
-                        WatcherStatusType.Checking => "Watcher: SYNCING...",
-                        _ => "Up to date"
-                    };
+        //            string watcherResult = Shell.WatcherStatus switch
+        //            {
+        //                WatcherStatusType.UpdateFound => "UPDATE FOUND",
+        //                WatcherStatusType.Error => "Watcher: ERROR",
+        //                WatcherStatusType.Checking => "Watcher: SYNCING...",
+        //                _ => "Up to date"
+        //            };
 
-                    // Header line with statuses
-                    string statusLine = $"{activeStatus} | {compatibilityStatus} | {watcherResult}";
+        //            // Header line with statuses
+        //            string statusLine = $"{activeStatus} | {compatibilityStatus} | {watcherResult}";
 
-                    // Add description on a new line if it exists
-                    if (!string.IsNullOrWhiteSpace(Description))
-                    {
-                        return $"{statusLine}{Environment.NewLine}{Description}";
-                    }
+        //            // Add description on a new line if it exists
+        //            if (!string.IsNullOrWhiteSpace(Description))
+        //            {
+        //                return $"{statusLine}{Environment.NewLine}{Description}";
+        //            }
 
-                    return statusLine;
-                }
-                else
-                {
-                    string pending = "Pending Setup";
-                    // Add description on a new line if it exists
-                    if (!string.IsNullOrWhiteSpace(Description))
-                    {
-                        return $"{pending}{Environment.NewLine}{Description}";
-                    }
+        //            return statusLine;
+        //        }
+        //        else
+        //        {
+        //            string pending = "Pending Setup";
+        //            // Add description on a new line if it exists
+        //            if (!string.IsNullOrWhiteSpace(Description))
+        //            {
+        //                return $"{pending}{Environment.NewLine}{Description}";
+        //            }
 
-                    return pending;
-                }
+        //            return pending;
+        //        }
 
 
 
                 
-            }
-        }
+        //    }
+        //}
+
+        //public string StatusLine
+        //{
+        //    get
+        //    {
+        //        if (Installed == null) return "Pending Setup"; //
+
+        //        string activeStatus = IsUsed ? "Active" : "Disabled"; //
+        //        string compatibilityStatus = IsCompatible ? "Ok" : "VERSION MISMATCH"; //
+
+        //        string watcherResult = Shell.WatcherStatus switch
+        //        {
+        //            WatcherStatusType.UpdateFound => "UPDATE FOUND",
+        //            WatcherStatusType.Error => "Watcher: ERROR",
+        //            WatcherStatusType.Checking => "Watcher: SYNCING...",
+        //            _ => "Up to date"
+        //        }; //
+
+        //        return $"{activeStatus} | {compatibilityStatus} | {watcherResult}"; //
+        //    }
+        //}
+
+        // Keep Description separate for XAML binding
+        public string ModDescription => string.IsNullOrWhiteSpace(Description) ? "" : Description; 
+
+        // Helper to check for error specifically
+        public bool WatcherError => Shell.WatcherStatus == WatcherStatusType.Error;
 
         // --- Constructor ---
 

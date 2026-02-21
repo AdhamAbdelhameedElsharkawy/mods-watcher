@@ -29,19 +29,7 @@ namespace ModsWatcher.Tests.VMs
             var vm = new ModItemViewModel(shell, null, null, null, _commonUtilsMock, _loggerMock.Object);
 
             Assert.Equal("Not Installed", vm.Version);
-            Assert.Equal("Pending Setup", vm.Summary);
             Assert.False(vm.IsUsed);
-        }
-
-        [Fact]
-        public void InstalledMod_ShouldShowActiveSummary()
-        {
-            var shell = new Mod { WatcherStatus = WatcherStatusType.Idle, IsUsed = true };
-            var installed = new InstalledMod { InstalledVersion = "1.0.0", SupportedAppVersions="1.0, 1.0.1, 1.0.0" };
-            var vm = new ModItemViewModel(shell, installed, null, "1.0.0", _commonUtilsMock, _loggerMock.Object);
-
-            // Matches: $"{activeStatus} | {compatibilityStatus} | {watcherResult}"
-            Assert.Equal("Active | Ok | Up to date", vm.Summary);
         }
 
         [Fact]
@@ -63,22 +51,11 @@ namespace ModsWatcher.Tests.VMs
 
             // Check that the necessary properties were notified at least once
             Assert.Contains(nameof(vm.IsUsed), changedProperties);
-            Assert.Contains(nameof(vm.Summary), changedProperties);
 
             // Optional: If you strictly want to know why it was 3
             // Assert.Equal(3, changedProperties.Count); 
         }
 
-        [Fact]
-        public void Summary_ShouldReflectDisabledStatus()
-        {
-            // Arrange
-            var installed = new InstalledMod { IsUsed = false, InstalledVersion = "1.0" };
-            var vm = new ModItemViewModel(new Mod(), installed, null, "1.0", _commonUtilsMock, _loggerMock.Object);
-
-            // Act & Assert
-            // Updated to match your actual VM string logic: Status | Compatibility | Watcher
-            Assert.Equal("Disabled | VERSION MISMATCH | Up to date", vm.Summary);
-        }
+        
     }
 }

@@ -9,6 +9,8 @@
         <ResourceDictionary>
             <locals:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
             <locals:CountToColorConverter x:Key="CountToColorConverter"/>
+            <locals:NullToColorConverter x:Key="NullToColorConverter"/>
+            <locals:NullToStringConverter x:Key="NullToStringConverter"/>
             <Style x:Key="ActionIconButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>

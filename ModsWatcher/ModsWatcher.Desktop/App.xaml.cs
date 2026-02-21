@@ -9,11 +9,16 @@ using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Desktop.Views;
 using ModsWatcher.Services.DI;
 using Serilog;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
 namespace ModsWatcher.Desktop
 {
+
+    //TODO:Admin tools (for managing mods, users, etc.)
+    //TODO:Installation pacakaging.
+    //TODO:check App, Mods Cards, for more visual notification of updates, new versions, etc.
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
@@ -41,6 +46,8 @@ namespace ModsWatcher.Desktop
             // 2. Add Logging to DI
             services.AddLogging(builder => builder.AddSerilog(dispose: true));
 
+            services.AddTransient<Microsoft.Extensions.Logging.ILogger>(sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger("App"));
+
             string connectionString = "Data Source=mods.db";
 
             services.AddDataServices(connectionString);
@@ -60,14 +67,17 @@ namespace ModsWatcher.Desktop
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            // 3. Hook Global Exceptions
-            this.DispatcherUnhandledException += (s, args) => {
-                Log.Fatal(args.Exception, "Unhandled UI Exception");
-                MessageBox.Show("A critical error occurred. See logs for details.");
-            };
+
+            base.OnStartup(e);
 
             var logger = ServiceProvider.GetRequiredService<ILogger<App>>();
             logger.LogInformation("ModsWatcher starting up...");
+
+            // Hook Global Exceptions
+            this.DispatcherUnhandledException += (s, args) => {
+                logger.LogCritical(args.Exception, "Unhandled UI Exception");
+                MessageBox.Show("A critical error occurred. See logs for details.");
+            };
 
             // Database Init
             var connectionFactory = ServiceProvider.GetRequiredService<IConnectionFactory>();
@@ -78,9 +88,14 @@ namespace ModsWatcher.Desktop
 
             try
             {
-                logger.LogInformation("Running Playwright browser check...");
-                var exitCode = Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
-                if (exitCode != 0) logger.LogWarning("Playwright exited with code {Code}", exitCode);
+                var sw = Stopwatch.StartNew();
+                logger.LogInformation("Checking Playwright browsers...");
+
+                await Task.Run(() => {
+                    Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
+                });
+                sw.Stop();
+                logger.LogInformation("Playwright check completed in {Elapsed}ms", sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
@@ -96,7 +111,7 @@ namespace ModsWatcher.Desktop
             nav.NavigateTo<AppSelectionViewModel>();
 
             mainWindow.Show();
-            base.OnStartup(e);
+            
         }
 
         protected override void OnExit(ExitEventArgs e)
