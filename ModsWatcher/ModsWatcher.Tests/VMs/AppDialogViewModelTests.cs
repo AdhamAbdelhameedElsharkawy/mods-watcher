@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
 using Moq;
@@ -9,10 +10,12 @@ namespace ModsWatcher.Tests.VMs
     public class AppDialogViewModelTests
     {
         private readonly Mock<IStorageService> _storageMock;
+        private readonly Mock<ILogger<AppDialogViewModel>> _loggerMock;
 
         public AppDialogViewModelTests()
         {
             _storageMock = new Mock<IStorageService>();
+            _loggerMock = new Mock<ILogger<AppDialogViewModel>>();
         }
 
         [Fact]
@@ -34,7 +37,7 @@ namespace ModsWatcher.Tests.VMs
             var existing = new ModdedApp { Name = "Skyrim", Id = 1 };
 
             // Act
-            var vm = new AppDialogViewModel(_storageMock.Object, existing);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, existing);
 
             // Assert
             Assert.True(vm.IsEditMode);
@@ -62,7 +65,7 @@ namespace ModsWatcher.Tests.VMs
         public async Task SaveCommand_ShouldUpdateLastUpdatedDate_AndCallAddApp()
         {
             // Arrange
-            var vm = new AppDialogViewModel(_storageMock.Object, null);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, null);
             vm.Name = "Test Game";
             vm.InstalledVersion = "1.0";
             vm.LatestVersion = "1.0";
@@ -83,7 +86,7 @@ namespace ModsWatcher.Tests.VMs
         {
             // Arrange
             var existing = new ModdedApp { Id = 5, Name = "Old Name", InstalledVersion = "1.0", LatestVersion = "2.0" };
-            var vm = new AppDialogViewModel(_storageMock.Object, existing);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, existing);
             vm.Name = "Updated Name";
 
             // Act

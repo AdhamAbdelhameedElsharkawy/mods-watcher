@@ -1,4 +1,6 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
@@ -11,10 +13,12 @@ namespace ModsWatcher.Tests.VMs
     {
 
         private readonly CommonUtils _commonUtilsMock;
+        private readonly Mock<ILogger<ModItemViewModel>> _loggerMock;
 
         public ModItemViewModelTests()
         {
             _commonUtilsMock = new CommonUtils();
+            _loggerMock = new Mock<ILogger<ModItemViewModel>>();
         }
 
 
@@ -22,7 +26,7 @@ namespace ModsWatcher.Tests.VMs
         public void UninstalledMod_ShouldShowCorrectDefaults()
         {
             var shell = new Mod { Name = "Uninstalled Mod" };
-            var vm = new ModItemViewModel(shell, null, null, null, _commonUtilsMock);
+            var vm = new ModItemViewModel(shell, null, null, null, _commonUtilsMock, _loggerMock.Object);
 
             Assert.Equal("Not Installed", vm.Version);
             Assert.Equal("Pending Setup", vm.Summary);
@@ -34,7 +38,7 @@ namespace ModsWatcher.Tests.VMs
         {
             var shell = new Mod { WatcherStatus = WatcherStatusType.Idle, IsUsed = true };
             var installed = new InstalledMod { InstalledVersion = "1.0.0", SupportedAppVersions="1.0, 1.0.1, 1.0.0" };
-            var vm = new ModItemViewModel(shell, installed, null, "1.0.0", _commonUtilsMock);
+            var vm = new ModItemViewModel(shell, installed, null, "1.0.0", _commonUtilsMock, _loggerMock.Object);
 
             // Matches: $"{activeStatus} | {compatibilityStatus} | {watcherResult}"
             Assert.Equal("Active | Ok | Up to date", vm.Summary);
@@ -46,7 +50,7 @@ namespace ModsWatcher.Tests.VMs
             // Arrange
             var shell = new Mod { Name = "Toggle Mod", IsUsed = false };
             var installed = new InstalledMod { };
-            var vm = new ModItemViewModel(shell, installed, null, "1.0", _commonUtilsMock);
+            var vm = new ModItemViewModel(shell, installed, null, "1.0", _commonUtilsMock, _loggerMock.Object);
 
             var changedProperties = new List<string>();
             vm.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName);
@@ -70,7 +74,7 @@ namespace ModsWatcher.Tests.VMs
         {
             // Arrange
             var installed = new InstalledMod { IsUsed = false, InstalledVersion = "1.0" };
-            var vm = new ModItemViewModel(new Mod(), installed, null, "1.0", _commonUtilsMock);
+            var vm = new ModItemViewModel(new Mod(), installed, null, "1.0", _commonUtilsMock, _loggerMock.Object);
 
             // Act & Assert
             // Updated to match your actual VM string logic: Status | Compatibility | Watcher

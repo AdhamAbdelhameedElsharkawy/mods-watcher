@@ -1,11 +1,10 @@
-﻿using Microsoft.Playwright;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Playwright;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ModsWatcher.Services
@@ -14,16 +13,18 @@ namespace ModsWatcher.Services
     {
         private readonly IStorageService _storageService;
         private readonly CommonUtils _utils;
+        private readonly ILogger<PlaywrightWatcherService> _logger;
 
         // Singleton instances to avoid process bloat
         private static IPlaywright? _playwright;
         private static IBrowser? _browser;
         private static readonly SemaphoreSlim _lock = new(1, 1);
 
-        public PlaywrightWatcherService(IStorageService storageService, CommonUtils commonUtils)
+        public PlaywrightWatcherService(IStorageService storageService, CommonUtils commonUtils, ILogger<PlaywrightWatcherService> logger)
         {
             _storageService = storageService;
             _utils = commonUtils;
+            _logger = logger;
         }
 
         private async Task EnsureBrowserAsync()
@@ -33,6 +34,7 @@ namespace ModsWatcher.Services
             await _lock.WaitAsync();
             try
             {
+                _logger.LogInformation("Initializing Playwright browser instance...");
                 if (_browser == null)
                 {
                     _playwright = await Playwright.CreateAsync();
@@ -41,6 +43,9 @@ namespace ModsWatcher.Services
                         Headless = true
                     });
                 }
+            }catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize Playwright browser.");
             }
             finally
             {
@@ -64,6 +69,7 @@ namespace ModsWatcher.Services
                 var page = await context.NewPageAsync();
                 try
                 {
+                    _logger.LogInformation("Checking mod: {ModName} at {Url}", shell.Name, shell.RootSourceUrl);
                     // DOMContentLoaded is the secret to the speed you liked in Python
                     await page.GotoAsync(shell.RootSourceUrl, new PageGotoOptions
                     {
@@ -93,7 +99,7 @@ namespace ModsWatcher.Services
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[Scrape Error] {shell.Name}: {ex.Message}");
+                    _logger.LogError(ex, "Error checking mod: {ModName} at {Url}", shell.Name, shell.RootSourceUrl);
                 }
                 finally
                 {
@@ -115,6 +121,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Extracting links from: {Url}", rootUrl);
                 // 1. Exact same navigation logic
                 await page.GotoAsync(rootUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Commit, Timeout = 30000 });
 
@@ -161,7 +168,7 @@ namespace ModsWatcher.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] {ex.Message}");
+                _logger.LogError(ex, "Error extracting links from: {Url}", rootUrl);
                 return new List<CrawledLink>();
             }
             finally
@@ -183,6 +190,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Parsing mod details from: {Url}", url);
                 // 1. Navigation matching Python: domcontentloaded
                 await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 30000 });
 
@@ -219,7 +227,7 @@ namespace ModsWatcher.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Deep Scrape Error] {url}: {ex.Message}");
+                _logger.LogError(ex, "Error parsing mod details from: {Url}", url);
                 return null;
             }
             finally
@@ -275,6 +283,7 @@ namespace ModsWatcher.Services
             }
             catch
             {
+                _logger.LogWarning("Failed to extract text for XPath: {XPath}", xpath);
                 return null;
             }
 

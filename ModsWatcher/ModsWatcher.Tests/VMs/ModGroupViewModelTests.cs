@@ -1,15 +1,23 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.ViewModels;
+using Moq;
 
 namespace ModsWatcher.Tests.VMs
 {
     public class ModGroupViewModelTests
     {
+        private readonly Mock<ILogger<ModVersionGroupViewModel>> _loggerMock;
+        public ModGroupViewModelTests()
+        {
+            _loggerMock = new Mock<ILogger<ModVersionGroupViewModel>>();
+        }
+
         [Fact]
         public void Constructor_ShouldInitializeWithDefaults()
         {
             // Act
-            var vm = new ModVersionGroupViewModel();
+            var vm = new ModVersionGroupViewModel(_loggerMock.Object);
 
             // Assert
             Assert.NotNull(vm.Versions);
@@ -20,7 +28,7 @@ namespace ModsWatcher.Tests.VMs
         public void PropertyAssignment_ShouldStoreDataCorrectly()
         {
             // Arrange
-            var vm = new ModVersionGroupViewModel();
+            var vm = new ModVersionGroupViewModel(_loggerMock.Object);
             var modId = Guid.NewGuid();
 
             // Act

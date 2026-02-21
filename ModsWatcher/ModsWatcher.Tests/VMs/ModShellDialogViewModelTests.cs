@@ -1,4 +1,6 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
@@ -10,19 +12,21 @@ namespace ModsWatcher.Tests.VMs
     {
         private readonly Mock<IStorageService> _serviceMock;
         private readonly Mock<IDialogService> _dialogMock;
+        private readonly Mock<ILogger<ModShellDialogViewModel>> _loggerMock;
         private const int TestAppId = 10;
 
         public ModShellDialogViewModelTests()
         {
             _serviceMock = new Mock<IStorageService>();
             _dialogMock = new Mock<IDialogService>();
+            _loggerMock = new Mock<ILogger<ModShellDialogViewModel>>();
         }
 
         [Fact]
         public void Constructor_WithNullMod_ShouldSetAddMode()
         {
             // Act
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, null);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, _loggerMock.Object, null);
 
             // Assert
             Assert.False(vm.IsEditMode);
@@ -38,7 +42,7 @@ namespace ModsWatcher.Tests.VMs
             var existingMod = new Mod { Id = Guid.NewGuid(), Name = "Existing Mod", AppId = TestAppId };
 
             // Act
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, existingMod);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, _loggerMock.Object, existingMod);
 
             // Assert
             Assert.True(vm.IsEditMode);
@@ -50,7 +54,7 @@ namespace ModsWatcher.Tests.VMs
         public void Properties_ShouldUpdateUnderlyingEntity()
         {
             // Arrange
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, _loggerMock.Object);
 
             // Act
             vm.Name = "New Texture Mod";
@@ -67,7 +71,7 @@ namespace ModsWatcher.Tests.VMs
         public async Task SaveCommand_InAddMode_ShouldCallSaveModWithConfigAsync()
         {
             // Arrange
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, 10, _dialogMock.Object); // AppId = 10
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 10, _dialogMock.Object, _loggerMock.Object); // AppId = 10
             vm.Name = "Brand New Mod";
             vm.RootSourceUrl = "https://nexusmods.com/test";
 
@@ -89,7 +93,7 @@ namespace ModsWatcher.Tests.VMs
             var existingMod = new Mod { Id = Guid.NewGuid(), Name = "Old Name", AppId = 1 };
             var existingConfig = new ModCrawlerConfig { ModId = existingMod.Id };
 
-            var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, _dialogMock.Object, existingMod, existingConfig);
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, 1, _dialogMock.Object, _loggerMock.Object, existingMod, existingConfig);
             vm.Name = "Updated Mod Name";
             vm.RootSourceUrl = "https://nexusmods.com/updated";
 

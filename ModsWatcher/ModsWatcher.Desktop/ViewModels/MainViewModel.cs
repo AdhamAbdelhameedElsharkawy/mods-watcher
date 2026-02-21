@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Desktop.Services;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Desktop.Services;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
@@ -15,7 +16,7 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _currentViewModel, value);
         }
 
-        public MainViewModel()
+        public MainViewModel(ILogger logger) : base(logger)
         {
             // Note: We don't initialize the starting view here anymore 
             // if we want to follow the DI pattern strictly. 

@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -42,7 +43,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public ICommand OpenUrlCommand { get; }
 
-        public ModInstallationDialogViewModel(InstalledMod entity)
+        public ModInstallationDialogViewModel(InstalledMod entity, ILogger logger) : base(logger)
         {
             Entity = entity;
 
@@ -58,6 +59,8 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             // The ?. operator handles Application.Current being null
             // The null check handles the Windows collection being null
+
+            _logger.LogInformation(result? $"Saving Mod Installation: {Entity.Name}, Version: {InstalledVersion}": "Closing Mod Installation Dialog");
             var windows = Application.Current?.Windows;
             if (windows == null) return;
 

@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Services;
 
 namespace ModsWatcher.Desktop.ViewModels
@@ -11,7 +12,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public InstalledModHistory History { get; }
 
-        public ModHistoryItemViewModel(InstalledModHistory history, string currentAppVersion, Func<bool> isOverrideActive, CommonUtils commonUtils)
+        public ModHistoryItemViewModel(InstalledModHistory history, string currentAppVersion, Func<bool> isOverrideActive, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             History = history;
             _currentAppVersion = currentAppVersion;

@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using System.Collections.ObjectModel;
 
 namespace ModsWatcher.Desktop.ViewModels
@@ -21,5 +22,10 @@ namespace ModsWatcher.Desktop.ViewModels
 
         // The collection of wrapped versions
         public ObservableCollection<AvailableVersionItemViewModel> Versions { get; set; } = new();
+
+        public ModVersionGroupViewModel(ILogger logger): base(logger) 
+        {
+            
+        }
     }
 }

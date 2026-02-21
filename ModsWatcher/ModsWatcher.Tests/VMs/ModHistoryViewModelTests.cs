@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
@@ -13,6 +14,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IDialogService> _dialogServiceMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
+        private readonly Mock<ILogger<ModHistoryViewModel>> _loggerMock;
         private readonly ModHistoryViewModel _vm;
         private readonly Mod _testMod;
         private readonly ModdedApp _testApp;
@@ -23,7 +25,8 @@ namespace ModsWatcher.Tests.VMs
             _navMock = new Mock<INavigationService>();
             _dialogServiceMock = new Mock<IDialogService>();
             _commonUtilsMock = new Mock<CommonUtils>();
-            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object);
+            _loggerMock = new Mock<ILogger<ModHistoryViewModel>>();
+            _vm = new ModHistoryViewModel(_navMock.Object, _storageMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
 
             _testMod = new Mod { Id = Guid.NewGuid(), Name = "UI Overhaul" };
             _testApp = new ModdedApp { Id = 1, InstalledVersion = "2.0" };

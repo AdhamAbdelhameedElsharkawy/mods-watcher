@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
@@ -9,7 +10,14 @@ namespace ModsWatcher.Desktop.ViewModels
 
     public abstract class BaseViewModel : INotifyPropertyChanged, INotifyDataErrorInfo
     {
-        
+
+        protected readonly ILogger _logger;
+
+        protected BaseViewModel(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private readonly Dictionary<string, List<string>> _errors = new();

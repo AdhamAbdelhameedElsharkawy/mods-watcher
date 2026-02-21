@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using System.Windows;
 
 namespace ModsWatcher.Desktop.ViewModels
@@ -39,7 +40,7 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _isSyncing, value);
         }
 
-        public ModdedAppItemViewModel(ModdedApp app)
+        public ModdedAppItemViewModel(ModdedApp app, ILogger logger) : base(logger)
         {
             App = app;
         }

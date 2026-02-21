@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.DTO;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.ViewModels;
 using System.Collections.ObjectModel;
@@ -12,7 +13,7 @@ public class VersionSelectorViewModel : BaseViewModel
     public AvailableMod? PrimaryMod { get; private set; }
     public Action<bool?>? RequestClose { get; set; }
 
-    public VersionSelectorViewModel(IEnumerable<AvailableMod> mods)
+    public VersionSelectorViewModel(IEnumerable<AvailableMod> mods, ILogger logger) : base(logger)
     {
         var dtos = mods.Select(m => new VersionSelectionDto(m));
         DisplayMods = new ObservableCollection<VersionSelectionDto>(dtos);

@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
@@ -11,6 +12,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IDialogService> _dialogMock;
+        private readonly Mock<ILogger<RetiredModsViewModel>> _loggerMock;
         private readonly RetiredModsViewModel _vm;
         private readonly ModdedApp _testApp;
 
@@ -19,7 +21,8 @@ namespace ModsWatcher.Tests.VMs
             _storageMock = new Mock<IStorageService>();
             _navMock = new Mock<INavigationService>();
             _dialogMock = new Mock<IDialogService>();
-            _vm = new RetiredModsViewModel(_navMock.Object, _storageMock.Object, _dialogMock.Object);
+            _loggerMock = new Mock<ILogger<RetiredModsViewModel>>();
+            _vm = new RetiredModsViewModel(_navMock.Object, _storageMock.Object, _dialogMock.Object, _loggerMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test Game" };
         }
 

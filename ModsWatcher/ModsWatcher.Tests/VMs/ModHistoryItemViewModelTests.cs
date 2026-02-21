@@ -1,4 +1,6 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
 using Moq;
@@ -9,10 +11,12 @@ namespace ModsWatcher.Tests.VMs
     {
 
         private readonly Mock<CommonUtils> _commonUtilsMock;
+        private readonly Mock<ILogger<ModHistoryItemViewModel>> _loggerMock;
 
         public ModHistoryItemViewModelTests()
         {
                 _commonUtilsMock = new Mock<CommonUtils>();
+                _loggerMock = new Mock<ILogger<ModHistoryItemViewModel>>();
         }
 
 
@@ -21,7 +25,7 @@ namespace ModsWatcher.Tests.VMs
         {
             // Arrange
             var history = new InstalledModHistory { AppVersion = "1.5.0" };
-            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => false, _commonUtilsMock.Object);
+            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => false, _commonUtilsMock.Object, _loggerMock.Object);
 
             // Assert
             Assert.True(vm.IsCompatible);
@@ -33,7 +37,7 @@ namespace ModsWatcher.Tests.VMs
         {
             // Arrange
             var history = new InstalledModHistory { AppVersion = "1.4.0" };
-            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => false, _commonUtilsMock.Object);
+            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => false, _commonUtilsMock.Object, _loggerMock.Object);
 
             // Assert
             Assert.False(vm.IsCompatible);
@@ -46,7 +50,7 @@ namespace ModsWatcher.Tests.VMs
             // Arrange
             var history = new InstalledModHistory { AppVersion = "1.4.0" };
             // Simulate the parent "Allow Incompatible" checkbox being checked
-            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => true, _commonUtilsMock.Object);
+            var vm = new ModHistoryItemViewModel(history, "1.5.0", () => true, _commonUtilsMock.Object, _loggerMock.Object);
 
             // Assert
             Assert.False(vm.IsCompatible);
@@ -57,7 +61,7 @@ namespace ModsWatcher.Tests.VMs
         public void RefreshCompatibility_ShouldTriggerPropertyChanged()
         {
             // Arrange
-            var vm = new ModHistoryItemViewModel(new InstalledModHistory(), "1.0", () => false, _commonUtilsMock.Object);
+            var vm = new ModHistoryItemViewModel(new InstalledModHistory(), "1.0", () => false, _commonUtilsMock.Object, _loggerMock.Object);
             bool wasNotified = false;
             vm.PropertyChanged += (s, e) =>
             {

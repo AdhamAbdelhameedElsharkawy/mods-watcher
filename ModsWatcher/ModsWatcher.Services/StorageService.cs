@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.DTO;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Core.Interfaces;
@@ -20,6 +21,7 @@ namespace ModsWatcher.Services
         private readonly IModCrawlerConfigRepository _modCrawlerConfigRepo;
         private readonly IAvailableModRepository _availableModRepo;
         private readonly CommonUtils _commonUtils;
+        private readonly ILogger<StorageService> _logger;
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
@@ -31,7 +33,8 @@ namespace ModsWatcher.Services
             IInstalledModHistoryRepository installedModHistoryRepo,
             IModCrawlerConfigRepository modCrawlerConfigRepo,
             IAvailableModRepository availableModRepo,
-            CommonUtils commonUtils)
+            CommonUtils commonUtils,
+            ILogger<StorageService> logger)
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
@@ -42,6 +45,7 @@ namespace ModsWatcher.Services
             _modCrawlerConfigRepo = modCrawlerConfigRepo;
             _availableModRepo = availableModRepo;
             _commonUtils = commonUtils;
+            _logger = logger;
         }
 
 
@@ -245,6 +249,8 @@ namespace ModsWatcher.Services
 
             try
             {
+                
+                _logger.LogInformation("Restoring mod from history. ModId: {ModId}, Name: {Name}, AppId: {AppId}", history.ModId, history.Name, history.ModdedAppId);
                 // 1. Re-create the Mod Shell using the 3 essential props: 
                 // ModId (Guid), RootSourceUrl (for crawler), and Name
                 var restoredShell = new Mod
@@ -285,6 +291,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred while restoring mod from history. ModId: {ModId}, Name: {Name}, AppId: {AppId}", history.ModId, history.Name, history.ModdedAppId);
                 throw;
             }
         }
@@ -313,6 +320,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Rolling back to version from history. ModId: {ModId}, Version: {Version}, AppVersion: {AppVersion}", target.ModId, target.Version, appVersion);
                 // 1. Get current active record to archive it
                 InstalledMod? currentActive = await _installedModRepo.FindByModIdAsync(target.ModId, connection, transaction);
 
@@ -345,6 +353,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred while rolling back to version from history. ModId: {ModId}, Version: {Version}, AppVersion: {AppVersion}", target.ModId, target.Version, appVersion);
                 throw;
             }
         }
@@ -360,6 +369,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Performing hard wipe for AppId: {AppId}", appId);
                 // 1. Wipe Unused History for this app
                 await _unUsedModRepo.DeleteByAppIdAsync(appId, connection, transaction);
 
@@ -380,6 +390,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred during hard wipe for AppId: {AppId}", appId);
                 throw;
             }
         }
@@ -392,6 +403,8 @@ namespace ModsWatcher.Services
 
             try
             {
+                
+                _logger.LogInformation("Performing hard wipe for ModId: {ModId}, Name: {Name}, AppId: {AppId}. Reason: {Reason}", mod.Id, mod.Name, mod.AppId, wipeReason);
                 // 1. Create the shell-based history record
                 var history = new UnusedModHistory
                 {
@@ -433,6 +446,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred during hard wipe for ModId: {ModId}, Name: {Name}, AppId: {AppId}. Reason: {Reason}", mod.Id, mod.Name, mod.AppId, wipeReason);
                 throw;
             }
         }
@@ -501,6 +515,8 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Promoting AvailableMod to InstalledMod. Mod Name: {ModId}, Version: {Version}, AppVersion: {AppVersion}", selected.Name, selected.AvailableVersion, appVersion);
+
                 if (conn.State != System.Data.ConnectionState.Open) conn.Open();
 
                 // 1. Archive current active mod to History
@@ -549,6 +565,10 @@ namespace ModsWatcher.Services
                 {
                     await _installedModRepo.UpdateAsync(currentActive, conn, transaction);
                 }
+            }catch
+            {
+                _logger.LogError("Error occurred while promoting AvailableMod to InstalledMod. Mod Name: {ModId}, Version: {Version}, AppVersion: {AppVersion}", selected.Name, selected.AvailableVersion, appVersion);
+                throw;
             }
             finally
             {
@@ -578,6 +598,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Deleting batch of AvailableMods. Count: {Count}", internalIds.Count());
                 // Pattern: Loop through the batch using the repository within a transaction
                 foreach (var id in internalIds)
                 {
@@ -589,6 +610,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred while deleting batch of AvailableMods. Count: {Count}", internalIds.Count());
                 throw;
             }
         }
@@ -642,6 +664,7 @@ namespace ModsWatcher.Services
 
             try
             {
+                _logger.LogInformation("Processing crawl results for ModId: {ModId}, AppVersion: {AppVersion}. Primary Version: {PrimaryVersion}, Scraped Count: {ScrapedCount}", shellId, appVersion, primary?.AvailableVersion, scrapedMods.Count);
                 // 1. Get existing versions to avoid duplicates in the history/available list
                 var existingVersions = await _availableModRepo.FindByModIdAsync(shellId, connection, transaction);
 
@@ -675,6 +698,7 @@ namespace ModsWatcher.Services
             catch
             {
                 transaction.Rollback();
+                _logger.LogError("Error occurred while processing crawl results for ModId: {ModId}, AppVersion: {AppVersion}. Primary Version: {PrimaryVersion}, Scraped Count: {ScrapedCount}", shellId, appVersion, primary?.AvailableVersion, scrapedMods.Count);
                 throw;
             }
             finally {

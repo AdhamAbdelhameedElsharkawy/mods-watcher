@@ -1,4 +1,6 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Desktop.ViewModels;
@@ -14,6 +16,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<IWatcherService> _watcherMock;
         private readonly Mock<IDialogService> _dialogServiceMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
+        private readonly Mock<ILogger<LibraryViewModel>> _loggerMock;
         private readonly LibraryViewModel _vm;
         private readonly ModdedApp _testApp;
 
@@ -24,8 +27,9 @@ namespace ModsWatcher.Tests.VMs
             _watcherMock = new Mock<IWatcherService>();
             _dialogServiceMock = new Mock<IDialogService>();
             _commonUtilsMock = new Mock<CommonUtils>();
+            _loggerMock = new Mock<ILogger<LibraryViewModel>>();
 
-            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object);
+            _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
         }
 
@@ -55,7 +59,7 @@ namespace ModsWatcher.Tests.VMs
         public void SelectedMod_SettingValue_ShouldNotifyDependentProperties()
         {
             // Arrange
-            var modItem = new ModItemViewModel(new Mod(), new InstalledMod { IsUsed = true }, null, "1.0", _commonUtilsMock.Object);
+            var modItem = new ModItemViewModel(new Mod(), new InstalledMod { IsUsed = true }, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
             List<string> changedProps = new();
             _vm.PropertyChanged += (s, e) => changedProps.Add(e.PropertyName);
 
@@ -70,8 +74,8 @@ namespace ModsWatcher.Tests.VMs
         public async Task MoveModOrder_ShouldSwapPriority_AndPersistToStorage()
         {
             // Arrange
-            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object);
-            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object);
+            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
+            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
             _vm.Mods.Add(mod1);
             _vm.Mods.Add(mod2);
 
@@ -92,7 +96,7 @@ namespace ModsWatcher.Tests.VMs
             // Arrange
             var shell = new Mod { Id = Guid.NewGuid() };
             _vm.SelectedApp = _testApp;
-            _vm.SelectedMod = new ModItemViewModel(shell, null, null, "1.0", _commonUtilsMock.Object);
+            _vm.SelectedMod = new ModItemViewModel(shell, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
 
             // Act
             _vm.ShowHistoryCommand.Execute(null);

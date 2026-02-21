@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
@@ -48,7 +49,7 @@ namespace ModsWatcher.Desktop.ViewModels
         }
 
         public ModHistoryViewModel(INavigationService navigationService, IStorageService storageService,
-            IDialogService dialog, CommonUtils commonUtils)
+            IDialogService dialog, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             _navigationService = navigationService;
             _storageService = storageService;
@@ -70,13 +71,14 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private async void LoadHistory()
         {
+            
             HistoryItems.Clear();
             var historyData = await _storageService.GetInstalledModHistoryAsync(_mod.Id);
 
             foreach (var entry in historyData)
             {
                 // Create the wrapper, passing the current app version and a link to the override status
-                var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules, _commonUtils);
+                var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules, _commonUtils, _logger);
                 HistoryItems.Add(wrapper);
             }
 
@@ -90,6 +92,7 @@ namespace ModsWatcher.Desktop.ViewModels
                 // Safety check in case the command is triggered via shortcut/double-click
                 if (!wrapper.CanRollback) return;
 
+                _logger.LogInformation("User initiated rollback to version {Version} for mod {ModName} in app {AppName}", wrapper.History.Version, _mod.Name, _parentApp.Name);
                 // Use the service instead of the static class!
                 string msg = $"Rollback to version {wrapper.History.Version}?\n\nCompatibility: {(wrapper.IsCompatible ? "Matched" : "Forced")}";
 

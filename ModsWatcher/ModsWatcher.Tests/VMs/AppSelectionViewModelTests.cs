@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.DTO;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
@@ -14,6 +15,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<INavigationService> _navMock;
         private readonly Mock<IWatcherService> _watcherMock;
         private readonly Mock<IDialogService> _dialogMock;
+        private readonly Mock<ILogger<AppSelectionViewModel>> _loggerMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
 
         public AppSelectionViewModelTests()
@@ -22,6 +24,7 @@ namespace ModsWatcher.Tests.VMs
             _navMock = new Mock<INavigationService>();
             _watcherMock = new Mock<IWatcherService>();
             _dialogMock = new Mock<IDialogService>();
+            _loggerMock = new Mock<ILogger<AppSelectionViewModel>>();
             _commonUtilsMock = new Mock<CommonUtils>();
 
             // Default setup for LoadApps in constructor
@@ -41,7 +44,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetAllAppSummariesAsync()).ReturnsAsync(summaries);
 
             // Act
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
             // Since LoadApps is called in ctor, we need to wait for it or trigger it
             await Task.Delay(50); // Small delay for the ctor-initiated task
 
@@ -55,8 +58,8 @@ namespace ModsWatcher.Tests.VMs
         public void SelectAppCommand_ShouldInvokeNavigationService()
         {
             // Arrange
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
-            var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 10, Name = "Test" });
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
+            var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 10, Name = "Test" }, _loggerMock.Object);
 
             // Act
             vm.SelectAppCommand.Execute(appItem);
@@ -71,8 +74,8 @@ namespace ModsWatcher.Tests.VMs
         public async Task SyncAppModsCommand_ShouldToggleSyncingState_WhileExecuting()
         {
             // Arrange
-            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object);
-            var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 1 });
+            var vm = new AppSelectionViewModel(_storageMock.Object, _navMock.Object, _watcherMock.Object, _dialogMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
+            var appItem = new ModdedAppItemViewModel(new ModdedApp { Id = 1 } , _loggerMock.Object);
             var bundle = new List<(Mod, ModCrawlerConfig)> { (new Mod(), new ModCrawlerConfig()) };
 
             // Use a TaskCompletionSource to control when the watcher "finishes"

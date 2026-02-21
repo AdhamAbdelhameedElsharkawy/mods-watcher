@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Core.Interfaces;
 using ModsWatcher.Data.Interfaces;
@@ -21,6 +22,7 @@ namespace ModsWatcher.Tests.Services
         private readonly Mock<IModCrawlerConfigRepository> _configRepoMock;
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
+        private readonly Mock<ILogger<StorageService>> _loggerMock;
         private readonly StorageService _service;
 
         public StorageServiceTests()
@@ -35,6 +37,8 @@ namespace ModsWatcher.Tests.Services
             _configRepoMock = new Mock<IModCrawlerConfigRepository>();
             _connectionMock = new Mock<IDbConnection>();
             _commonUtilsMock = new Mock<CommonUtils>();
+            _loggerMock = new Mock<ILogger<StorageService>>();
+
 
 
             // 1. SETUP: When the service asks for a connection, give it our mock connection
@@ -49,7 +53,8 @@ namespace ModsWatcher.Tests.Services
                 _installedModHistoryRepoMock.Object,
                 _configRepoMock.Object,
                 _availableModRepoMock.Object,
-                _commonUtilsMock.Object
+                _commonUtilsMock.Object,
+                _loggerMock.Object
             );
         }
 

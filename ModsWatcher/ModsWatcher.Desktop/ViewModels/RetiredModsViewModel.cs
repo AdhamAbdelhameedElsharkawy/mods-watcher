@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
@@ -17,7 +18,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public bool HasNoRetiredMods => RetiredMods.Count == 0;
 
-        public RetiredModsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService)
+        public RetiredModsViewModel(INavigationService navigationService, IStorageService storageService, IDialogService dialogService, ILogger logger) : base(logger)
         {
             _navigationService = navigationService;
             _storageService = storageService;
@@ -50,6 +51,8 @@ namespace ModsWatcher.Desktop.ViewModels
                 // Version Guard
                 if (_parentApp.InstalledVersion != historyItem.AppVersion)
                 {
+                    _logger.LogWarning("User attempted to restore mod '{ModName}' which was retired under app version {RetiredVersion}, but current app version is {CurrentVersion}. Restoration blocked.",
+                        historyItem.Name, historyItem.AppVersion, _parentApp.InstalledVersion);
                     _dialogService.ShowError(
                         $"Cannot restore mod. This mod was retired for app version {historyItem.AppVersion}, " +
                         $"but the current app version is {_parentApp.InstalledVersion}.",
@@ -61,6 +64,7 @@ namespace ModsWatcher.Desktop.ViewModels
                 if (_dialogService.ShowConfirmation($"Restore '{historyItem.Name}' to your active library?", "Confirm Restoration"))
                 {
                     await _storageService.RestoreModFromHistoryAsync(historyItem);
+                    _logger.LogInformation("User restored mod '{ModName}' from retired history for app '{AppName}'.", historyItem.Name, _parentApp.Name);
                     await LoadRetiredMods(); // Refresh list
                 }
             }

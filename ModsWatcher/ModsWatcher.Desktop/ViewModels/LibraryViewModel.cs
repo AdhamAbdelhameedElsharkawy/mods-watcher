@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
@@ -79,7 +80,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand EditInstallationCommand { get; }
 
         public LibraryViewModel(INavigationService navigationService, IStorageService storageService, IWatcherService watcherService, 
-            IDialogService dialogService, CommonUtils commonUtils)
+            IDialogService dialogService, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             _navigationService = navigationService;
             _storageService = storageService;
@@ -150,6 +151,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (SelectedApp == null) return;
             Mods.Clear();
+            
 
             // 1. Get the list of tuples: (Mod shell, InstalledMod installed, ModCrawlerConfig config)
             var libraryData = await _storageService.GetFullModsByAppId(SelectedApp.Id);
@@ -161,7 +163,7 @@ namespace ModsWatcher.Desktop.ViewModels
             foreach (var (shell, installed, config) in sortedData)
             {
                 // Use SelectedApp.Version (or your specific property name) for the constructor
-                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils));
+                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils, _logger));
             }
         }
 
@@ -223,7 +225,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private async Task<bool> ShowInstallationDialog(InstalledMod installed)
         {
-            var vm = new ModInstallationDialogViewModel(installed);
+            var vm = new ModInstallationDialogViewModel(installed, _logger);
             var dialog = new Views.ModInstallationDialog
             {
                 DataContext = vm,
@@ -299,7 +301,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private async Task RegisterNewMod()
         {
-            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService);
+            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService, _logger);
             var dialog = new Views.ModShellDialog { DataContext = vm, Owner = Application.Current.MainWindow };
             if (dialog.ShowDialog() == true) await LoadLibrary();
         }
@@ -308,7 +310,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (SelectedMod == null) return;
             var config = await _storageService.GetModCrawlerConfigByModIdAsync(SelectedMod.Shell.Id);
-            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService, SelectedMod.Shell, config);
+            var vm = new ModShellDialogViewModel(_storageService, SelectedApp.Id, _dialogService,_logger, SelectedMod.Shell, config);
             var dialog = new Views.ModShellDialog { DataContext = vm, Owner = Application.Current.MainWindow };
             if (dialog.ShowDialog() == true) await LoadLibrary();
         }
@@ -319,6 +321,8 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 IsBusy = true;
                 BusyMessage = "Retrieving watchable mods...";
+
+                _logger.LogInformation("Starting bulk sync for watchable mods of app {AppName} (ID: {AppId})", SelectedApp.Name, SelectedApp.Id);
 
                 var targetMods = Mods.Where(m => m.IsUsed && m.Shell.IsWatchable && m.Config != null).ToList();
                 if (targetMods.Any())
@@ -359,7 +363,8 @@ namespace ModsWatcher.Desktop.ViewModels
             }
             catch (Exception)
             {
-
+                _dialogService.ShowError("An error occurred during synchronization. Please try again.");
+                _logger.LogError("Error during bulk sync of watchable mods for app {AppName} (ID: {AppId})", SelectedApp.Name, SelectedApp.Id);
                 throw;
             }
             finally
@@ -419,6 +424,8 @@ namespace ModsWatcher.Desktop.ViewModels
                 IsBusy = true;
                 bool forceSync = false;
                 BusyMessage = "Analyzing watcher status...";
+                _logger.LogInformation("Initiating full sync for mod {ModName} (ID: {ModId}) of app {AppName} (ID: {AppId})", 
+                    modItem.Shell.Name, modItem.Shell.Id, SelectedApp.Name, SelectedApp.Id);
                 bool canCheck = _commonUtils.CanCheckModWatcherStatus(modItem.Shell);
 
                 if (canCheck)
@@ -466,13 +473,15 @@ namespace ModsWatcher.Desktop.ViewModels
 
                 BusyMessage = "Analyzing watcher status Completed...";
                 IsBusy = false;
-
+                _logger.LogInformation("Watcher status analysis completed for mod {ModName} (ID: {ModId}). Force sync: {ForceSync}", 
+                    modItem.Shell.Name, modItem.Shell.Id, forceSync);
 
 
                 if (modItem.Shell.IsCrawlable)
                 {
                     IsBusy = true;
                     BusyMessage = "Extracting Links...";
+                    _logger.LogInformation("Starting link extraction for mod {ModName} (ID: {ModId})", modItem.Shell.Name, modItem.Shell.Id);
                     // 2. STAGE 1: LINK EXTRACTION
                     modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
                     var extractedLinks = await _watcherService.ExtractLinksAsync(modItem.Shell.RootSourceUrl, modItem.Config!);
@@ -492,7 +501,8 @@ namespace ModsWatcher.Desktop.ViewModels
                         await FinalizeSyncState(modItem, WatcherStatusType.Idle);
                         return;
                     }
-
+                    _logger.LogInformation("{SelectedCount} links selected for deep parsing for mod {ModName} (ID: {ModId})", 
+                        selectedLinks.Count(), modItem.Shell.Name, modItem.Shell.Id);
                     // 4. STAGE 2: DEEP PARSE
                     BusyMessage = $"Deep-parsing {selectedLinks.Count()} items...";
                     var availableMods = new List<AvailableMod>();
@@ -510,6 +520,8 @@ namespace ModsWatcher.Desktop.ViewModels
                     // 5. VERSION SELECTION & PROMOTION
                     if (availableMods.Any())
                     {
+                        _logger.LogInformation("{AvailableCount} available versions found for mod {ModName} (ID: {ModId})", 
+                            availableMods.Count(), modItem.Shell.Name, modItem.Shell.Id);
                         var (primary, chosenMods) = await _dialogService.ShowVersionSelectorAsync(availableMods);
 
                         if (chosenMods != null && chosenMods.Any())
@@ -541,6 +553,7 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 await FinalizeSyncState(modItem, WatcherStatusType.Error);
                 _dialogService.ShowError($"Crawl failed: {ex.Message}");
+                _logger.LogError(ex, "Error during full sync for mod {ModName} (ID: {ModId})", modItem.Shell.Name, modItem.Shell.Id);
             }
             finally
             {

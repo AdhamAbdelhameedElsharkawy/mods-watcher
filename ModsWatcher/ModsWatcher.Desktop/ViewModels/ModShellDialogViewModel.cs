@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Services.Interfaces;
@@ -161,7 +162,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
-        public ModShellDialogViewModel(IStorageService storageService, int appId, IDialogService dialogService, Mod? existingMod = null, ModCrawlerConfig? existingConfig = null)
+        public ModShellDialogViewModel(IStorageService storageService, int appId, IDialogService dialogService, ILogger logger, Mod? existingMod = null, ModCrawlerConfig? existingConfig = null) : base(logger)
         {
             _storageService = storageService;
             IsEditMode = existingMod != null;
@@ -189,6 +190,8 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             try
             {
+                _logger.LogInformation("Saving mod: {ModName} (EditMode: {IsEditMode})", Shell.Name, IsEditMode);
+
                 if (IsEditMode)
                 {
                     await _storageService.UpdateModWithConfigAsync(Shell, Config);
@@ -202,8 +205,8 @@ namespace ModsWatcher.Desktop.ViewModels
             catch (Exception ex)
             {
                 _dialogService.ShowError($"Failed to save mod: {ex.Message}");
+                _logger.LogError(ex, "Error saving mod: {ModName}", Shell.Name);
 
-                //MessageBox.Show($"Failed to save mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

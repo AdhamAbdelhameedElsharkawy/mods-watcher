@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.DTO;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Views;
@@ -8,6 +9,14 @@ namespace ModsWatcher.Desktop.Services
 {
     public class WpfDialogService : IDialogService
     {
+
+        private readonly ILogger<WpfDialogService> _logger;
+
+        public WpfDialogService(ILogger<WpfDialogService> logger) 
+        {
+            _logger = logger;
+        }
+
         public bool ShowConfirmation(string message, string title)
         {
             var result = MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -26,7 +35,7 @@ namespace ModsWatcher.Desktop.Services
 
         public async Task<List<CrawledLink>> ShowLinkSelectorAsync(IEnumerable<CrawledLink> links)
         {
-            var vm = new LinkSelectorViewModel(links);
+            var vm = new LinkSelectorViewModel(links, _logger);
             var dialog = new LinkSelectorView { DataContext = vm };
 
             var result = dialog.ShowDialog();
@@ -43,7 +52,7 @@ namespace ModsWatcher.Desktop.Services
         {
             return await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                var vm = new VersionSelectorViewModel(availableMods);
+                var vm = new VersionSelectorViewModel(availableMods, _logger);
                 var window = new VersionSelectorWindow
                 {
                     DataContext = vm,

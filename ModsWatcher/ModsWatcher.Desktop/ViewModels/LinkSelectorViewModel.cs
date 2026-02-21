@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 public class LinkSelectorViewModel : BaseViewModel
 {
@@ -16,7 +17,7 @@ public class LinkSelectorViewModel : BaseViewModel
     public ICommand CopyUrlCommand { get; }
     public ICommand OpenUrlCommand { get; }
 
-    public LinkSelectorViewModel(IEnumerable<CrawledLink> discoveredLinks)
+    public LinkSelectorViewModel(IEnumerable<CrawledLink> discoveredLinks, ILogger logger) : base(logger)
     {
         Links = new ObservableCollection<CrawledLink>(discoveredLinks);
 

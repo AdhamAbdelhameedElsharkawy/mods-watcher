@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Services;
 using System;
@@ -174,7 +175,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         // --- Constructor ---
 
-        public ModItemViewModel(Mod shell, InstalledMod installed, ModCrawlerConfig config, string appVersion, CommonUtils commonUtils)
+        public ModItemViewModel(Mod shell, InstalledMod installed, ModCrawlerConfig config, string appVersion, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             Shell = shell;
             Installed = installed;

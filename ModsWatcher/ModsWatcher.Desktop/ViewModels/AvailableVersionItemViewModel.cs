@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Services;
 
 namespace ModsWatcher.Desktop.ViewModels
@@ -19,7 +20,7 @@ namespace ModsWatcher.Desktop.ViewModels
         }
         public bool IsCompatible { get; }
 
-        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion, string? installedVersion, CommonUtils commonUtils)
+        public AvailableVersionItemViewModel(AvailableMod entity, string currentAppVersion, string? installedVersion, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             Entity = entity;
             _commonUtils = commonUtils;

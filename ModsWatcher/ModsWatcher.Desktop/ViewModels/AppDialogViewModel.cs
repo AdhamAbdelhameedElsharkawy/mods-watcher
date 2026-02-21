@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
@@ -55,7 +56,7 @@ public class AppDialogViewModel : BaseViewModel
     public ICommand CancelCommand { get; }
     public event Action RequestClose;
 
-    public AppDialogViewModel(IStorageService storageService, ModdedApp? existingApp = null)
+    public AppDialogViewModel(IStorageService storageService, ILogger logger, ModdedApp? existingApp = null):base(logger)
     {
         _storageService = storageService;
         IsEditMode = existingApp != null;
@@ -71,6 +72,8 @@ public class AppDialogViewModel : BaseViewModel
 
     private async Task SaveAsync()
     {
+        
+        _logger.LogInformation(IsEditMode ? "Updating app: {AppName}" : "Adding new app: {AppName}", App.Name);
         // Implicitly update for both modes
         App.LastUpdatedDate = DateOnly.FromDateTime(DateTime.Now);
 

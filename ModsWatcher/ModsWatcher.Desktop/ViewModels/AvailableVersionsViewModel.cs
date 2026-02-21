@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
@@ -33,7 +34,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand OpenUrlCommand { get; }
 
         public AvailableVersionsViewModel(INavigationService navigationService, IStorageService storageService, 
-            IDialogService dialogService, CommonUtils commonUtils)
+            IDialogService dialogService, CommonUtils commonUtils, ILogger logger) : base(logger)
         {
             _navigationService = navigationService;
             _storageService = storageService;
@@ -65,6 +66,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (_selectedApp == null) return;
 
+            
             string installedVersion = string.Empty;
 
             GroupedAvailableMods.Clear();
@@ -78,14 +80,17 @@ namespace ModsWatcher.Desktop.ViewModels
 
             foreach (var (Shell, Versions) in results)
             {
-                var group = new ModVersionGroupViewModel
+                var group = new ModVersionGroupViewModel(_logger)
                 {
                     ModId = Shell.Id,
                     ModName = Shell.Name,
                     RootSourceUrl = Shell.RootSourceUrl,
                     Versions = new ObservableCollection<AvailableVersionItemViewModel>(
-                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion, _commonUtils))
+                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion, _commonUtils, _logger))
                     )
+
+                    
+
                 };
 
                 GroupedAvailableMods.Add(group);
@@ -96,6 +101,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (item == null) return;
 
+            _logger.LogInformation("Attempting to promote Available version {Version} for Mod {ModId} to Installed status.", item.Entity.AvailableVersion, item.Entity.Name);
             if (_dialogService.ShowConfirmation($"Promote version {item.Entity.AvailableVersion} to Installed status?", "Confirm Promotion"))
             {
                 // This updates the InstalledMod record in the DB
@@ -108,6 +114,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (item == null) return;
 
+            _logger.LogInformation("Attempting to delete Available version {Version} for Mod {ModId}.", item.Entity.AvailableVersion, item.Entity.Name);
             if (_dialogService.ShowConfirmation("Delete this version entry?", "Confirm Delete"))
             {
                 await _storageService.DeleteAvailableModAsync(item.Entity.InternalId);
@@ -119,6 +126,7 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (group == null) return;
 
+            _logger.LogInformation("Attempting to delete {Count} selected versions for Mod {ModId}.", group.Versions.Count(v => v.IsSelected), group.ModId);
             var selected = group.Versions.Where(v => v.IsSelected).ToList();
             if (!selected.Any()) return;
 

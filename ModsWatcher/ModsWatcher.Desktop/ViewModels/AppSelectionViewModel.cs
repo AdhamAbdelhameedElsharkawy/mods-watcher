@@ -1,4 +1,5 @@
-﻿using ModsWatcher.Core.Entities;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.Services;
 using ModsWatcher.Services.Interfaces;
@@ -29,7 +30,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand SyncAppModsCommand { get; }
 
         public AppSelectionViewModel(IStorageService storageService, INavigationService navigationService, IWatcherService watcherService,
-            IDialogService dialogService, CommonUtils commonUtils)
+            IDialogService dialogService, CommonUtils commonUtils, ILogger logger):base(logger)
         {
             _storageService = storageService;
             _navigationService = navigationService;
@@ -63,6 +64,7 @@ namespace ModsWatcher.Desktop.ViewModels
                     {
                         try
                         {
+                            _logger.LogInformation("User confirmed hard wipe for app: {AppName}", wrapper.App.Name);
                             // Trigger the bulk wipe logic 
                             await _storageService.HardWipeAppAsync(wrapper.App.Id);
                             // Remove from the UI collection
@@ -71,6 +73,7 @@ namespace ModsWatcher.Desktop.ViewModels
                         catch (Exception ex)
                         {
                             _dialogService.ShowError($"Failed to wipe app: {ex.Message}", "Error");
+                            _logger.LogError(ex, "Error during hard wipe for app: {AppName}", wrapper.App.Name);
                         }
                     }
 
@@ -88,6 +91,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private async Task LoadApps()
         {
+
             // Fetch the DTOs (Data + Stats combined)
             var summaries = await _storageService.GetAllAppSummariesAsync();
 
@@ -96,7 +100,7 @@ namespace ModsWatcher.Desktop.ViewModels
             foreach (var dto in summaries)
             {
                 // Map the DTO to the small VM
-                var wrapper = new ModdedAppItemViewModel(dto.App)
+                var wrapper = new ModdedAppItemViewModel(dto.App, _logger)
                 {
                     ActiveModsCount = dto.ActiveCount,
                     PotentialUpdatesCount = dto.PotentialUpdatesCount
@@ -108,7 +112,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private void AddNewApp() {
             // Create the ViewModel for the dialog (Add Mode)
-            var dialogVM = new AppDialogViewModel(_storageService);
+            var dialogVM = new AppDialogViewModel(_storageService, _logger);
 
             // Create the View (the Window)
             var dialog = new Views.AddAppDialog
@@ -127,7 +131,7 @@ namespace ModsWatcher.Desktop.ViewModels
             if (item == null) return;
 
             // Create ViewModel in Edit Mode
-            var dialogVM = new AppDialogViewModel(_storageService, item.App);
+            var dialogVM = new AppDialogViewModel(_storageService,_logger, item.App);
 
             var dialog = new Views.AddAppDialog
             {
@@ -147,6 +151,8 @@ namespace ModsWatcher.Desktop.ViewModels
 
             try
             {
+                
+                _logger.LogInformation("Starting sync for app: {AppName}", item.Name);
                 // 1. UI Feedback: Start loading state on the app card
                 item.IsSyncing = true;
                 this.IsBusy = true;
@@ -191,6 +197,8 @@ namespace ModsWatcher.Desktop.ViewModels
             catch (Exception ex)
             {
                 // Add logging or user notification here
+                _dialogService.ShowError($"An error occurred during sync for App: {item.Name}", "Sync Error");
+                _logger.LogError(ex, "Error during app sync for {AppName}", item.Name);
             }
             finally
             {
