@@ -1,12 +1,12 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class ModInstallationDialogViewModel : BaseViewModel
     {

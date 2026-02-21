@@ -1,6 +1,6 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.ViewModels;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 

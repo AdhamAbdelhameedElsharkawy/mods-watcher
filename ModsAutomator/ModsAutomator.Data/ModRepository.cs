@@ -1,14 +1,14 @@
 ﻿using Dapper;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data.Interfaces;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data.Interfaces;
 using System.Data;
 using System.Threading;
 using System.Transactions;
 
 
-namespace ModsAutomator.Data
+namespace ModsWatcher.Data
 {
     public class ModRepository : BaseRepository, IModRepository
     {

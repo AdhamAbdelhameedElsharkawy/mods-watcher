@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class AvailableVersionsViewModel : BaseViewModel, IInitializable<(Mod? Shell, ModdedApp App)>
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ModsAutomator.Core.Enums
+namespace ModsWatcher.Core.Enums
 {
     public enum WatcherStatusType : byte
     {

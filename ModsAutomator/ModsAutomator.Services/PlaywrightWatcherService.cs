@@ -1,14 +1,14 @@
 ﻿using Microsoft.Playwright;
-using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace ModsAutomator.Services
+namespace ModsWatcher.Services
 {
     public class PlaywrightWatcherService : IWatcherService, IAsyncDisposable
     {

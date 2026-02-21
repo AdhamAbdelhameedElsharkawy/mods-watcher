@@ -1,19 +1,16 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using ModsAutomator.Data.DI;
-using ModsAutomator.Data.Helpers;
-using ModsAutomator.Data.Interfaces;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Desktop.ViewModels;
-using ModsAutomator.Desktop.Views;
-using ModsAutomator.Services;
-using ModsAutomator.Services.DI;
-using ModsAutomator.Services.Interfaces;
-using System.Runtime.InteropServices.JavaScript;
+using ModsWatcher.Data.DI;
+using ModsWatcher.Data.Helpers;
+using ModsWatcher.Data.Interfaces;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Desktop.Views;
+using ModsWatcher.Services.DI;
 using System.Windows;
 
 
-namespace ModsAutomator.Desktop
+namespace ModsWatcher.Desktop
 {
     /// <summary>
     /// Interaction logic for App.xaml
@@ -22,6 +19,8 @@ namespace ModsAutomator.Desktop
 
     //TODO:Logging layer
     //TODO:Admin tools (for managing mods, users, etc.)
+    //TODO:Installation pacakaging.
+    //TODO:check App, Mods Cards, for more visual notification of updates, new versions, etc.
 
     public partial class App : Application
     {

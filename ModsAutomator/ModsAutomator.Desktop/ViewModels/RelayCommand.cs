@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
 
 

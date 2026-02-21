@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data;
-using ModsAutomator.Data.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data;
+using ModsWatcher.Data.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 
-namespace ModsAutomator.Services.DI
+namespace ModsWatcher.Services.DI
 {
     public static class ServicesDependencyInjection
     {

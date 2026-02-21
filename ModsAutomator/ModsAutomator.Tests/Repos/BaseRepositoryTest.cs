@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
-using ModsAutomator.Data.Helpers;
-using ModsAutomator.Data.Interfaces;
+using ModsWatcher.Data.Helpers;
+using ModsWatcher.Data.Interfaces;
 using Moq;
 
-namespace ModsAutomator.Tests.Repos
+namespace ModsWatcher.Tests.Repos
 {
     public abstract class BaseRepositoryTest : IDisposable
     {

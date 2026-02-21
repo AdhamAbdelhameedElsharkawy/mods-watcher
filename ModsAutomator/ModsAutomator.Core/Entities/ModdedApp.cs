@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     /// <summary>
     /// This class represents a modded application e.g ATS, ETS2

@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace ModsAutomator.Core.Interfaces
+namespace ModsWatcher.Core.Interfaces
 {
     public interface IRepository<T, TId>
     {

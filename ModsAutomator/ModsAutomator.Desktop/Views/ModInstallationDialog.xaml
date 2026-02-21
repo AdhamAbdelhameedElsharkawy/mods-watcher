@@ -1,4 +1,4 @@
-﻿<Window x:Class="ModsAutomator.Desktop.Views.ModInstallationDialog"
+﻿<Window x:Class="ModsWatcher.Desktop.Views.ModInstallationDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Installation Details" Height="450" Width="400"

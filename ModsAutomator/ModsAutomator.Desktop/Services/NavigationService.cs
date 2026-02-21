@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.ViewModels;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.ViewModels;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class NavigationService : INavigationService
     {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class InverseBoolToVisConverter : IValueConverter
     {

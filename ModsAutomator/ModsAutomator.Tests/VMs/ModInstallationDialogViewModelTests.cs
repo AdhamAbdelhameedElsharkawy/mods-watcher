@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Desktop.ViewModels;
 using Xunit;
 
-namespace ModsAutomator.Tests.VMs
+namespace ModsWatcher.Tests.VMs
 {
     public class ModInstallationDialogViewModelTests
     {

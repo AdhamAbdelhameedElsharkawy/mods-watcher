@@ -1,13 +1,13 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services;
 using Moq;
 using System.Data;
 
-namespace ModsAutomator.Tests.Services
+namespace ModsWatcher.Tests.Services
 {
     public class StorageServiceTests
     {

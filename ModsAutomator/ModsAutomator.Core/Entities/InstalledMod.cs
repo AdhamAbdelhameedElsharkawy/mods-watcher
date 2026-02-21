@@ -1,6 +1,6 @@
-﻿using ModsAutomator.Core.Enums;
+﻿using ModsWatcher.Core.Enums;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     /// <summary>
     /// This class represents an current installed Mod in an application, it has 1:1 relationship with Mod entity

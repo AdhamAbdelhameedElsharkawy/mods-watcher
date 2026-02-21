@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ModsAutomator.Core\ModsAutomator.Core.csproj" />
-    <ProjectReference Include="..\ModsAutomator.Data\ModsAutomator.Data.csproj" />
+    <ProjectReference Include="..\ModsAutomator.Core\ModsWatcher.Core.csproj" />
+    <ProjectReference Include="..\ModsAutomator.Data\ModsWatcher.Data.csproj" />
   </ItemGroup>
 
 </Project>

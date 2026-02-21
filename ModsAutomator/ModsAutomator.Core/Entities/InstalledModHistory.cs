@@ -1,4 +1,4 @@
-﻿namespace ModsAutomator.Core.Entities
+﻿namespace ModsWatcher.Core.Entities
 {
     public class InstalledModHistory
     {

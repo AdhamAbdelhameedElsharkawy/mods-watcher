@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Data.Interfaces;
+﻿using ModsWatcher.Data.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data.Helpers;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data.Helpers;
 
-namespace ModsAutomator.Data.DI
+namespace ModsWatcher.Data.DI
 {
     public static class DataDependencyInjection
     {

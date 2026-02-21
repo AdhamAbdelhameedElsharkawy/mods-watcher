@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.ViewModels;
 
-namespace ModsAutomator.Tests.VMs
+namespace ModsWatcher.Tests.VMs
 {
     public class ModGroupViewModelTests
     {

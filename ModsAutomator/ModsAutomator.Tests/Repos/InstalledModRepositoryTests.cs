@@ -1,13 +1,13 @@
 ﻿using Dapper;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data;
 using Moq;
 using System.Data;
 using Xunit;
 
-namespace ModsAutomator.Tests.Repos
+namespace ModsWatcher.Tests.Repos
 {
     public class InstalledModRepositoryTests : BaseRepositoryTest
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     public class UnusedModHistory
     {

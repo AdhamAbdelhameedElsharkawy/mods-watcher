@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     public class ModCrawlerConfig
     {

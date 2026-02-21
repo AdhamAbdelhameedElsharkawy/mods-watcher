@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Desktop.ViewModels;
 using Moq;
 
-namespace ModsAutomator.Tests.VMs
+namespace ModsWatcher.Tests.VMs
 {
     public class ModHistoryItemViewModelTests
     {

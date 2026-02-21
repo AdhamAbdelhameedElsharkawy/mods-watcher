@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class CommonUtils
     {

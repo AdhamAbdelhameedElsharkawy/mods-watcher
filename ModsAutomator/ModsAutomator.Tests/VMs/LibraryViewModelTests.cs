@@ -1,11 +1,11 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Desktop.ViewModels;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services.Interfaces;
 using Moq;
 
-namespace ModsAutomator.Tests.VMs
+namespace ModsWatcher.Tests.VMs
 {
     public class LibraryViewModelTests
     {

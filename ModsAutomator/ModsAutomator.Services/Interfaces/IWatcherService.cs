@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
 
-namespace ModsAutomator.Services.Interfaces
+namespace ModsWatcher.Services.Interfaces
 {
     public interface IWatcherService
     {

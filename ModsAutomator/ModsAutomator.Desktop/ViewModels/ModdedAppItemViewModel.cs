@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.Entities;
 using System.Windows;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class ModdedAppItemViewModel : BaseViewModel
     {

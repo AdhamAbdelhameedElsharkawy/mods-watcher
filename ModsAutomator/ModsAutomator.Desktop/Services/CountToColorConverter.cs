@@ -2,7 +2,7 @@
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class CountToColorConverter : IValueConverter
     {

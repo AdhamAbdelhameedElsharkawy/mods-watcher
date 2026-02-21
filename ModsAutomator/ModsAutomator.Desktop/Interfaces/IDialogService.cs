@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
 
-namespace ModsAutomator.Desktop.Interfaces
+namespace ModsWatcher.Desktop.Interfaces
 {
     public interface IDialogService
     {

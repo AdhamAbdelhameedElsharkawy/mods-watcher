@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
   
 

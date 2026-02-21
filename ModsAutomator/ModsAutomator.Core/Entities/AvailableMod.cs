@@ -1,9 +1,6 @@
-﻿using ModsAutomator.Core.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using ModsWatcher.Core.Enums;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     /// <summary>
     /// This class represents an available Mod version that can be installed or updated for an application

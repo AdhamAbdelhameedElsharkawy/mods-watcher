@@ -1,10 +1,10 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class RetiredModsViewModel : BaseViewModel, IInitializable<ModdedApp>
     {

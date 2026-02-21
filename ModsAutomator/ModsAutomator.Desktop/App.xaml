@@ -1,8 +1,8 @@
-﻿<Application x:Class="ModsAutomator.Desktop.App"
+﻿<Application x:Class="ModsWatcher.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ModsAutomator.Desktop"
-             xmlns:locals="clr-namespace:ModsAutomator.Desktop.Services"
+             xmlns:local="clr-namespace:ModsWatcher.Desktop"
+             xmlns:locals="clr-namespace:ModsWatcher.Desktop.Services"
              >
     <Application.Resources>
         

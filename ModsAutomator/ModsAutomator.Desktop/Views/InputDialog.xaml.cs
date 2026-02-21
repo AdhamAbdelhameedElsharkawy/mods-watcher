@@ -10,7 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ModsAutomator.Desktop.Views
+namespace ModsWatcher.Desktop.Views
 {
     /// <summary>
     /// Interaction logic for InputDialog.xaml

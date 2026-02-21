@@ -1,13 +1,13 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 using System.Data;
 
-namespace ModsAutomator.Services
+namespace ModsWatcher.Services
 {
     public class StorageService : IStorageService
     {

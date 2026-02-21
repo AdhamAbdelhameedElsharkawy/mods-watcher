@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     using System.Windows; // Required for Visibility
 

@@ -1,12 +1,12 @@
-﻿<Window x:Class="ModsAutomator.Desktop.Views.MainWindow"
+﻿<Window x:Class="ModsWatcher.Desktop.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:viewmodels="clr-namespace:ModsAutomator.Desktop.ViewModels"
-        xmlns:views="clr-namespace:ModsAutomator.Desktop.Views"
+        xmlns:viewmodels="clr-namespace:ModsWatcher.Desktop.ViewModels"
+        xmlns:views="clr-namespace:ModsWatcher.Desktop.Views"
         mc:Ignorable="d"
-        Title="Mods Automator 2026" Height="600" Width="1000"
+        Title="Mods Watcher 2026" Height="600" Width="1000"
         Background="#1E1E1E">
 
     <Window.Resources>

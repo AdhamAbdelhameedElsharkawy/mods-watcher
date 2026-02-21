@@ -1,6 +1,6 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.ViewModels;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.ViewModels;
+using ModsWatcher.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Input;

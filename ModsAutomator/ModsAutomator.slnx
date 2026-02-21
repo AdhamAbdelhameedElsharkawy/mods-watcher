@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="ModsAutomator.Core/ModsAutomator.Core.csproj" />
-  <Project Path="ModsAutomator.Data/ModsAutomator.Data.csproj" />
-  <Project Path="ModsAutomator.Desktop/ModsAutomator.Desktop.csproj" />
-  <Project Path="ModsAutomator.Services/ModsAutomator.Services.csproj" />
-  <Project Path="ModsAutomator.Tests/ModsAutomator.Tests.csproj" Id="13589ed5-ae8d-4d76-bcf6-7380a3412178" />
-</Solution>

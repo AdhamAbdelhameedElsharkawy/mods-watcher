@@ -1,11 +1,11 @@
 ﻿using Microsoft.Data.Sqlite;
-using ModsAutomator.Data.Interfaces;
+using ModsWatcher.Data.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace ModsAutomator.Data.Helpers
+namespace ModsWatcher.Data.Helpers
 {
     public class SqliteConnectionFactory : IConnectionFactory
     {

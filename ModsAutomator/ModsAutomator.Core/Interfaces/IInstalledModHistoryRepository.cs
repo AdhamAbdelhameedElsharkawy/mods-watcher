@@ -1,10 +1,10 @@
-﻿using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace ModsAutomator.Core.Interfaces
+namespace ModsWatcher.Core.Interfaces
 {
     public interface IInstalledModHistoryRepository : IRepository<InstalledModHistory, int>
     {

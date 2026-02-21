@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Data;
-using ModsAutomator.Data.Interfaces;
+﻿using ModsWatcher.Data;
+using ModsWatcher.Data.Interfaces;
 using Moq;
 using System.Data;
 
-namespace ModsAutomator.Tests.Repos
+namespace ModsWatcher.Tests.Repos
 {
     // We inherit from your BaseRepositoryTest to get the SQLite setup,
     // but the class name MUST be distinct.

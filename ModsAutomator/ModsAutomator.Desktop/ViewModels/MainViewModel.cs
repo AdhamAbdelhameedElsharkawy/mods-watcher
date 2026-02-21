@@ -1,6 +1,6 @@
-﻿using ModsAutomator.Desktop.Services;
+﻿using ModsWatcher.Desktop.Services;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class MainViewModel : BaseViewModel
     {

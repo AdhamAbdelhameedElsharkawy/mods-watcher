@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Services;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Services;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class AvailableVersionItemViewModel : BaseViewModel
     {

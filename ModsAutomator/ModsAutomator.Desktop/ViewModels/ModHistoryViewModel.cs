@@ -1,12 +1,12 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class ModHistoryViewModel : BaseViewModel, IInitializable<(Mod Mod, ModdedApp App)>
     {
@@ -71,7 +71,6 @@ namespace ModsAutomator.Desktop.ViewModels
         private async void LoadHistory()
         {
             HistoryItems.Clear();
-            //TODO:R2, logic to filter history data before returning it to the viewmodel
             var historyData = await _storageService.GetInstalledModHistoryAsync(_mod.Id);
 
             foreach (var entry in historyData)

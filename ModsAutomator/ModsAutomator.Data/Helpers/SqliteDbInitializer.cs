@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 
-namespace ModsAutomator.Data.Helpers
+namespace ModsWatcher.Data.Helpers
 {
     public static class SqliteDbInitializer
     {

@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
 using System.Data;
 
-namespace ModsAutomator.Services.Interfaces
+namespace ModsWatcher.Services.Interfaces
 {
     public interface IStorageService
     {

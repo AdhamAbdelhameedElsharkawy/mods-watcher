@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.Entities;
 using System.Collections.ObjectModel;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     /// <summary>
     /// Helper class to represent the Mod group in the UI

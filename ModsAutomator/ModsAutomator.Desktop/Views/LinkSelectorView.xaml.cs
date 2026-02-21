@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ModsAutomator.Desktop.Views
+namespace ModsWatcher.Desktop.Views
 {
     /// <summary>
     /// Interaction logic for LinkSelectorView.xaml

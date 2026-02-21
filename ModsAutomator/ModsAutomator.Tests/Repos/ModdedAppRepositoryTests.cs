@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Data;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Data;
 using Dapper;
 using Xunit;
 
-namespace ModsAutomator.Tests.Repos
+namespace ModsWatcher.Tests.Repos
 {
     public class ModdedAppRepositoryTests : BaseRepositoryTest
     {

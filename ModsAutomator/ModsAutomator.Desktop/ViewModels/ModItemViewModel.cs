@@ -1,11 +1,11 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Desktop.Services;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Desktop.Services;
 using System;
 using System.IO;
 using System.Windows.Markup;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class ModItemViewModel : BaseViewModel
     {

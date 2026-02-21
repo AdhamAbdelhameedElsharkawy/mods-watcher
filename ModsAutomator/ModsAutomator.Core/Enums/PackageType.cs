@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ModsAutomator.Core.Enums
+﻿namespace ModsWatcher.Core.Enums
 {
     /// <summary>
     /// This Enum represents the type of package used for a Mod

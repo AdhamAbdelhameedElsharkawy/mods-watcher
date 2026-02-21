@@ -1,10 +1,10 @@
 ﻿using Dapper;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data.Interfaces;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data.Interfaces;
 using System.Data;
 
-namespace ModsAutomator.Data
+namespace ModsWatcher.Data
 {
     public class ModdedAppRepository : BaseRepository, IModdedAppRepository
     {

@@ -1,10 +1,10 @@
-﻿using ModsAutomator.Core.DTO;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Views;
+﻿using ModsWatcher.Core.DTO;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Views;
 using System.Windows;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class WpfDialogService : IDialogService
     {

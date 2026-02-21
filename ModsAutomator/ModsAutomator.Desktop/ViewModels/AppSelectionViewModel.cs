@@ -1,13 +1,13 @@
-﻿using ModsAutomator.Core.Entities;
-using ModsAutomator.Desktop.Interfaces;
-using ModsAutomator.Desktop.Services;
-using ModsAutomator.Services.Interfaces;
+﻿using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
+using ModsWatcher.Desktop.Services;
+using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.DirectoryServices.ActiveDirectory;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ModsAutomator.Desktop.ViewModels
+namespace ModsWatcher.Desktop.ViewModels
 {
     public class AppSelectionViewModel : BaseViewModel
     {
@@ -141,7 +141,6 @@ namespace ModsAutomator.Desktop.ViewModels
             }
         }
 
-        //TODO:new watcher logic
         private async Task SyncAppWatcherAsync(ModdedAppItemViewModel? item)
         {
             if (item == null) return;

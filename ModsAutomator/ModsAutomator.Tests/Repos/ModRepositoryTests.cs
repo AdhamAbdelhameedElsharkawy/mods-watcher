@@ -1,10 +1,10 @@
 ﻿using Dapper;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Enums;
-using ModsAutomator.Data;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
+using ModsWatcher.Data;
 using Xunit;
 
-namespace ModsAutomator.Tests.Repos
+namespace ModsWatcher.Tests.Repos
 {
     public class ModRepositoryTests : BaseRepositoryTest
     {

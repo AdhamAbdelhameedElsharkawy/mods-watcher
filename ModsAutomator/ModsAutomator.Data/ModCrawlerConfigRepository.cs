@@ -1,8 +1,8 @@
 ﻿using Dapper;
-using ModsAutomator.Core.Entities;
-using ModsAutomator.Core.Interfaces;
-using ModsAutomator.Data;
-using ModsAutomator.Data.Interfaces;
+using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Interfaces;
+using ModsWatcher.Data;
+using ModsWatcher.Data.Interfaces;
 using System.Data;
 
 public class ModCrawlerConfigRepository : BaseRepository, IModCrawlerConfigRepository

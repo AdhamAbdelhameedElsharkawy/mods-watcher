@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ModsAutomator.Core.DTO
+namespace ModsWatcher.Core.DTO
 {
     public class VersionSelectionDto
     {

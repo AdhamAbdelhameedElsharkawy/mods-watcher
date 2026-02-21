@@ -1,9 +1,6 @@
-﻿using ModsAutomator.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using ModsWatcher.Core.Entities;
 
-namespace ModsAutomator.Core.DTO
+namespace ModsWatcher.Core.DTO
 {
     public class AppSummaryDto
     {

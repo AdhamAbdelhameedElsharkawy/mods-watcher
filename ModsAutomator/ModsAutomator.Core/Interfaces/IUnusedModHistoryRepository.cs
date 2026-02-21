@@ -1,7 +1,7 @@
-﻿using ModsAutomator.Core.Entities;
+﻿using ModsWatcher.Core.Entities;
 using System.Data;
 
-namespace ModsAutomator.Core.Interfaces
+namespace ModsWatcher.Core.Interfaces
 {
     public interface IUnusedModHistoryRepository : IRepository<UnusedModHistory, int>
     {

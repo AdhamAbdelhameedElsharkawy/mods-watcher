@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace ModsAutomator.Data.Interfaces
+namespace ModsWatcher.Data.Interfaces
 {
     public interface IConnectionFactory
     {

@@ -1,4 +1,4 @@
-﻿namespace ModsAutomator.Core.DTO
+﻿namespace ModsWatcher.Core.DTO
 {
     public class CrawledLink
     {

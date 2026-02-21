@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Core.Enums;
+﻿using ModsWatcher.Core.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ModsAutomator.Core.Entities
+namespace ModsWatcher.Core.Entities
 {
     /// <summary>
     /// This class represents an abstract Mod that is used in an app

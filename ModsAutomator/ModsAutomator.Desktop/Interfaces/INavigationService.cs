@@ -1,6 +1,6 @@
-﻿using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Desktop.ViewModels;
 
-namespace ModsAutomator.Desktop.Interfaces
+namespace ModsWatcher.Desktop.Interfaces
 {
     public interface INavigationService
     {

@@ -1,9 +1,9 @@
-﻿using ModsAutomator.Desktop.ViewModels;
+﻿using ModsWatcher.Desktop.ViewModels;
 using System.Globalization;
 using System.Windows; // Required for Visibility
 using System.Windows.Data;
 
-namespace ModsAutomator.Desktop.Services
+namespace ModsWatcher.Desktop.Services
 {
     public class ModReadyToCrawlConverter : IMultiValueConverter
     {
