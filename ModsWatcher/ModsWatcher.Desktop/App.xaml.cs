@@ -108,6 +108,9 @@ namespace ModsWatcher.Desktop
                 var sw = Stopwatch.StartNew();
                 logger.LogInformation("Checking Playwright browsers...");
 
+                string localPlaywrightPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".playwright");
+                Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", localPlaywrightPath);
+
                 await Task.Run(() => {
                     Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
                 });
