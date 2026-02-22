@@ -57,7 +57,7 @@ Deep Crawl: Use secondary XPaths on those pages to extract mod details or file i
 * **Database:** SQLite (Local)
 * **Architecture:** Self-contained sidecar (no external dependencies required).
 
-🔒 Privacy & Security
+## 🔒 Privacy & Security
 Local Processing: All crawling and mod management are performed locally on your machine; no data is sent to external servers.
 
 No Account Required: ModsWatcher does not require you to log in or share your game credentials.
