@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging; 
+using Microsoft.Extensions.Logging;
 using ModsWatcher.Data.DI;
 using ModsWatcher.Data.Helpers;
 using ModsWatcher.Data.Interfaces;
@@ -78,8 +78,12 @@ namespace ModsWatcher.Desktop
             services.AddTransient<RetiredModsViewModel>();
             services.AddTransient<ModHistoryViewModel>();
             services.AddTransient<AvailableVersionsViewModel>();
+            services.AddSingleton<ILoadingService, LoadingService>();
 
             ServiceProvider = services.BuildServiceProvider();
+
+            var globalLoading = ServiceProvider.GetRequiredService<ILoadingService>();
+            BaseViewModel.Initialize(globalLoading);
         }
 
         protected override async void OnStartup(StartupEventArgs e)
@@ -91,7 +95,8 @@ namespace ModsWatcher.Desktop
             logger.LogInformation("ModsWatcher starting up...");
 
             // Hook Global Exceptions
-            this.DispatcherUnhandledException += (s, args) => {
+            this.DispatcherUnhandledException += (s, args) =>
+            {
                 logger.LogCritical(args.Exception, "Unhandled UI Exception");
                 MessageBox.Show("A critical error occurred. See logs for details.");
             };
@@ -108,10 +113,20 @@ namespace ModsWatcher.Desktop
                 var sw = Stopwatch.StartNew();
                 logger.LogInformation("Checking Playwright browsers...");
 
-                string localPlaywrightPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".playwright");
-                Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", localPlaywrightPath);
+                string playwrightPath;
 
-                await Task.Run(() => {
+#if DEBUG
+                // Use the short path on C: to avoid Windows MAX_PATH limits during development
+                playwrightPath = @"S:\Projects\PlaywrightOffline";
+#else
+    // In Release/Packed mode, use the default local folder
+    playwrightPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".playwright");
+#endif
+
+                Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", playwrightPath);
+
+                await Task.Run(() =>
+                {
                     Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
                 });
                 sw.Stop();
@@ -131,7 +146,7 @@ namespace ModsWatcher.Desktop
             nav.NavigateTo<AppSelectionViewModel>();
 
             mainWindow.Show();
-            
+
         }
 
         protected override void OnExit(ExitEventArgs e)

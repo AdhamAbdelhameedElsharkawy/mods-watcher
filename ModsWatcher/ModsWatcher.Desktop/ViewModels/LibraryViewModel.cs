@@ -327,15 +327,15 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             try
             {
-                IsBusy = true;
-                BusyMessage = "Retrieving watchable mods...";
+                Loading.IsBusy = true;
+                Loading.BusyMessage = "Retrieving watchable mods...";
 
                 _logger.LogInformation("Starting bulk sync for watchable mods of app {AppName} (ID: {AppId})", SelectedApp.Name, SelectedApp.Id);
 
                 var targetMods = Mods.Where(m => m.IsUsed && m.Shell.IsWatchable && m.Config != null).ToList();
                 if (targetMods.Any())
                 {
-                    BusyMessage = $"Checking for updates for {targetMods.Count} Mods...";
+                    Loading.BusyMessage = $"Checking for updates for {targetMods.Count} Mods...";
 
                     var watchList = targetMods.Select(m => (m.Shell, m.Config)).ToList();
                     var nonCheckedMods = new List<(Mod, ModCrawlerConfig)>();
@@ -365,7 +365,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
                         await _watcherService.RunStatusCheckAsync(nonCheckedMods);
                         foreach (var mod in targetMods) mod.RefreshSummary();
-                        BusyMessage = $"Checking for updates for {targetMods.Count} Mods Completed...";
+                        Loading.BusyMessage = $"Checking for updates for {targetMods.Count} Mods Completed...";
                     }
                 }
             }
@@ -377,8 +377,8 @@ namespace ModsWatcher.Desktop.ViewModels
             }
             finally
             {
-                IsBusy = false;
-                BusyMessage = "Not Busy...";
+                Loading.IsBusy = false;
+                Loading.BusyMessage = "Not Busy...";
             }
         }
 
@@ -429,9 +429,9 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 // 1. WATCHER CHECK
 
-                IsBusy = true;
+                Loading.IsBusy = true;
                 bool forceSync = false;
-                BusyMessage = "Analyzing watcher status...";
+                Loading.BusyMessage = "Analyzing watcher status...";
                 _logger.LogInformation("Initiating full sync for mod {ModName} (ID: {ModId}) of app {AppName} (ID: {AppId})", 
                     modItem.Shell.Name, modItem.Shell.Id, SelectedApp.Name, SelectedApp.Id);
                 bool canCheck = _commonUtils.CanCheckModWatcherStatus(modItem.Shell);
@@ -439,7 +439,7 @@ namespace ModsWatcher.Desktop.ViewModels
                 if (canCheck)
                 {
 
-                    BusyMessage = "Checking for updates...";
+                    Loading.BusyMessage = "Checking for updates...";
 
                     modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
                     var watchBundle = new List<(Mod, ModCrawlerConfig)> { (modItem.Shell, modItem.Config!) };
@@ -455,8 +455,8 @@ namespace ModsWatcher.Desktop.ViewModels
                         if (!forceSync)
                         {
                             await FinalizeSyncState(modItem, WatcherStatusType.Idle);
-                            IsBusy = false; // Unlock to show dialog
-                            BusyMessage = string.Empty;
+                            Loading.IsBusy = false; // Unlock to show dialog
+                            Loading.BusyMessage = string.Empty;
                             return;
                         }
                     }
@@ -464,7 +464,7 @@ namespace ModsWatcher.Desktop.ViewModels
                 else
                 {
                     // If recently checked, ask before jumping into the deep crawl
-                    IsBusy = true;
+                    Loading.IsBusy = true;
                     forceSync = _dialogService.ShowConfirmation(
                         $"This mod was checked recently ({modItem.Shell.LastWatched:t}). Run full scan anyway?",
                         "Recent Check Detected");
@@ -472,23 +472,23 @@ namespace ModsWatcher.Desktop.ViewModels
                     if (!forceSync) {
 
                         await FinalizeSyncState(modItem, WatcherStatusType.Idle);
-                        IsBusy = false;
-                        BusyMessage = string.Empty;
+                        Loading.IsBusy = false;
+                        Loading.BusyMessage = string.Empty;
                         return;
                     }
                     
                 }
 
-                BusyMessage = "Analyzing watcher status Completed...";
-                IsBusy = false;
+                Loading.BusyMessage = "Analyzing watcher status Completed...";
+                Loading.IsBusy = false;
                 _logger.LogInformation("Watcher status analysis completed for mod {ModName} (ID: {ModId}). Force sync: {ForceSync}", 
                     modItem.Shell.Name, modItem.Shell.Id, forceSync);
 
 
                 if (modItem.Shell.IsCrawlable)
                 {
-                    IsBusy = true;
-                    BusyMessage = "Extracting Links...";
+                    Loading.IsBusy = true;
+                    Loading.BusyMessage = "Extracting Links...";
                     _logger.LogInformation("Starting link extraction for mod {ModName} (ID: {ModId})", modItem.Shell.Name, modItem.Shell.Id);
                     // 2. STAGE 1: LINK EXTRACTION
                     modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
@@ -512,7 +512,7 @@ namespace ModsWatcher.Desktop.ViewModels
                     _logger.LogInformation("{SelectedCount} links selected for deep parsing for mod {ModName} (ID: {ModId})", 
                         selectedLinks.Count(), modItem.Shell.Name, modItem.Shell.Id);
                     // 4. STAGE 2: DEEP PARSE
-                    BusyMessage = $"Deep-parsing {selectedLinks.Count()} items...";
+                    Loading.BusyMessage = $"Deep-parsing {selectedLinks.Count()} items...";
                     var availableMods = new List<AvailableMod>();
                     foreach (var link in selectedLinks)
                     {
@@ -542,6 +542,8 @@ namespace ModsWatcher.Desktop.ViewModels
 
                             if (result != null)
                             {
+                                modItem.Installed = result;
+
                                 _dialogService.ShowInfo($"Mod '{modItem.Name}' has been updated to version {result.InstalledVersion}.", "Update Successful");
                             }
 
@@ -565,8 +567,8 @@ namespace ModsWatcher.Desktop.ViewModels
             }
             finally
             {
-                IsBusy = false;
-                BusyMessage = string.Empty;
+                Loading.IsBusy = false;
+                Loading.BusyMessage = string.Empty;
             }
         }
 

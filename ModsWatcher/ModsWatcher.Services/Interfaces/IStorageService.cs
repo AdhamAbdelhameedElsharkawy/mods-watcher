@@ -38,6 +38,8 @@ namespace ModsWatcher.Services.Interfaces
 
         Task RollbackToVersionAsync(InstalledModHistory target, string appVersion);
 
+        Task DeleteInstalledModHistoryAsync(int historyId);
+
         // Hard wipe
 
         Task HardWipeAppAsync(int appId);

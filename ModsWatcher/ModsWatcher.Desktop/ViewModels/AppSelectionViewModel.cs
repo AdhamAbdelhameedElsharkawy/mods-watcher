@@ -64,6 +64,8 @@ namespace ModsWatcher.Desktop.ViewModels
                         {
                             _logger.LogInformation("User confirmed hard wipe for app: {AppName}", wrapper.App.Name);
                             // Trigger the bulk wipe logic 
+                            Loading.IsBusy = true;
+                            Loading.BusyMessage = $"Wiping all data for '{wrapper.App.Name}'...";
                             await _storageService.HardWipeAppAsync(wrapper.App.Id);
                             // Remove from the UI collection
                             ModdedApps.Remove(wrapper);
@@ -72,6 +74,12 @@ namespace ModsWatcher.Desktop.ViewModels
                         {
                             _dialogService.ShowError($"Failed to wipe app: {ex.Message}", "Error");
                             _logger.LogError(ex, "Error during hard wipe for app: {AppName}", wrapper.App.Name);
+                        }
+                        finally
+                        {
+                            Loading.IsBusy = false;
+                            
+                            Loading.BusyMessage = string.Empty;
                         }
                     }
 
@@ -153,9 +161,9 @@ namespace ModsWatcher.Desktop.ViewModels
                 _logger.LogInformation("Starting sync for app: {AppName}", item.Name);
                 // 1. UI Feedback: Start loading state on the app card
                 item.IsSyncing = true;
-                this.IsBusy = true;
+                Loading.IsBusy = true;
 
-                BusyMessage = $"Checking All Watchable Mods for '{item.Name}'...";
+                Loading.BusyMessage = $"Checking All Watchable Mods for '{item.Name}'...";
 
                 // 2. Data Fetch: 
                 var bundle = await _storageService.GetWatchableBundleByAppIdAsync(item.App.Id);
@@ -189,7 +197,7 @@ namespace ModsWatcher.Desktop.ViewModels
                 }
 
                 // 4. Refresh: Update the UI to show new PotentialUpdatesCount/ActiveCount
-                BusyMessage = $"Checking Completed for {modsToCheck.Count} Mods...";
+                Loading.BusyMessage = $"Checking Completed for {modsToCheck.Count} Mods...";
                 await LoadApps();
             }
             catch (Exception ex)
@@ -202,8 +210,8 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 // 5. UI Feedback: Stop loading state
                 item.IsSyncing = false;
-                this.IsBusy = false;
-                BusyMessage = string.Empty;
+                Loading.IsBusy = false;
+                Loading.BusyMessage = string.Empty;
             }
         }
     }

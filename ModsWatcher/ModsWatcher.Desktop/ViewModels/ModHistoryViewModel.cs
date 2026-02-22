@@ -104,6 +104,19 @@ namespace ModsWatcher.Desktop.ViewModels
             }
         });
 
+        public ICommand DeleteHistoryItemCommand => new RelayCommand(async o =>
+        {
+            if (o is ModHistoryItemViewModel wrapper)
+            {
+                _logger.LogInformation("User initiated deletion of history entry {Version} for mod {ModName} in app {AppName}", wrapper.History.Version, _mod.Name, _parentApp.Name);
+                if (_dialogService.ShowConfirmation($"Delete history entry for version {wrapper.History.Version}?", "Confirm Deletion"))
+                {
+                    await _storageService.DeleteInstalledModHistoryAsync(wrapper.History.InternalId);
+                    LoadHistory();
+                }
+            }
+        });
+
         public ICommand BackCommand => new RelayCommand(o =>
         {
             _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);

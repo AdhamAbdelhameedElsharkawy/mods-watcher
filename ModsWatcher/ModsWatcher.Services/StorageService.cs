@@ -329,7 +329,7 @@ namespace ModsWatcher.Services
                     {
                         ModId = currentActive.Id,
                         Version = currentActive.InstalledVersion,
-                        AppVersion = appVersion,
+                        AppVersion = string.IsNullOrEmpty(currentActive.SupportedAppVersions) ? appVersion : currentActive.SupportedAppVersions,
                         InstalledAt = currentActive.InstalledDate,
                         RemovedAt = DateOnly.FromDateTime(DateTime.Now),
                         DownloadUrl = currentActive.DownloadUrl,
@@ -354,6 +354,14 @@ namespace ModsWatcher.Services
                 _logger.LogError("Error occurred while rolling back to version from history. ModId: {ModId}, Version: {Version}, AppVersion: {AppVersion}", target.ModId, target.Version, appVersion);
                 throw;
             }
+        }
+
+        public async Task DeleteInstalledModHistoryAsync(int historyId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+            await _installedModHistoryRepo.DeleteAsync(historyId, connection);
         }
         #endregion
 
@@ -531,7 +539,7 @@ namespace ModsWatcher.Services
                     {
                         ModId = currentActive.Id,
                         Version = currentActive.InstalledVersion,
-                        AppVersion = appVersion,
+                        AppVersion = string.IsNullOrEmpty(currentActive.SupportedAppVersions)? appVersion : currentActive.SupportedAppVersions,
                         InstalledAt = currentActive.InstalledDate,
                         RemovedAt = DateOnly.FromDateTime(DateTime.Now),
                         DownloadUrl = currentActive.DownloadUrl

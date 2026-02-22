@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Desktop.Interfaces;
+using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.Logging;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
@@ -11,11 +12,18 @@ namespace ModsWatcher.Desktop.ViewModels
     public abstract class BaseViewModel : INotifyPropertyChanged, INotifyDataErrorInfo
     {
 
+        public static ILoadingService Loading { get; private set; }
+
         protected readonly ILogger _logger;
 
         protected BaseViewModel(ILogger logger)
         {
             _logger = logger;
+        }
+
+        public static void Initialize(ILoadingService loadingService)
+        {
+            Loading = loadingService;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -105,19 +113,19 @@ namespace ModsWatcher.Desktop.ViewModels
             return true;
         }
 
-        private bool _isBusy;
-        private string _busyMessage = "Loading...";
+        //private bool _isBusy;
+        //private string _busyMessage = string.Empty;
 
-        public bool IsBusy
-        {
-            get => _isBusy;
-            set => SetProperty(ref _isBusy, value);
-        }
+        //public bool IsBusy
+        //{
+        //    get => _isBusy;
+        //    set => SetProperty(ref _isBusy, value);
+        //}
 
-        public string BusyMessage
-        {
-            get => _busyMessage;
-            set => SetProperty(ref _busyMessage, value);
-        }
+        //public string BusyMessage
+        //{
+        //    get => _busyMessage;
+        //    set => SetProperty(ref _busyMessage, value);
+        //}
     }
 }
