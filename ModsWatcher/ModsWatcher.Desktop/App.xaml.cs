@@ -10,7 +10,6 @@ using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Desktop.Views;
 using ModsWatcher.Services.DI;
 using Serilog;
-using Serilog.Events;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -25,6 +24,8 @@ namespace ModsWatcher.Desktop
     {
         public static IServiceProvider ServiceProvider { get; private set; }
 
+        private string _playwrightPath;
+
         public App()
         {
             // 1. Configuration
@@ -32,6 +33,10 @@ namespace ModsWatcher.Desktop
 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
 .Build();
+
+
+
+
 
             // 2. Extract Logging values (with defaults as backups)
             var logSettings = configuration.GetSection("LoggingSettings");
@@ -89,6 +94,9 @@ namespace ModsWatcher.Desktop
         protected override async void OnStartup(StartupEventArgs e)
         {
 
+            // Change shutdown mode so closing setupWin doesn't kill the app
+            this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             base.OnStartup(e);
 
             var logger = ServiceProvider.GetRequiredService<ILogger<App>>();
@@ -108,35 +116,64 @@ namespace ModsWatcher.Desktop
                 await SqliteDbInitializer.InitializeAsync(connection);
             }
 
-            try
-            {
-                var sw = Stopwatch.StartNew();
-                logger.LogInformation("Checking Playwright browsers...");
-
-                string playwrightPath;
 
 #if DEBUG
-                // Use the short path on C: to avoid Windows MAX_PATH limits during development
-                playwrightPath = @"S:\Projects\PlaywrightOffline";
+            // Use the short path on C: to avoid Windows MAX_PATH limits during development
+            _playwrightPath = @"S:\Projects\PlaywrightOffline";
 #else
-    // In Release/Packed mode, use the default local folder
-    playwrightPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".playwright");
+   string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+_playwrightPath = Path.Combine(baseDir, ".playwright");
+
+// The .NET driver usually buries node.exe here:
+string nodeDir = Path.Combine(_playwrightPath, "node", "win32_x64");
+string nodeExe = Path.Combine(nodeDir, "node.exe");
+
+// Tell Playwright where to find its own engine
+Environment.SetEnvironmentVariable("PLAYWRIGHT_NODEJS_PATH", nodeExe);
+
+// Tell Playwright where to download/find the browsers (Chromium)
+Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", _playwrightPath);
 #endif
 
-                Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", playwrightPath);
 
-                await Task.Run(() =>
+            
+                logger.LogInformation($"Checking Playwright browsers with Path: {_playwrightPath}...");
+                // Check if the actual chromium folder exists in .playwright
+                bool isInstalled = Directory.Exists(_playwrightPath) &&
+                                   Directory.GetDirectories(_playwrightPath, "chromium-*", SearchOption.AllDirectories).Any();
+
+                if (!isInstalled)
                 {
-                    Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
-                });
-                sw.Stop();
-                logger.LogInformation("Playwright check completed in {Elapsed}ms", sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Playwright initialization failed.");
-                MessageBox.Show($"Error initializing Playwright: {ex.Message}");
-            }
+                    var setupWin = new ModsWatcher.Desktop.Views.BrowserSetupWindow();
+                    var sw = Stopwatch.StartNew();
+
+                    
+                    logger.LogInformation("Chromium not found. Installing to sidecar...");
+
+                    try
+                    {
+                        setupWin.Show();
+                        await Task.Run(() =>
+                        {
+                            // Now Main() will find node.exe because we set PLAYWRIGHT_NODEJS_PATH
+                            var exitCode = Microsoft.Playwright.Program.Main(new[] { "install", "chromium" });
+                            sw.Stop();
+                            logger.LogInformation("Playwright check completed in {Elapsed}ms", sw.ElapsedMilliseconds);
+                            if (exitCode != 0) throw new Exception($"Install failed: {exitCode}");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Playwright initialization failed.");
+                        MessageBox.Show($"Error initializing Playwright: {ex.Message}");
+                    }
+                    finally
+                    {
+                        setupWin.Close();
+                    }
+                }
+            
+            
 
             // UI Setup
             var mainWindow = new MainWindow();
@@ -145,7 +182,13 @@ namespace ModsWatcher.Desktop
             var nav = ServiceProvider.GetRequiredService<INavigationService>();
             nav.NavigateTo<AppSelectionViewModel>();
 
+            this.MainWindow = mainWindow;
             mainWindow.Show();
+            mainWindow.Closed += (s, args) =>
+            {
+                logger.LogInformation("Main window closed. Shutting down...");
+                this.Shutdown(); // This officially kills the app
+            };
 
         }
 

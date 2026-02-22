@@ -30,4 +30,16 @@
     </None>
   </ItemGroup>
 
+
+	<Target Name="ForcePlaywrightToPublish" AfterTargets="ComputeFilesToPublish">
+		<ItemGroup>
+			<_CustomPayLoad Include="bin\Release\net10.0-windows\.playwright\**\*.*" />
+			<ResolvedFileToPublish Include="@(_CustomPayLoad)">
+				<RelativePath>.playwright\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+				<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+				<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			</ResolvedFileToPublish>
+		</ItemGroup>
+	</Target>
+
 </Project>
