@@ -1,4 +1,3 @@
-Contributing to ModsWatcher
 Thank you for your interest in improving ModsWatcher! To ensure the project remains stable for the community, please follow these guidelines.
 
 🌿 Branch Naming Patterns
