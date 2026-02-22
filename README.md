@@ -29,11 +29,20 @@ Once an app is selected, you can start building your library:
 * Provide the **Source URL** (e.g., a Nexus Mods or Forum page).
 * Enter the **Mod Name** and your **Current Version**.
 
-### 3. Setup the "Watcher" (XPath)
-The "Watcher" is the brain of the app. It goes to the mod page and looks for the "Latest Version" string using an **XPath**.
-* **Find the XPath:** Right-click the version number on the mod's website in your browser, select **Inspect**, right-click the highlighted code, and choose **Copy > Copy XPath**.
-* **Paste in App:** Paste that value into the "Version XPath" field in ModsWatcher.
-* **Crawl:** Click the **Crawl** button. The app will launch a headless browser, find the text at that location, and save it to your database.
+### 3. Setup the "Watcher" & Deep Crawler
+Root URL & Watcher XPath: This is the primary mod page where you set a specific XPath to monitor the main version number.
+
+Crawled Pages (Link Selector View): Users choose specific pages containing download links from the Link Selector View; the app will then crawl all these selected pages.
+
+Deep Crawl XPaths: For each of the crawled pages, you set additional XPaths to extract specific mod information and metadata.
+
+Example Workflow:
+
+Root: https://nexusmods.com/ets2/mods/1 -> XPath: //div[@id='version'].
+
+Link Selector: Choose the specific pages/links from the list that lead to mod downloads.
+
+Deep Crawl: Use secondary XPaths on those pages to extract mod details or file info.
 
 ### 4. Tracking Updates
 * The **Library View** displays all installed mods.
