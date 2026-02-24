@@ -17,14 +17,12 @@ using System.Windows;
 namespace ModsWatcher.Desktop
 {
 
-    //TODO:Admin tools (for managing mods, users, etc.)
-    //TODO:Installation pacakaging.
-    //TODO:check App, Mods Cards, for more visual notification of updates, new versions, etc.
+   
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
 
-        private string _playwrightPath;
+        private string _playwrightPath = string.Empty;
 
         public App()
         {
@@ -62,10 +60,15 @@ namespace ModsWatcher.Desktop
                 .CreateLogger();
 
 
+            // 4. Setup Playwright path for
+            var watcherSettings = configuration.GetSection("WatcherSettings");
+            _playwrightPath = watcherSettings["PlayWrightDebugPath"] ?? @"C:\PlaywrightOffline";
+
+
 
             var services = new ServiceCollection();
 
-            // 2. Add Logging to DI
+            //Add Logging to DI
             services.AddLogging(builder => builder.AddSerilog(dispose: true));
 
             services.AddTransient<Microsoft.Extensions.Logging.ILogger>(sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger("App"));
@@ -118,8 +121,7 @@ namespace ModsWatcher.Desktop
 
 
 #if DEBUG
-            // Use the short path on C: to avoid Windows MAX_PATH limits during development
-            _playwrightPath = @"S:\Projects\PlaywrightOffline";
+           
 #else
    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 _playwrightPath = Path.Combine(baseDir, ".playwright");

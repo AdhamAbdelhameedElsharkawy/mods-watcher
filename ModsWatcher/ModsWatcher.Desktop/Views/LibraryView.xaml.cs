@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ModsWatcher.Desktop.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -21,6 +22,26 @@ namespace ModsWatcher.Desktop.Views
         public LibraryView()
         {
             InitializeComponent();
+        }
+
+        private async void ModSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            string query = textBox.Text.ToLower();
+
+            // Rule: Only search after 3 characters
+            if (query.Length >= 3)
+            {
+                // Find the first mod that contains the search string
+                var match = ModListBox.Items.Cast<ModItemViewModel>()
+                    .FirstOrDefault(m => m.Name.ToLower().Contains(query));
+
+                if (match != null)
+                {
+                    ModListBox.SelectedItem = match;
+                    ModListBox.ScrollIntoView(match);
+                }
+            }
         }
     }
 }

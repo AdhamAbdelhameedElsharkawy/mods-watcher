@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
+using ModsWatcher.Services.Config;
 using ModsWatcher.Services.Interfaces;
 using System.Text.RegularExpressions;
 
@@ -13,17 +15,19 @@ namespace ModsWatcher.Services
         private readonly IStorageService _storageService;
         private readonly CommonUtils _utils;
         private readonly ILogger<PlaywrightWatcherService> _logger;
+        private readonly WatcherSettings _watcherConfig;
 
         // Singleton instances to avoid process bloat
         private static IPlaywright? _playwright;
         private static IBrowser? _browser;
         private static readonly SemaphoreSlim _lock = new(1, 1);
 
-        public PlaywrightWatcherService(IStorageService storageService, CommonUtils commonUtils, ILogger<PlaywrightWatcherService> logger)
+        public PlaywrightWatcherService(IStorageService storageService, CommonUtils commonUtils, ILogger<PlaywrightWatcherService> logger, IOptions<WatcherSettings> watcherConfig)
         {
             _storageService = storageService;
             _utils = commonUtils;
             _logger = logger;
+            _watcherConfig = watcherConfig.Value;
         }
 
         private async Task EnsureBrowserAsync()
@@ -39,7 +43,7 @@ namespace ModsWatcher.Services
                     _playwright = await Playwright.CreateAsync();
                     _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
                     {
-                        Headless = true
+                        Headless = _watcherConfig.PlayWrightHeadless
                     });
                 }
             }catch (Exception ex)
@@ -57,10 +61,9 @@ namespace ModsWatcher.Services
             await EnsureBrowserAsync();
 
             // Create one context for the entire bundle to share cache/cookies if needed
-            // Matching your fast Python UserAgent exactly
             await using var context = await _browser!.NewContextAsync(new BrowserNewContextOptions
             {
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                UserAgent = _watcherConfig.PlayWrightUserAgent//"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             });
 
             foreach (var (shell, config) in bundle)
@@ -73,14 +76,14 @@ namespace ModsWatcher.Services
                     await page.GotoAsync(shell.RootSourceUrl, new PageGotoOptions
                     {
                         WaitUntil = WaitUntilState.DOMContentLoaded,
-                        Timeout = 30000
+                        Timeout = _watcherConfig.PlayWrightPageTimeout
                     });
 
                     var locator = page.Locator($"xpath={config.WatcherXPath}").First;
                     await locator.WaitForAsync(new LocatorWaitForOptions
                     {
                         State = WaitForSelectorState.Attached,
-                        Timeout = 5000
+                        Timeout = _watcherConfig.PlayWrightSelectorTimeout
                     });
 
                     string content = (await locator.InnerTextAsync()).Trim();
@@ -113,7 +116,7 @@ namespace ModsWatcher.Services
 
             await using var context = await _browser!.NewContextAsync(new BrowserNewContextOptions
             {
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"//these userAgent values alters the result for some reason.
+                UserAgent = _watcherConfig.PlayWrightUserAgent //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"these userAgent values alters the result for some reason.
             });
 
             var page = await context.NewPageAsync();
@@ -122,10 +125,10 @@ namespace ModsWatcher.Services
             {
                 _logger.LogInformation("Extracting links from: {Url}", rootUrl);
                 // 1. Exact same navigation logic
-                await page.GotoAsync(rootUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Commit, Timeout = 30000 });
+                await page.GotoAsync(rootUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Commit, Timeout = _watcherConfig.PlayWrightPageTimeout });
 
                 // 2. Exact same wait logic
-                await page.WaitForSelectorAsync("a", new PageWaitForSelectorOptions { State = WaitForSelectorState.Attached, Timeout = 10000 });
+                await page.WaitForSelectorAsync("a", new PageWaitForSelectorOptions { State = WaitForSelectorState.Attached, Timeout = _watcherConfig.PlayWrightSelectorTimeout });
 
                 // 3. Exact same full-page extraction logic
                 var anchors = await page.QuerySelectorAllAsync("a");
@@ -182,7 +185,7 @@ namespace ModsWatcher.Services
             // Using a fresh context for each deep scrape to avoid cache/state issues
             await using var context = await _browser!.NewContextAsync(new BrowserNewContextOptions
             {
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"//"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                UserAgent = _watcherConfig.PlayWrightUserAgent //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             });
 
             var page = await context.NewPageAsync();
@@ -191,10 +194,10 @@ namespace ModsWatcher.Services
             {
                 _logger.LogInformation("Parsing mod details from: {Url}", url);
                 // 1. Navigation matching Python: domcontentloaded
-                await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 30000 });
+                await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = _watcherConfig.PlayWrightPageTimeout });
 
-                // 2. The critical 1-second delay for JS rendering (Matches Python: wait_for_timeout)
-                await page.WaitForTimeoutAsync(1000);
+                // 2. The critical X-second delay for JS rendering (Matches Python: wait_for_timeout)
+                await page.WaitForTimeoutAsync(_watcherConfig.PlayWrightSelectorTimeout);
 
                 var mod = new AvailableMod { CrawledModUrl = url };
 
