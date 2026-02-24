@@ -1,6 +1,5 @@
 ﻿using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
-using ModsWatcher.Core.Enums;
 using System.Data;
 
 namespace ModsWatcher.Services.Interfaces
@@ -19,6 +18,8 @@ namespace ModsWatcher.Services.Interfaces
         Task<IEnumerable<(Mod Shell, InstalledMod? Installed, ModCrawlerConfig? Config)>> GetFullModsByAppId(int appId);
         Task AddModShellAsync(Mod shell);
         Task UpdateModShellAsync(Mod shell);
+
+        Task UpdateModsOrderAsync(IEnumerable<Mod> orderedShells);
 
         // Unified methods to handle both entities together
         Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config);

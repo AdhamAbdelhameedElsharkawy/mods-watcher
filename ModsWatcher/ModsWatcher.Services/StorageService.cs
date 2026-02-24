@@ -133,6 +133,31 @@ namespace ModsWatcher.Services
 
         }
 
+        public async Task UpdateModsOrderAsync(IEnumerable<Mod> shells)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                int priority = 0;
+                foreach (var shell in shells)
+                {
+                    shell.PriorityOrder = priority++;
+                    // Pass the transaction into your repository method
+                    await _modRepo.UpdateAsync(shell, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
 
         public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed, ModCrawlerConfig? Config)>> GetFullModsByAppId(int appId)
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using GongSolutions.Wpf.DragDrop;
+using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
@@ -6,11 +7,12 @@ using ModsWatcher.Services;
 using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class LibraryViewModel : BaseViewModel, IInitializable<ModdedApp>
+    public class LibraryViewModel : BaseViewModel, IInitializable<ModdedApp>, IDropTarget
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
@@ -607,5 +609,64 @@ namespace ModsWatcher.Desktop.ViewModels
             Clipboard.SetText(url);
             // Optional: You could add a temporary 'Copied!' status message here if you have a status bar
         }
+
+        public void DragOver(IDropInfo dropInfo)
+        {
+            // Allow dragging if both source and target are ModItemViewModels
+            if (dropInfo.Data is ModItemViewModel && dropInfo.TargetItem is ModItemViewModel)
+            {
+                dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
+                dropInfo.Effects = DragDropEffects.Move;
+            }
+        }
+
+        public async void Drop(IDropInfo dropInfo)
+        {
+            if (Loading.IsBusy)
+            {
+                _dialogService.ShowError("Please wait for the current operation to finish.");
+                return;
+            }
+
+            if (dropInfo.Data is not ModItemViewModel sourceItem) return;
+
+            try
+            {
+                Loading.IsBusy = true;
+                Loading.BusyMessage = "Saving order...";
+
+                int oldIndex = Mods.IndexOf(sourceItem);
+                int targetIndex = dropInfo.InsertIndex;
+                if (targetIndex > oldIndex) targetIndex--;
+                if (oldIndex == targetIndex) return;
+
+                // 1. Visual Move
+                Mods.Move(oldIndex, targetIndex);
+                for (int i = 0; i < Mods.Count; i++)
+                {
+                    Mods[i].PriorityOrder = i;
+                    //Mods[i].RefreshSummary();
+                }
+                OnPropertyChanged(nameof(Mods));
+                
+                // 2. Just extract the Shells in their new order and send them off
+                var shells = Mods.Select(vm => vm.Shell).ToList();
+                await _storageService.UpdateModsOrderAsync(shells);
+
+                _logger.LogInformation("Library reordered via Drag-and-Drop.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist reorder.");
+                // Optional: Re-fetch or revert UI move here
+            }
+            finally
+            {
+                Loading.IsBusy = false;
+                Loading.BusyMessage = string.Empty;
+            }
+        }
+
+
     }
 }
