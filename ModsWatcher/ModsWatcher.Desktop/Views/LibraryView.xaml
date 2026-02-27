@@ -18,7 +18,7 @@
         </Grid.ColumnDefinitions>
 
         <DockPanel Grid.Column="0" Margin="20">
-            <Border DockPanel.Dock="Top" Background="#1E1E1E" Padding="15" CornerRadius="10" Margin="0,0,0,15">
+            <Border DockPanel.Dock="Top" Style="{DynamicResource HeaderContainerBorderStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" MaxWidth="400" />
@@ -27,40 +27,30 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Command="{Binding NavToAppsCommand}" Background="Transparent" BorderThickness="0" Margin="0,0,12,0" Cursor="Hand">
-                            <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White"/>
+                        <Button Command="{Binding NavToAppsCommand}" Background="Transparent" BorderThickness="0" Margin="0,0,12,0">
+                            <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource TextPrimary}"/>
                         </Button>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="{Binding SelectedApp.Name}" 
-                                       FontSize="18" 
-                                       FontWeight="Bold" 
-                                       Foreground="White" 
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding SelectedApp.InstalledVersion, StringFormat='Target Version: {0}'}" 
-                                       Foreground="#2196F3" 
-                                       FontSize="10"/>
+                            <TextBlock Text="{Binding SelectedApp.Name}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SelectedApp.InstalledVersion, StringFormat='Target Version: {0}'}" Foreground="{DynamicResource AccentPrimary}" FontSize="10"/>
                         </StackPanel>
                     </StackPanel>
-
+                    <!--Upper banner buttons-->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="+ Register Mod" Command="{Binding AddModShellCommand}" 
-                                Background="#2196F3" Foreground="White" Padding="12,5" Height="32" Margin="0,0,6,0" BorderThickness="0"/>
-
-                        <Button Command="{Binding SyncAllModsCommand}" Background="#252525" Foreground="#4CAF50" Padding="10,5" Height="32" Margin="0,0,6,0">
+                        <Button Content="+ Register Mod" Command="{Binding AddModShellCommand}" Style="{DynamicResource PrimaryActionButtonStyle}" Margin="0,0,6,0"/>
+                        <Button Command="{Binding SyncAllModsCommand}" Style="{DynamicResource SecondaryActionButtonStyle}" Foreground="#4CAF50" Margin="0,0,6,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Sync All" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <Button Command="{Binding NavToVersionsManagerCommand}" Background="#252525" Foreground="#FFC107" Padding="10,5" Height="32" Margin="0,0,6,0">
+                        <Button Command="{Binding NavToVersionsManagerCommand}" Style="{DynamicResource SecondaryActionButtonStyle}" Foreground="#FFC107" Margin="0,0,6,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7A6;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Versions" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <Button Command="{Binding NavToRetiredCommand}" Background="Transparent" Foreground="#666" BorderThickness="0" Margin="0" ToolTip="Retired History">
+                        <Button Command="{Binding NavToRetiredCommand}" Style="{DynamicResource GhostActionButtonStyle}" ToolTip="Retired History">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Retired" VerticalAlignment="Center" FontWeight="SemiBold"/>
@@ -69,12 +59,9 @@
                     </StackPanel>
                 </Grid>
             </Border>
-
-            <Border DockPanel.Dock="Top" 
-            Background="#1E1E1E" 
-            CornerRadius="8" 
-            Margin="0,0,0,15" 
-            Padding="12,2">
+<!--Search Bar-->
+            <Border Style="{DynamicResource SearchContainerBorderStyle}" DockPanel.Dock="Top" Height="45"
+            Margin="0,0,0,15">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -82,41 +69,40 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Text="&#xE721;" 
-                       FontFamily="Segoe MDL2 Assets" 
-                       Foreground="#666" 
-                       VerticalAlignment="Center" 
-                       FontSize="14"
-                       Margin="5,0,12,0"/>
+                   FontFamily="Segoe MDL2 Assets" 
+                   Foreground="{DynamicResource TextMuted}" 
+                   VerticalAlignment="Center" 
+                   FontSize="14"
+                   Margin="5,0,12,0"/>
 
                     <TextBox x:Name="ModSearchBox" 
-                     Grid.Column="1"
-                     Tag="Search mods..." 
-                     TextChanged="ModSearchBox_TextChanged"
-                     Background="Transparent" 
-                     Foreground="White" 
-                     BorderThickness="0" 
-                     Padding="0,10"
-                     VerticalContentAlignment="Center"
-                     CaretBrush="#2196F3"/>
+                 Grid.Column="1"
+                 Tag="Search mods..." 
+                 TextChanged="ModSearchBox_TextChanged"
+                 Background="Transparent" 
+                 Foreground="{DynamicResource TextPrimary}" 
+                 BorderThickness="0" 
+                 Padding="0,10"
+                 VerticalContentAlignment="Center"
+                 CaretBrush="{DynamicResource AccentPrimary}"/>
                 </Grid>
             </Border>
-
+<!--Mods cards-->
             <ListBox 
-                x:Name="ModListBox"
-                ItemsSource="{Binding Mods}" 
-         SelectedItem="{Binding SelectedMod}" 
-         Background="Transparent" 
-         BorderThickness="0"
-         HorizontalContentAlignment="Stretch"
-                     ScrollViewer.CanContentScroll="False"
-         
-         VirtualizingStackPanel.ScrollUnit="Pixel"
-         VirtualizingStackPanel.VirtualizationMode="Recycling"
-         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-         xmlns:dd="urn:gong-wpf-dragdrop"
-         dd:DragDrop.IsDragSource="True"
-         dd:DragDrop.IsDropTarget="True"
-         dd:DragDrop.DropHandler="{Binding}">
+    x:Name="ModListBox"
+    ItemsSource="{Binding Mods}" 
+    SelectedItem="{Binding SelectedMod}" 
+    Background="Transparent" 
+    BorderThickness="0"
+    HorizontalContentAlignment="Stretch"
+    ScrollViewer.CanContentScroll="False"
+    VirtualizingStackPanel.ScrollUnit="Pixel"
+    VirtualizingStackPanel.VirtualizationMode="Recycling"
+    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+    xmlns:dd="urn:gong-wpf-dragdrop"
+    dd:DragDrop.IsDragSource="True"
+    dd:DragDrop.IsDropTarget="True"
+    dd:DragDrop.DropHandler="{Binding}">
 
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
@@ -129,18 +115,17 @@
                                 BorderThickness="3,0,0,0" 
                                 BorderBrush="Transparent"
                                 Margin="0,0,0,10">
-
                                         <ContentPresenter />
                                     </Border>
 
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="OuterBorder" Property="Background" Value="#252525"/>
+                                            <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource CardInnerSectionBackground}"/>
                                         </Trigger>
 
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="OuterBorder" Property="BorderBrush" Value="#2196F3"/>
-                                            <Setter TargetName="OuterBorder" Property="Background" Value="#2A2A2A"/>
+                                            <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource AccentPrimary}"/>
+                                            <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource CardInnerSectionBackground}"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -148,159 +133,97 @@
                         </Setter>
                     </Style>
                 </ListBox.ItemContainerStyle>
+
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="#1E1E1E" CornerRadius="8" Margin="0,0,0,10" Padding="15">
+                        <Border Background="{DynamicResource CardBackground}" CornerRadius="8" Margin="0,0,0,10" Padding="15">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="35"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
-                                    <Button Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-            CommandParameter="{Binding}" 
-            Background="Transparent" 
-            BorderThickness="0" 
-            Cursor="Hand"
-            Foreground="#888" 
-            Content="&#xE74A;" 
-            FontSize="16"
-            FontFamily="Segoe MDL2 Assets"
-            ToolTip="Move Up">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Foreground" Value="#4CAF50"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
 
-                                    <TextBlock Text="&#xE76F;" 
-               FontFamily="Segoe MDL2 Assets" 
-               FontSize="14" 
-               Foreground="#444" 
-               HorizontalAlignment="Center"
-               Margin="0,2"
-               Cursor="SizeAll"
-               ToolTip="Drag to reorder"/>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,2,10,0">
+                                    <Button Style="{DynamicResource ReorderButtonStyle}"
+            Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+            CommandParameter="{Binding}"
+            Foreground="{DynamicResource TextMuted}" Content="" FontSize="11"
+            FontFamily="Segoe MDL2 Assets"/>
 
-                                    <Button Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-            CommandParameter="{Binding}" 
-            Background="Transparent" 
-            BorderThickness="0" 
-            Cursor="Hand"
-            Foreground="#888" 
-            Content="&#xE74B;" 
-            FontSize="16"
-            FontFamily="Segoe MDL2 Assets"
-            ToolTip="Move Down">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Foreground" Value="#4CAF50"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
+                                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="12" 
+               Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"
+               Margin="0,2" Opacity="0.5" Cursor="SizeAll"/>
 
-                                    <TextBlock Text="{Binding PriorityOrder}" 
-               Foreground="#555" 
-               FontSize="11" 
-               FontWeight="Bold"
-               HorizontalAlignment="Center" 
-               Margin="0,5"/>
+                                    <Button Style="{DynamicResource ReorderButtonStyle}"
+            Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+            CommandParameter="{Binding}"
+            Foreground="{DynamicResource TextMuted}" Content="" FontSize="11"
+            FontFamily="Segoe MDL2 Assets"/>
+
+                                    <TextBlock Text="{Binding PriorityOrder}" Style="{DynamicResource PriorityOrderTextStyle}" Margin="0,10,0,0"/>
                                 </StackPanel>
-                                <Grid Grid.Column="1" Margin="5,0,0,0">
+
+                                <Grid Grid.Column="1">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                   
 
-                                    <TextBlock Grid.Row="0" Text="{Binding Name}" Foreground="White" FontWeight="Bold" FontSize="15"/>
-                                    <TextBlock Grid.Row="1" Text="{Binding Author, StringFormat='by {0}'}" Foreground="#555" FontSize="11" Margin="0,2,0,8"/>
+                                    <TextBlock Grid.Row="0" Text="{Binding Name}" Style="{DynamicResource ModTitleTextStyle}"/>
+                                    <TextBlock Grid.Row="1" Text="{Binding Author, StringFormat='by {0}'}" Style="{DynamicResource ModMetadataTextStyle}" Margin="0,2,0,12"/>
 
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
-                                        <Border Background="{Binding Installed, Converter={StaticResource NullToColorConverter}, ConverterParameter='#2E4A2E|#4A2E2E'}" 
-                                                CornerRadius="4" Padding="6,2" Margin="0,0,5,0">
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,15">
+                                        <Border Background="{Binding Installed, Converter={StaticResource NullToColorConverter}, ConverterParameter='#2A452A|#452A2A'}" 
+                        CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
                                             <TextBlock Text="{Binding Installed, Converter={StaticResource NullToStringConverter}, ConverterParameter='INSTALLED|PENDING SETUP'}" 
-                                                       Foreground="White" FontSize="9" FontWeight="Bold"/>
+                               Foreground="White" FontSize="9" FontWeight="Bold"/>
                                         </Border>
 
                                         <Border Visibility="{Binding IsUsed, Converter={StaticResource BooleanToVisibilityConverter}}" 
-                                                Background="#2E4A2E" CornerRadius="4" Padding="6,2" Margin="0,0,5,0">
-                                            <TextBlock Text="ACTIVE" Foreground="#4CAF50" FontSize="9" FontWeight="Bold"/>
+                        Background="{DynamicResource ModBadgeActiveBackground}" CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
+                                            <TextBlock Text="ACTIVE" Foreground="#81C784" FontSize="9" FontWeight="Bold"/>
                                         </Border>
 
                                         <Border Visibility="{Binding IsCompatible, Converter={StaticResource InverseBoolToVisConverter}}" 
-                                                Background="#B71C1C" CornerRadius="4" Padding="6,2" Margin="0,0,5,0">
+                        Background="{DynamicResource ModBadgeMismatchBackground}" CornerRadius="4" Padding="8,3">
                                             <TextBlock Text="MISMATCH" Foreground="White" FontSize="9" FontWeight="Bold"/>
                                         </Border>
+                                    </StackPanel>
 
-                                        <Border Visibility="{Binding HasUpdate, Converter={StaticResource BooleanToVisibilityConverter}}" 
-                                                Background="#FFC107" CornerRadius="4" Padding="6,2" Margin="0,0,5,0">
-                                            <TextBlock Text="POSSIBLE UPDATE" Foreground="Black" FontSize="9" FontWeight="Bold"/>
-                                        </Border>
+                                    <TextBlock Grid.Row="3" Text="{Binding ModDescription}" Foreground="{DynamicResource TextMuted}" 
+                       FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15" Opacity="0.8"/>
 
-                                        <Border Visibility="{Binding WatcherError, Converter={StaticResource BooleanToVisibilityConverter}}" 
-                                                Background="#F44336" CornerRadius="4" Padding="6,2" Margin="0,0,5,0">
-                                            <TextBlock Text="WATCHER ERROR" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                                    <StackPanel Grid.Row="4" Visibility="{Binding Shell.RootSourceUrl, Converter={StaticResource NullToBoolConverter}}" Margin="0,0,0,15">
+                                        <TextBlock Text="ROOT SOURCE" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,0,0,5"/>
+                                        <Border Style="{DynamicResource ModUrlContainerStyle}">
+                                            <DockPanel LastChildFill="True">
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                    <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                    Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding Shell.RootSourceUrl}">
+                                                        <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#4A69FF" FontSize="12" Margin="5,0"/>
+                                                    </Button>
+                                                    <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                    Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding Shell.RootSourceUrl}">
+                                                        <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0"/>
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Shell.RootSourceUrl}" Foreground="{DynamicResource TextSecondary}" 
+                                   FontSize="10" VerticalAlignment="Center" Margin="5,0" 
+                                   Opacity="0.6" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
                                         </Border>
                                     </StackPanel>
 
-                                    <TextBlock Grid.Row="3" 
-               Text="{Binding ModDescription}" 
-               Foreground="#777" 
-               FontSize="11" 
-               TextWrapping="Wrap" 
-               Margin="0,0,0,10"/>
-
-                                    <StackPanel Grid.Row="4" 
-                Visibility="{Binding Shell.RootSourceUrl, Converter={StaticResource NullToBoolConverter}}" 
-                Margin="0,0,0,10">
-                                        <TextBlock Text="ROOT SOURCE" Foreground="#444" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                                        <DockPanel Background="#181818" LastChildFill="True">
-                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                                <Button Style="{StaticResource ActionIconButtonStyle}" 
-                        Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandParameter="{Binding Shell.RootSourceUrl}">
-                                                    <TextBlock Text="&#xE128;" FontFamily="Segoe MDL2 Assets" Foreground="#2196F3" FontSize="12" Margin="5,0"/>
-                                                </Button>
-                                                <Button Style="{StaticResource ActionIconButtonStyle}" 
-                        Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandParameter="{Binding Shell.RootSourceUrl}">
-                                                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="12" Margin="5,0"/>
-                                                </Button>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding Shell.RootSourceUrl}" 
-                       Foreground="#888" 
-                       FontSize="10" 
-                       VerticalAlignment="Center" 
-                       Margin="8,4"
-                       TextTrimming="CharacterEllipsis"/>
-                                        </DockPanel>
-                                    </StackPanel>
-
-                                    <Button Grid.Row="6" 
-            Content="Check Versions" 
-            HorizontalAlignment="Right" 
-            Command="{Binding DataContext.NavToSingleModVersionsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-            CommandParameter="{Binding}" 
-            Background="#252525" 
-            Foreground="#FFC107" 
-            FontSize="11" 
-            Padding="12,4" 
-            BorderThickness="0"/>
+                                    <Button Grid.Row="5" Content="Check Versions" HorizontalAlignment="Right"
+                    Style="{DynamicResource VersionPillButtonStyle}"
+                    Command="{Binding DataContext.NavToSingleModVersionsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                    CommandParameter="{Binding}"/>
                                 </Grid>
                             </Grid>
                         </Border>
@@ -311,40 +234,47 @@
 
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" VerticalAlignment="Stretch" 
                       Background="Transparent" ShowsPreview="True" Margin="2,0"/>
-
-        <Border Grid.Column="2" Background="#181818" BorderBrush="#252525" BorderThickness="1,0,0,0" Padding="25">
+        <!--Mod inspector-->
+        <Border Grid.Column="2" Background="{DynamicResource WindowBackground}" BorderBrush="{DynamicResource BorderMuted}" BorderThickness="1,0,0,0" Padding="25">
             <Grid>
                 <Grid x:Name="DetailView" Visibility="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="MOD INSPECTOR" FontSize="11" Foreground="#444" Margin="0,0,0,20"/>
-                            <TextBlock Text="{Binding SelectedMod.Shell.Name}" FontSize="24" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
+                            <TextBlock Text="MOD INSPECTOR" Style="{DynamicResource InspectorSectionHeaderStyle}"/>
+                            <TextBlock Text="{Binding SelectedMod.Shell.Name}" Style="{DynamicResource ModTitleTextStyle}" FontSize="24" Margin="0,0,0,15" TextWrapping="Wrap"/>
 
-                            <Button Command="{Binding FullSyncSingleModCommand}" CommandParameter="{Binding SelectedMod}" Margin="0,15,0,0" Padding="10" Background="#1E2A1E" BorderBrush="#4CAF50" BorderThickness="0,0,0,2">
+                            <Button Command="{Binding FullSyncSingleModCommand}" 
+                            CommandParameter="{Binding SelectedMod}" 
+                            Style="{DynamicResource InspectorSuccessButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Foreground="#4CAF50" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Run Full Sync" Foreground="White" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+
                             <Border Visibility="{Binding SelectedMod.Installed, Converter={StaticResource NullToBoolConverter}}" 
-                                    Background="#161B33" CornerRadius="8" Padding="15" Margin="0,20,0,0" BorderBrush="#3F51B5" BorderThickness="1">
+                            Style="{DynamicResource InspectorHighlightBorderStyle}">
                                 <StackPanel>
                                     <DockPanel LastChildFill="False" Margin="0,0,0,10">
-                                        <TextBlock Text="CURRENTLY INSTALLED" Foreground="#3F51B5" FontSize="10" FontWeight="Black" VerticalAlignment="Center"/>
+                                        <TextBlock Text="CURRENTLY INSTALLED" Foreground="{DynamicResource AccentPrimary}" FontSize="10" FontWeight="Black" VerticalAlignment="Center"/>
+
                                         <Button DockPanel.Dock="Right"
-                                                Command="{Binding ShowHistoryCommand}"
-                                                CommandParameter="{Binding SelectedMod}"
-                                                Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0">
-                                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" Foreground="#3F51B5" FontSize="14" ToolTip="View Installation History"/>
+                                        Style="{DynamicResource ActionIconButtonStyle}"
+                                        Command="{Binding ShowHistoryCommand}"
+                                        CommandParameter="{Binding SelectedMod}"
+                                        Margin="5,0,0,0">
+                                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentPrimary}" FontSize="14" ToolTip="View Installation History"/>
                                         </Button>
+
                                         <TextBlock DockPanel.Dock="Right" Text="{Binding SelectedMod.Installed.InstalledVersion}" Foreground="White" FontWeight="Bold" FontSize="14"/>
                                     </DockPanel>
 
-                                    <Separator Background="#252525" Margin="0,0,0,10"/>
+                                    <Separator Background="{DynamicResource BorderMuted}" Margin="0,0,0,10"/>
 
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions>
@@ -352,59 +282,85 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="INSTALL DATE" Foreground="#888" FontSize="9" Margin="0,0,0,2"/>
+                                            <TextBlock Text="INSTALL DATE" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,0,0,2"/>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Foreground="#4CAF50" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentSuccess}" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                                 <TextBlock Text="{Binding SelectedMod.Installed.InstalledDate, StringFormat='{}{0:d}'}" Foreground="White" FontSize="12"/>
                                             </StackPanel>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1">
-                                            <TextBlock Text="COMPATIBILITY" Foreground="#888" FontSize="9" Margin="0,0,0,2"/>
+                                            <TextBlock Text="COMPATIBILITY" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,0,0,2"/>
                                             <TextBlock Text="{Binding SelectedMod.Installed.SupportedAppVersions}" Foreground="#2196F3" FontSize="11" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Text="DOWNLOAD SOURCE" Foreground="#888" FontSize="9" Margin="0,5,0,2"/>
+                                    <TextBlock Text="DOWNLOAD SOURCE" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,5,0,2"/>
                                     <DockPanel>
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                            <Button Style="{StaticResource ActionIconButtonStyle}" 
-                                                    Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
-                                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#4CAF50" FontSize="14"/>
+                                            <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                            Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
+                                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentSuccess}" FontSize="14"/>
                                             </Button>
 
-                                            <Button Style="{StaticResource ActionIconButtonStyle}" 
-                                                    Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
-                                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="14"/>
+                                            <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                            Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding SelectedMod.Installed.DownloadUrl}">
+                                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="14"/>
                                             </Button>
                                         </StackPanel>
                                         <TextBlock Text="{Binding SelectedMod.Installed.DownloadUrl}" 
-                                                   Foreground="#666" FontSize="10" VerticalAlignment="Center" 
-                                                   TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                                           Foreground="{DynamicResource TextMuted}" FontSize="10" VerticalAlignment="Center" 
+                                           TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
                                     </DockPanel>
                                 </StackPanel>
                             </Border>
 
-                            <TextBlock Text="INSTALLATION" FontSize="11" Foreground="#444" Margin="0,25,0,10"/>
-                            <Button Content="Edit Installation Data" Command="{Binding EditInstallationCommand}" Visibility="{Binding SelectedMod.Installed, Converter={StaticResource NullToBoolConverter}}" Background="#2A2A2A" Foreground="#4CAF50" Height="35" BorderThickness="0" Margin="0,0,0,5"/>
-                            <Button Content="Setup Manual Install" Command="{Binding SetupManualInstallCommand}" Visibility="{Binding SelectedMod.Installed, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Inverted}" Background="#2A2A2A" Foreground="#2196F3" Height="35" BorderThickness="0"/>
+                            <TextBlock Text="INSTALLATION" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,25,0,10"/>
+                            <Button Content="Edit Installation Data" 
+                            Command="{Binding EditInstallationCommand}" 
+                            Visibility="{Binding SelectedMod.Installed, Converter={StaticResource NullToBoolConverter}}" 
+                            Style="{DynamicResource InspectorMutedButtonStyle}"
+                            Foreground="{DynamicResource AccentSuccess}"
+                            Margin="0,0,0,5"/>
 
-                            <TextBlock Text="CONFIGURATION" FontSize="11" Foreground="#444" Margin="0,25,0,10"/>
-                            <Button Content="Edit Shell Metadata" Command="{Binding EditModShellCommand}" Background="#2A2A2A" Foreground="White" Height="35" BorderThickness="0"/>
+                            <Button Content="Setup Manual Install" 
+                            Command="{Binding SetupManualInstallCommand}" 
+                            Visibility="{Binding SelectedMod.Installed, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Inverted}" 
+                            Style="{DynamicResource InspectorMutedButtonStyle}"
+                            Foreground="#2196F3"/>
+
+                            <TextBlock Text="CONFIGURATION" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,25,0,10"/>
+                            <Button Content="Edit Shell Metadata" 
+                            Command="{Binding EditModShellCommand}" 
+                            Style="{DynamicResource InspectorMutedButtonStyle}" 
+                            Foreground="White"/>
                         </StackPanel>
                     </ScrollViewer>
+
                     <StackPanel Grid.Row="1" Margin="0,15,0,0">
-                        <Button Content="DEACTIVATE MOD" Command="{Binding ToggleActivationCommand}" Visibility="{Binding SelectedMod.IsUsed, Converter={StaticResource BooleanToVisibilityConverter}}" Background="#333" Foreground="#BBB" Height="40" Margin="0,0,0,10" BorderThickness="0"/>
-                        <Button Content="ACTIVATE MOD" Command="{Binding ToggleActivationCommand}" Visibility="{Binding SelectedMod.IsUsed, Converter={StaticResource InverseBoolToVisConverter}}" Background="#4CAF50" Foreground="White" Height="40" Margin="0,0,0,10" BorderThickness="0"/>
-                        <Button Content="HARD WIPE" Command="{Binding HardWipeCommand}" Background="Transparent" BorderBrush="#442222" BorderThickness="1" Height="40" Foreground="#F44336"/>
+                        <Button Content="DEACTIVATE MOD" 
+                        Command="{Binding ToggleActivationCommand}" 
+                        Visibility="{Binding SelectedMod.IsUsed, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                        Style="{DynamicResource InspectorMutedButtonStyle}"
+                        Margin="0,0,0,10"/>
+
+                        <Button Content="ACTIVATE MOD" 
+                        Command="{Binding ToggleActivationCommand}" 
+                        Visibility="{Binding SelectedMod.IsUsed, Converter={StaticResource InverseBoolToVisConverter}}" 
+                        Style="{DynamicResource InspectorSuccessButtonStyle}"
+                        Margin="0,0,0,10"/>
+
+                        <Button Content="HARD WIPE" 
+                        Command="{Binding HardWipeCommand}" 
+                        Style="{DynamicResource InspectorDangerButtonStyle}"/>
                     </StackPanel>
                 </Grid>
 
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
-                            Visibility="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Inverted}">
-                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="48" Foreground="#222" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Select a mod to inspect" Foreground="#444" Margin="0,10" HorizontalAlignment="Center"/>
+                    Visibility="{Binding SelectedMod, Converter={StaticResource NullToBoolConverter}, ConverterParameter=Inverted}">
+                    <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="48" Foreground="{DynamicResource CardInnerSectionBackground}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Select a mod to inspect" Foreground="{DynamicResource TextMuted}" Margin="0,10" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Grid>
         </Border>

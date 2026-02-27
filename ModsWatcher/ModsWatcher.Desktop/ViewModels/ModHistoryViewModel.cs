@@ -8,30 +8,50 @@ using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class ModHistoryViewModel : BaseViewModel, IInitializable<(Mod Mod, ModdedApp App)>
+    public class ModHistoryViewModel : BaseViewModel, IInitializable<(ModItemViewModel Mod, ModdedApp App)>
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
         private readonly CommonUtils _commonUtils;
+
+        private ModItemViewModel _selectedItem;
         private Mod _mod;
         private ModdedApp _parentApp;
         private string _selectedModName = "Mod History";
         private bool _overrideRollbackRules;
 
+        // Source of truth (unfiltered)
+        private List<ModHistoryItemViewModel> _allHistoryRecords = new();
 
-        public ObservableCollection<ModHistoryItemViewModel> HistoryItems { get; set; }
+        // UI Binding collection
+        private ObservableCollection<ModHistoryItemViewModel> _historyItems = new();
+        public ObservableCollection<ModHistoryItemViewModel> HistoryItems
+        {
+            get => _historyItems;
+            set => SetProperty(ref _historyItems, value);
+        }
 
-        public bool HasHistory => HistoryItems.Count > 0;
+        // Filter Options
+        public ObservableCollection<string> AppVersionFilterOptions { get; set; } = new();
+
+        private string _selectedAppVersionFilter = "All";
+        public string SelectedAppVersionFilter
+        {
+            get => _selectedAppVersionFilter;
+            set
+            {
+                if (SetProperty(ref _selectedAppVersionFilter, value))
+                    ApplyFilter();
+            }
+        }
+
+        public bool HasHistory => HistoryItems?.Count > 0;
 
         public string SelectedModName
         {
             get => _selectedModName;
-            set
-            {
-                _selectedModName = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _selectedModName, value);
         }
 
         public bool OverrideRollbackRules
@@ -41,8 +61,8 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 if (SetProperty(ref _overrideRollbackRules, value))
                 {
-                    // When the checkbox changes, tell all wrappers to re-check their button state
-                    foreach (var item in HistoryItems) item.RefreshCompatibility();
+                    // Update compatibility status for all records when override toggle changes
+                    foreach (var item in _allHistoryRecords) item.RefreshCompatibility();
                 }
             }
         }
@@ -53,32 +73,57 @@ namespace ModsWatcher.Desktop.ViewModels
             _navigationService = navigationService;
             _storageService = storageService;
             _commonUtils = commonUtils;
+            _dialogService = dialog;
 
             HistoryItems = new ObservableCollection<ModHistoryItemViewModel>();
-            _dialogService = dialog;
         }
 
-        public void Initialize((Mod Mod, ModdedApp App) data)
+        public void Initialize((ModItemViewModel Mod, ModdedApp App) data)
         {
-            _mod = data.Mod;
+            _selectedItem = data.Mod;
+            _mod = _selectedItem?.Shell;
             _parentApp = data.App;
-
-            this._selectedModName = _mod.Name;
+            this.SelectedModName = _mod?.Name ?? "Mod History";
 
             LoadHistory();
         }
 
         private async void LoadHistory()
         {
-            
-            HistoryItems.Clear();
+            _allHistoryRecords.Clear();
             var historyData = await _storageService.GetInstalledModHistoryAsync(_mod.Id);
 
             foreach (var entry in historyData)
             {
-                // Create the wrapper, passing the current app version and a link to the override status
                 var wrapper = new ModHistoryItemViewModel(entry, _parentApp.InstalledVersion, () => OverrideRollbackRules, _commonUtils, _logger);
-                HistoryItems.Add(wrapper);
+                _allHistoryRecords.Add(wrapper);
+            }
+
+            // Generate unique App Versions for the filter dropdown
+            var apps = _allHistoryRecords
+                .Select(x => x.History.AppVersion)
+                .Where(v => !string.IsNullOrEmpty(v))
+                .Distinct()
+                .OrderByDescending(v => v)
+                .ToList();
+
+            apps.Insert(0, "All");
+            AppVersionFilterOptions = new ObservableCollection<string>(apps);
+            OnPropertyChanged(nameof(AppVersionFilterOptions));
+
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            if (SelectedAppVersionFilter == "All")
+            {
+                HistoryItems = new ObservableCollection<ModHistoryItemViewModel>(_allHistoryRecords);
+            }
+            else
+            {
+                var filtered = _allHistoryRecords.Where(x => x.History.AppVersion == SelectedAppVersionFilter);
+                HistoryItems = new ObservableCollection<ModHistoryItemViewModel>(filtered);
             }
 
             OnPropertyChanged(nameof(HasHistory));
@@ -88,11 +133,10 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (o is ModHistoryItemViewModel wrapper)
             {
-                // Safety check in case the command is triggered via shortcut/double-click
                 if (!wrapper.CanRollback) return;
 
-                _logger.LogInformation("User initiated rollback to version {Version} for mod {ModName} in app {AppName}", wrapper.History.Version, _mod.Name, _parentApp.Name);
-                // Use the service instead of the static class!
+                _logger.LogInformation("User initiated rollback to version {Version} for mod {ModName}", wrapper.History.Version, _mod.Name);
+
                 string msg = $"Rollback to version {wrapper.History.Version}?\n\nCompatibility: {(wrapper.IsCompatible ? "Matched" : "Forced")}";
 
                 if (_dialogService.ShowConfirmation(msg, "Confirm Rollback"))
@@ -100,7 +144,6 @@ namespace ModsWatcher.Desktop.ViewModels
                     await _storageService.RollbackToVersionAsync(wrapper.History, this._parentApp.InstalledVersion);
                     BackCommand.Execute(null);
                 }
-                
             }
         });
 
@@ -108,7 +151,6 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (o is ModHistoryItemViewModel wrapper)
             {
-                _logger.LogInformation("User initiated deletion of history entry {Version} for mod {ModName} in app {AppName}", wrapper.History.Version, _mod.Name, _parentApp.Name);
                 if (_dialogService.ShowConfirmation($"Delete history entry for version {wrapper.History.Version}?", "Confirm Deletion"))
                 {
                     await _storageService.DeleteInstalledModHistoryAsync(wrapper.History.InternalId);
@@ -117,9 +159,33 @@ namespace ModsWatcher.Desktop.ViewModels
             }
         });
 
+        public ICommand OpenUrlCommand => new RelayCommand(obj => ExecuteOpenUrl(obj as string));
+
+        public ICommand CopyUrlCommand => new RelayCommand(obj => ExecuteCopyUrl(obj as string));
+
         public ICommand BackCommand => new RelayCommand(o =>
         {
-            _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);
+            _navigationService.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>((_parentApp, _selectedItem));
         });
+
+        private void ExecuteCopyUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try { System.Windows.Clipboard.SetText(url); } catch { }
+        }
+
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
     }
 }

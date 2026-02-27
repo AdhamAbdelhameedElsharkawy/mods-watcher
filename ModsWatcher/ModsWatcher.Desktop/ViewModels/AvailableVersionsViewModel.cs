@@ -8,7 +8,7 @@ using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class AvailableVersionsViewModel : BaseViewModel, IInitializable<(Mod? Shell, ModdedApp App)>
+    public class AvailableVersionsViewModel : BaseViewModel, IInitializable<(ModItemViewModel? Shell, ModdedApp App)>
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
@@ -17,6 +17,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private Mod? _targetShell;
         private ModdedApp _selectedApp;
+        private ModItemViewModel? _selectedItem;
 
         public ObservableCollection<ModVersionGroupViewModel> GroupedAvailableMods { get; set; }
 
@@ -44,15 +45,16 @@ namespace ModsWatcher.Desktop.ViewModels
             DeleteSelectedCommand = new RelayCommand(async obj => await DeleteSelectedInGroupAsync(obj as ModVersionGroupViewModel));
 
             BackCommand = new RelayCommand(_ =>
-                _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_selectedApp));
+                _navigationService.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>((_selectedApp, _selectedItem)));
 
             CopyUrlCommand = new RelayCommand(obj => ExecuteCopyUrl(obj as string));
             OpenUrlCommand = new RelayCommand(obj => ExecuteOpenUrl(obj as string));
         }
 
-        public void Initialize((Mod? Shell, ModdedApp App) data)
+        public void Initialize((ModItemViewModel? Shell, ModdedApp App) data)
         {
-            _targetShell = data.Shell;
+            _selectedItem = data.Shell;
+            _targetShell = data.Shell?.Shell;
             _selectedApp = data.App;
             _ = LoadVersions();
         }
@@ -61,17 +63,12 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (_selectedApp == null) return;
 
-            
             string installedVersion = string.Empty;
-
             GroupedAvailableMods.Clear();
 
-            // Passing the optional _targetShell?.Id to filter at the DB level if coming from a specific mod
             var results = await _storageService.GetAvailableVersionsByAppIdAsync(_selectedApp.Id, _targetShell?.Id);
-
             InstalledMod? currentInstalledMod = await _storageService.GetInstalledModsByModIdAsync(_targetShell?.Id);
-
-         installedVersion = currentInstalledMod?.InstalledVersion ?? string.Empty;
+            installedVersion = currentInstalledMod?.InstalledVersion ?? string.Empty;
 
             foreach (var (Shell, Versions) in results)
             {
@@ -80,13 +77,14 @@ namespace ModsWatcher.Desktop.ViewModels
                     ModId = Shell.Id,
                     ModName = Shell.Name,
                     RootSourceUrl = Shell.RootSourceUrl,
-                    Versions = new ObservableCollection<AvailableVersionItemViewModel>(
-                        Versions.Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion, _commonUtils, _logger))
-                    )
-
-                    
-
+                    // 1. Fill the source list
+                    AllVersions = Versions
+                        .Select(v => new AvailableVersionItemViewModel(v, _selectedApp.InstalledVersion, installedVersion, _commonUtils, _logger))
+                        .ToList()
                 };
+
+                // 2. Build the Filter options and DisplayedVersions collection
+                group.InitializeFilters();
 
                 GroupedAvailableMods.Add(group);
             }
@@ -121,8 +119,8 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (group == null) return;
 
-            _logger.LogInformation("Attempting to delete {Count} selected versions for Mod {ModId}.", group.Versions.Count(v => v.IsSelected), group.ModId);
-            var selected = group.Versions.Where(v => v.IsSelected).ToList();
+            _logger.LogInformation("Attempting to delete {Count} selected versions for Mod {ModId}.", group.AllVersions.Count(v => v.IsSelected), group.ModId);
+            var selected = group.AllVersions.Where(v => v.IsSelected).ToList();
             if (!selected.Any()) return;
 
             if (_dialogService.ShowConfirmation($"Delete {selected.Count} selected versions for '{group.ModName}'?", "Bulk Delete"))

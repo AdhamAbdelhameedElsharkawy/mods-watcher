@@ -40,7 +40,7 @@ namespace ModsWatcher.Desktop.ViewModels
             SelectAppCommand = new RelayCommand(o =>
             {
                 if (o is ModdedAppItemViewModel wrapper)
-                    _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(wrapper.App);
+                    _navigationService.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>((wrapper.App, null));
             });
 
             // 2. Delete Logic
@@ -198,6 +198,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
                 // 4. Refresh: Update the UI to show new PotentialUpdatesCount/ActiveCount
                 Loading.BusyMessage = $"Checking Completed for {modsToCheck.Count} Mods...";
+                _dialogService.ShowInfo($"Checking Completed for {modsToCheck.Count} Mods...");
                 await LoadApps();
             }
             catch (Exception ex)

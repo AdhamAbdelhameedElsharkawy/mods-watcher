@@ -20,8 +20,8 @@ namespace ModsWatcher.Tests.VMs
             var vm = new ModVersionGroupViewModel(_loggerMock.Object);
 
             // Assert
-            Assert.NotNull(vm.Versions);
-            Assert.Empty(vm.Versions);
+            Assert.NotNull(vm.AllVersions);
+            Assert.Empty(vm.AllVersions);
         }
 
         [Fact]

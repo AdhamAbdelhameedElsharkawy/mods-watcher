@@ -20,6 +20,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<ILogger<LibraryViewModel>> _loggerMock;
         private readonly LibraryViewModel _vm;
         private readonly ModdedApp _testApp;
+        private readonly Mock<ModItemViewModel> _modItemViewModel;
 
         public LibraryViewModelTests()
         {
@@ -30,6 +31,7 @@ namespace ModsWatcher.Tests.VMs
             var optionsMock = new Mock<IOptions<WatcherSettings>>();
             _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<LibraryViewModel>>();
+            _modItemViewModel = new Mock<ModItemViewModel>();
 
             _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
@@ -48,7 +50,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
 
             // Act
-            _vm.Initialize(_testApp);
+            _vm.Initialize((_testApp, null));
             await Task.Delay(10); // Wait for async LoadLibrary
 
             // Assert
@@ -104,8 +106,8 @@ namespace ModsWatcher.Tests.VMs
             _vm.ShowHistoryCommand.Execute(null);
 
             // Assert
-            _navMock.Verify(n => n.NavigateTo<ModHistoryViewModel, (Mod, ModdedApp)>(
-                It.Is<(Mod, ModdedApp)>(t => t.Item1 == shell && t.Item2 == _testApp)),
+            _navMock.Verify(n => n.NavigateTo<ModHistoryViewModel, (ModItemViewModel, ModdedApp)>(
+                It.Is<(ModItemViewModel, ModdedApp)>(t => t.Item1.Shell == shell && t.Item2 == _testApp)),
                 Times.Once);
         }
     }

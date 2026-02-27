@@ -4,35 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             Background="#1A1A1A">
+             Background="{DynamicResource WindowBackground}">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
-
-        <Style x:Key="ActionIconButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="Margin" Value="2,0"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Opacity" Value="0.6"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="InstalledRowStyle" TargetType="Border">
-            <Setter Property="Background" Value="#1E1E1E"/>
-            <Setter Property="Padding" Value="15"/>
-            <Setter Property="BorderThickness" Value="1,0,1,1"/>
-            <Setter Property="BorderBrush" Value="#333"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                    <Setter Property="Background" Value="#161B33"/>
-                    <Setter Property="BorderBrush" Value="#3F51B5"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -43,8 +18,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
-            <TextBlock Text="VERSION HISTORY &amp; PROMOTION" FontSize="11" FontWeight="Bold" Foreground="#888" />
-            <TextBlock Text="Available Versions" FontSize="24" FontWeight="Bold" Foreground="White"/>
+            <TextBlock Text="VERSION HISTORY &amp; PROMOTION" Style="{DynamicResource InspectorSectionHeaderStyle}" />
+            <TextBlock Text="Available Versions" Style="{DynamicResource ModTitleTextStyle}" FontSize="24"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -52,18 +27,27 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Margin="0,0,0,30">
-                            <Border Background="#252525" CornerRadius="8,8,0,0" Padding="15" BorderBrush="#333" BorderThickness="1,1,1,0">
+                            <Border Style="{DynamicResource VersionGroupHeaderStyle}">
                                 <DockPanel>
-                                    <TextBlock Text="{Binding ModName}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
-                                    <CheckBox Content="OVERRIDE COMPATIBILITY" IsChecked="{Binding IsOverrideEnabled}" Foreground="#AAA" FontSize="10" FontWeight="Bold" Margin="20,0,0,0" VerticalAlignment="Center"/>
-                                    <Button DockPanel.Dock="Right" Content="DELETE SELECTED" Command="{Binding DataContext.DeleteSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Background="#C62828" Foreground="White" FontSize="10" FontWeight="Bold" Padding="10,4" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="{Binding ModName}" Style="{DynamicResource ModTitleTextStyle}" FontSize="18" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Margin="20,0">
+                                        <TextBlock Text="FILTER:" Style="{DynamicResource SmallHeaderTextStyle}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <ComboBox ItemsSource="{Binding AppVersionFilterOptions}" 
+                      SelectedItem="{Binding SelectedAppVersionFilter}"
+                      Width="100" Height="22" VerticalContentAlignment="Center" FontSize="11"/>
+                                    </StackPanel>
+                                    <CheckBox Content="OVERRIDE COMPATIBILITY" IsChecked="{Binding IsOverrideEnabled}" 
+                                              Foreground="{DynamicResource TextSecondary}" FontSize="10" FontWeight="Bold" Margin="20,0,0,0" VerticalAlignment="Center"/>
+                                    <Button DockPanel.Dock="Right" Content="DELETE SELECTED" Style="{DynamicResource DeleteButtonStyle}"
+                                            Command="{Binding DataContext.DeleteSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                            CommandParameter="{Binding}" HorizontalAlignment="Right"/>
                                 </DockPanel>
                             </Border>
 
-                            <ItemsControl ItemsSource="{Binding Versions}">
+                            <ItemsControl ItemsSource="{Binding DisplayedVersions}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource InstalledRowStyle}">
+                                        <Border Style="{DynamicResource InstalledRowStyle}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -75,42 +59,43 @@
 
                                                 <StackPanel Grid.Column="1">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Entity.AvailableVersion}" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                                                        <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" Background="#3F51B5" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Entity.AvailableVersion}" Style="{DynamicResource ModTitleTextStyle}" FontSize="16"/>
+                                                        <Border Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVis}}" 
+                                                                Style="{DynamicResource StatusBadgeStyle}" Background="{DynamicResource AccentPrimary}" Margin="10,0,0,0">
                                                             <TextBlock Text="INSTALLED" FontSize="9" FontWeight="Black" Foreground="White"/>
                                                         </Border>
                                                     </StackPanel>
 
                                                     <WrapPanel Margin="0,4">
-                                                        <TextBlock Text="{Binding Entity.SizeMB, StringFormat='{}{0:N1} MB'}" Foreground="#AAA" FontSize="11"/>
-                                                        <TextBlock Text=" | " Foreground="#444" Margin="5,0"/>
-                                                        <TextBlock Text="{Binding Entity.PackageFilesNumber, StringFormat='{}{0} Files'}" Foreground="#AAA" FontSize="11"/>
-                                                        <TextBlock Text=" | " Foreground="#444" Margin="5,0"/>
-                                                        <TextBlock Text="{Binding Entity.PackageType}" Foreground="#888" FontSize="11" FontStyle="Italic"/>
-                                                        <TextBlock Text=" | " Foreground="#444" Margin="5,0"/>
-                                                        <TextBlock Text="{Binding Entity.SupportedAppVersions, StringFormat='Supports: {0}'}" Foreground="#007ACC" FontSize="11"/>
+                                                        <TextBlock Text="{Binding Entity.SizeMB, StringFormat='{}{0:N1} MB'}" Style="{DynamicResource ModMetadataTextStyle}"/>
+                                                        <TextBlock Text=" | " Foreground="{DynamicResource BorderMuted}" Margin="5,0"/>
+                                                        <TextBlock Text="{Binding Entity.PackageFilesNumber, StringFormat='{}{0} Files'}" Style="{DynamicResource ModMetadataTextStyle}"/>
+                                                        <TextBlock Text=" | " Foreground="{DynamicResource BorderMuted}" Margin="5,0"/>
+                                                        <TextBlock Text="{Binding Entity.PackageType}" Style="{DynamicResource ModMetadataTextStyle}" FontStyle="Italic"/>
+                                                        <TextBlock Text=" | " Foreground="{DynamicResource BorderMuted}" Margin="5,0"/>
+                                                        <TextBlock Text="{Binding Entity.SupportedAppVersions, StringFormat='Supports: {0}'}" Foreground="{DynamicResource AccentPrimary}" FontSize="11"/>
                                                     </WrapPanel>
 
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Foreground="#666" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                        <TextBlock Text="{Binding Entity.ReleaseDate, StringFormat='{}{0:d}'}" Foreground="#CCC" FontSize="11" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                                                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                        <TextBlock Text="{Binding Entity.ReleaseDate, StringFormat='{}{0:d}'}" Style="{DynamicResource ModMetadataTextStyle}" VerticalAlignment="Center" Margin="0,0,20,0"/>
 
-                                                        <TextBlock Text="SOURCE:" Foreground="#555" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                        <Button Style="{StaticResource ActionIconButtonStyle}" ToolTip="Open Source" Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.CrawledModUrl}">
-                                                            <TextBlock Text="&#xE12B;" FontFamily="Segoe MDL2 Assets" Foreground="#007ACC" FontSize="13"/>
+                                                        <TextBlock Text="SOURCE:" Style="{DynamicResource SmallHeaderTextStyle}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                        <Button Style="{DynamicResource ActionIconButtonStyle}" Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.CrawledModUrl}">
+                                                            <TextBlock Text="&#xE12B;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentPrimary}" FontSize="13"/>
                                                         </Button>
-                                                        <Button Style="{StaticResource ActionIconButtonStyle}" ToolTip="Copy Source Link" Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.CrawledModUrl}">
-                                                            <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="13"/>
+                                                        <Button Style="{DynamicResource ActionIconButtonStyle}" Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.CrawledModUrl}">
+                                                            <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="13"/>
                                                         </Button>
 
-                                                        <TextBlock Text=" | " Foreground="#333" VerticalAlignment="Center" Margin="10,0"/>
+                                                        <TextBlock Text=" | " Foreground="{DynamicResource BorderMuted}" VerticalAlignment="Center" Margin="10,0"/>
 
-                                                        <TextBlock Text="PACKAGE:" Foreground="#555" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                        <Button Style="{StaticResource ActionIconButtonStyle}" ToolTip="Open Download Link" Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.DownloadUrl}">
-                                                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#4CAF50" FontSize="13"/>
+                                                        <TextBlock Text="PACKAGE:" Style="{DynamicResource SmallHeaderTextStyle}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                        <Button Style="{DynamicResource ActionIconButtonStyle}" Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.DownloadUrl}">
+                                                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentSuccess}" FontSize="13"/>
                                                         </Button>
-                                                        <Button Style="{StaticResource ActionIconButtonStyle}" ToolTip="Copy Download Link" Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.DownloadUrl}">
-                                                            <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="#888" FontSize="13"/>
+                                                        <Button Style="{DynamicResource ActionIconButtonStyle}" Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Entity.DownloadUrl}">
+                                                            <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="13"/>
                                                         </Button>
                                                     </StackPanel>
                                                 </StackPanel>
@@ -119,9 +104,9 @@
                                                     <Button Content="PROMOTE" 
                                                             Command="{Binding DataContext.PromoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            Padding="15,6" Background="#3F51B5" Foreground="White" FontWeight="Bold" Margin="0,0,10,0">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                            Style="{DynamicResource PrimaryActionButtonStyle}" Margin="0,0,10,0">
+                                                        <Button.Resources>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryActionButtonStyle}">
                                                                 <Setter Property="IsEnabled" Value="False"/>
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding IsCompatible}" Value="True">
@@ -132,14 +117,13 @@
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
-                                                        </Button.Style>
+                                                        </Button.Resources>
                                                     </Button>
 
                                                     <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets"
                                                             Command="{Binding DataContext.DeleteSingleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            ToolTip="Delete this version"
-                                                            Background="Transparent" Foreground="#C62828" BorderThickness="0" FontSize="14" VerticalAlignment="Center"/>
+                                                            Style="{DynamicResource ActionIconButtonStyle}" Foreground="{DynamicResource AccentDanger}" FontSize="14" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -152,8 +136,8 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#333" Padding="0,15,0,0">
-            <Button Content="Back to Library" Command="{Binding BackCommand}" Background="Transparent" Foreground="#888" BorderThickness="0" HorizontalAlignment="Left"/>
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderMuted}" Padding="0,15,0,0">
+            <Button Content="Back to Library" Command="{Binding BackCommand}" Style="{DynamicResource GhostActionButtonStyle}" HorizontalAlignment="Left"/>
         </Border>
     </Grid>
 </UserControl>

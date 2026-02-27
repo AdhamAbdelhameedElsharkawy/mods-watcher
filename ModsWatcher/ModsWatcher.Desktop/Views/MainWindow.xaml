@@ -7,10 +7,12 @@
         xmlns:views="clr-namespace:ModsWatcher.Desktop.Views"
         mc:Ignorable="d"
         Title="Mods Watcher 2026" Height="600" Width="1000"
-        Background="#1E1E1E">
+        Icon="pack://application:,,,/Resources/AppIcon.ico"
+        Background="{DynamicResource WindowBackground}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
         <DataTemplate DataType="{x:Type viewmodels:AppSelectionViewModel}">
             <views:AppSelectionView />
         </DataTemplate>
@@ -34,25 +36,22 @@
 
     <Grid>
         <ContentControl Content="{Binding CurrentViewModel}" />
+
         <Border Visibility="{Binding Loading.IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
-                Background="#AA121212">
+                Background="{DynamicResource OverlayBackground}">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ProgressBar IsIndeterminate="True" 
-                             Width="250" 
-                             Height="2" 
-                             Foreground="#4CAF50" 
-                             Background="#333" 
-                             BorderThickness="0"/>
+
+                <ProgressBar Style="{DynamicResource LoadingProgressBarStyle}"/>
 
                 <TextBlock Text="{Binding Loading.BusyMessage}" 
-                           Foreground="White" 
+                           Foreground="{DynamicResource TextPrimary}" 
                            FontSize="16" 
                            FontWeight="SemiBold" 
                            Margin="0,20,0,0" 
                            HorizontalAlignment="Center"/>
 
                 <TextBlock Text="System is processing data..." 
-                           Foreground="#666" 
+                           Foreground="{DynamicResource TextMuted}" 
                            FontSize="11" 
                            Margin="0,5,0,0" 
                            HorizontalAlignment="Center"/>

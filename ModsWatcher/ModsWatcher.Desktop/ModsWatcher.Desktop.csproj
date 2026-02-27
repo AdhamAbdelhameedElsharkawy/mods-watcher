@@ -7,7 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 	  <UseAppHost>true</UseAppHost>
+	  <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
+
+ 
 
   <ItemGroup>
     <PackageReference Include="gong-wpf-dragdrop" Version="4.0.0" />
@@ -22,6 +25,12 @@
   <ItemGroup>
     <ProjectReference Include="..\ModsWatcher.Core\ModsWatcher.Core.csproj" />
     <ProjectReference Include="..\ModsWatcher.Services\ModsWatcher.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\AppIcon.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>
