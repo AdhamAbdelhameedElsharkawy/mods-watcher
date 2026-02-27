@@ -143,7 +143,7 @@ namespace ModsWatcher.Desktop.ViewModels
             ToggleActivationCommand = new RelayCommand(_ => ToggleModActivation());
             HardWipeCommand = new RelayCommand(_ => HardWipeSelectedMod());
             NavToRetiredCommand = new RelayCommand(_ =>
-                _navigationService.NavigateTo<RetiredModsViewModel, ModdedApp>(SelectedApp));
+                _navigationService.NavigateTo<RetiredModsViewModel, (ModdedApp, ModItemViewModel)>((SelectedApp, SelectedMod)));
             MoveUpCommand = new RelayCommand(async obj => await MoveModOrder(obj as ModItemViewModel, -1));
             MoveDownCommand = new RelayCommand(async obj => await MoveModOrder(obj as ModItemViewModel, 1));
             OpenUrlCommand = new RelayCommand(obj => ExecuteOpenUrl(obj as string));
