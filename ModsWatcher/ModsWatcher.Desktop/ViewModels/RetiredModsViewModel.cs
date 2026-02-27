@@ -7,12 +7,13 @@ using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class RetiredModsViewModel : BaseViewModel, IInitializable<ModdedApp>
+    public class RetiredModsViewModel : BaseViewModel, IInitializable<(ModdedApp, ModItemViewModel)>
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
         private ModdedApp _parentApp;
+        private ModItemViewModel _itemViewModel;
 
         public ObservableCollection<UnusedModHistory> RetiredMods { get; } = new();
 
@@ -25,9 +26,10 @@ namespace ModsWatcher.Desktop.ViewModels
             _dialogService = dialogService;
         }
 
-        public async void Initialize(ModdedApp app)
+        public async void Initialize((ModdedApp, ModItemViewModel) data)
         {
-            _parentApp = app;
+            _parentApp = data.Item1;
+            _itemViewModel = data.Item2;
             await LoadRetiredMods();
         }
 
@@ -72,7 +74,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public ICommand BackCommand => new RelayCommand(o =>
         {
-            _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);
+            _navigationService.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>((_parentApp, _itemViewModel));
         });
     }
 }
