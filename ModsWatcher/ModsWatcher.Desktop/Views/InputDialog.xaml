@@ -1,18 +1,32 @@
 ﻿<Window x:Class="ModsWatcher.Desktop.Views.InputDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="{Binding Title}" Width="400" Height="200" 
-        Background="#121212" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <StackPanel Margin="20">
-        <TextBlock Text="{Binding Message}" Foreground="White" Margin="0,0,0,10" TextWrapping="Wrap"/>
-        <TextBox x:Name="InputTextBox" Background="#1E1E1E" Foreground="White" 
-                 BorderBrush="#333" Padding="5" Margin="0,0,0,20"
-                 KeyDown="InputTextBox_KeyDown"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" IsCancel="True" Click="Cancel_Click" 
-                    Width="80" Background="Transparent" Foreground="#666" Margin="0,0,10,0"/>
-            <Button Content="Confirm" IsDefault="True" Click="Ok_Click" 
-                    Width="80" Background="#2196F3" Foreground="White" BorderThickness="0"/>
+        Title="{Binding Title}" Width="400" SizeToContent="Height"
+        Background="{DynamicResource WindowBackground}" 
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None" AllowsTransparency="True">
+
+    <Border BorderBrush="{DynamicResource BorderMuted}" BorderThickness="1" CornerRadius="8">
+        <StackPanel Margin="20">
+            <TextBlock Text="{Binding Message}" 
+                       Style="{DynamicResource InputLabelStyle}" 
+                       FontSize="13" Foreground="{DynamicResource TextPrimary}"
+                       Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+            <TextBox x:Name="InputTextBox" 
+                     Margin="0,0,0,20"
+                     KeyDown="InputTextBox_KeyDown"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" IsCancel="True" Click="Cancel_Click" 
+                        Style="{DynamicResource GhostActionButtonStyle}"
+                        Width="80" Margin="0,0,10,0"/>
+
+                <Button Content="Confirm" IsDefault="True" Click="Ok_Click" 
+                        Style="{DynamicResource PrimaryActionButtonStyle}"
+                        Background="#2196F3"
+                        Width="80"/>
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </Border>
 </Window>

@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Select Versions to Track" Height="500" Width="850" 
-        WindowStartupLocation="CenterOwner" Background="#2D2D2D" Foreground="White">
+        WindowStartupLocation="CenterOwner" 
+        Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextPrimary}">
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -10,82 +11,41 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Text="Multiple versions found." FontSize="16" FontWeight="Bold"/>
+        <StackPanel Grid.Row="0" Margin="0,0,10,15">
+            <TextBlock Text="Multiple versions found." Style="{DynamicResource ModTitleTextStyle}" FontSize="16"/>
             <TextBlock Text="Select which versions to save to history, and pick ONE to set as the active version." 
-                       FontSize="12" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
         </StackPanel>
 
         <DataGrid x:Name="ModGrid" 
                   ItemsSource="{Binding DisplayMods}"
                   Grid.Row="1" 
-                  AutoGenerateColumns="False" 
-                  CanUserAddRows="False" 
-                  Background="#1E1E1E" 
-                  RowBackground="#1E1E1E" 
-                  Foreground="White"
-                  BorderThickness="0"
-                  GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#333333">
-            <DataGrid.Resources>
-                <Style TargetType="{x:Type DataGridColumnHeader}">
-                    <Setter Property="Background" Value="#2D2D2D"/>
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Padding" Value="10,5"/>
-                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                    <Setter Property="BorderBrush" Value="#444444"/>
-                    <Setter Property="Height" Value="32"/>
-                </Style>
-            </DataGrid.Resources>
+                  Style="{DynamicResource DefaultDataGridStyle}"
+                  ColumnHeaderStyle="{DynamicResource DefaultDataGridColumnHeaderStyle}">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Save" 
-                                        Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
-                                        Width="50"/>
+                <DataGridCheckBoxColumn Header="Save" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
 
                 <DataGridTemplateColumn Header="Install" Width="60">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <RadioButton IsChecked="{Binding IsPrimary, UpdateSourceTrigger=PropertyChanged}" 
-                                         GroupName="PrimaryVersion" 
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center"/>
+                                         GroupName="PrimaryVersion" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Version" 
-                                    Binding="{Binding Mod.AvailableVersion}" 
-                                    Width="80" IsReadOnly="True"/>
-
-                <DataGridTextColumn Header="Size" 
-                                    Binding="{Binding Mod.SizeMB, StringFormat={}{0} MB}" 
-                                    Width="80" IsReadOnly="True"/>
-
-                <DataGridTextColumn Header="Date" 
-                                    Binding="{Binding Mod.ReleaseDate}" 
-                                    Width="80" IsReadOnly="True"/>
-
-                <DataGridTextColumn Header="Crawled URL" 
-                                    Binding="{Binding Mod.CrawledModUrl}" 
-                                    Width="100" IsReadOnly="True"/>
-
-                <DataGridTextColumn Header="Download URL" 
-                    Binding="{Binding Mod.DownloadUrl}" 
-                    Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Version" Binding="{Binding Mod.AvailableVersion}" Width="80" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Size" Binding="{Binding Mod.SizeMB, StringFormat={}{0} MB}" Width="80" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Date" Binding="{Binding Mod.ReleaseDate}" Width="110" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Crawled URL" Binding="{Binding Mod.CrawledModUrl}" Width="150" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Download URL" Binding="{Binding Mod.DownloadUrl}" Width="*" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Process Selection" 
-                    Command="{Binding AcceptCommand}"
-                    Width="140" Height="32" Margin="0,0,10,0" 
-                    Background="#007ACC" Foreground="White" BorderThickness="0"
-                    IsDefault="True"/>
-
-            <Button Content="Cancel" 
-                    Width="100" Height="32" 
-                    IsCancel="True" Background="Transparent" Foreground="White"/>
+            <Button Content="Process Selection" Command="{Binding AcceptCommand}"
+                    Style="{DynamicResource PrimaryActionButtonStyle}" Width="140" Height="32" Margin="0,0,10,0" IsDefault="True"/>
+            <Button Content="Cancel" Style="{DynamicResource GhostActionButtonStyle}" Width="100" Height="32" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>

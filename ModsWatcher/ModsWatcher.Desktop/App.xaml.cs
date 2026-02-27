@@ -33,9 +33,6 @@ namespace ModsWatcher.Desktop
 .Build();
 
 
-
-
-
             // 2. Extract Logging values (with defaults as backups)
             var logSettings = configuration.GetSection("LoggingSettings");
             string minLevel = logSettings["MinimumLevel"] ?? "Information";
@@ -67,6 +64,8 @@ namespace ModsWatcher.Desktop
 
 
             var services = new ServiceCollection();
+
+            services.AddSingleton<IConfiguration>(configuration);
 
             //Add Logging to DI
             services.AddLogging(builder => builder.AddSerilog(dispose: true));
@@ -104,6 +103,20 @@ namespace ModsWatcher.Desktop
 
             var logger = ServiceProvider.GetRequiredService<ILogger<App>>();
             logger.LogInformation("ModsWatcher starting up...");
+
+            var config = ServiceProvider.GetRequiredService<IConfiguration>();
+
+            // 2. Decide which file to load
+            bool isDark = bool.Parse(config["Theme:IsDarkTheme"] ?? "true");
+            string themeFile = isDark ? "Themes/DarkTheme.xaml" : "Themes/LightTheme.xaml";
+
+            // 3. Add to Global Resources
+            try
+            {
+                var dict = new ResourceDictionary { Source = new Uri(themeFile, UriKind.Relative) };
+                this.Resources.MergedDictionaries.Add(dict);
+            }
+            catch { /* Fallback logic */ }
 
             // Hook Global Exceptions
             this.DispatcherUnhandledException += (s, args) =>

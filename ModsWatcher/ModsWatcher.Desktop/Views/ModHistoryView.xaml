@@ -2,19 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:ModsWatcher.Desktop.Services"
-             Background="#1A1A1A">
+             Background="{DynamicResource WindowBackground}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <conv:InverseBoolToVisConverter x:Key="InverseBoolToVis" />
-
-        <Style x:Key="HistoryRowStyle" TargetType="Border">
-            <Setter Property="Background" Value="#1E1E1E"/>
-            <Setter Property="Padding" Value="15"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#333"/>
-        </Style>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -26,13 +17,13 @@
 
         <DockPanel Grid.Row="0" Margin="0,0,0,20">
             <StackPanel>
-                <TextBlock Text="INSTALLATION HISTORY" FontSize="11" FontWeight="Bold" Foreground="#888" />
-                <TextBlock Text="{Binding SelectedModName}" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="INSTALLATION HISTORY" Style="{DynamicResource InspectorSectionHeaderStyle}" />
+                <TextBlock Text="{Binding SelectedModName}" Style="{DynamicResource ModTitleTextStyle}" FontSize="24"/>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <CheckBox IsChecked="{Binding OverrideRollbackRules}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBlock Text="OVERRIDE ROLLBACK RULES" Foreground="#AAA" FontSize="10" FontWeight="Black" VerticalAlignment="Center">
+                <TextBlock Text="OVERRIDE ROLLBACK RULES" Foreground="{DynamicResource TextSecondary}" FontSize="10" FontWeight="Black" VerticalAlignment="Center">
                     <TextBlock.ToolTip>
                         <ToolTip Content="Allow rollback to versions designed for different App versions."/>
                     </TextBlock.ToolTip>
@@ -43,10 +34,10 @@
         <Grid Grid.Row="1">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding HistoryItems}" 
-                              Visibility="{Binding HasHistory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                             Visibility="{Binding HasHistory, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border x:Name="ItemBorder" Style="{StaticResource HistoryRowStyle}">
+                            <Border x:Name="ItemBorder" Style="{DynamicResource HistoryRowStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="180"/>
@@ -56,67 +47,56 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding History.InstalledAt, StringFormat='MMM dd, yyyy'}" Foreground="White" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Date Installed" Foreground="#555" FontSize="11"/>
+                                        <TextBlock Text="{Binding History.InstalledAt, StringFormat='MMM dd, yyyy'}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Date Installed" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding History.Version}" Foreground="#3F51B5" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding History.Version}" Foreground="{DynamicResource AccentPrimary}" FontSize="16" FontWeight="Bold"/>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="App: " Foreground="#444" FontSize="10"/>
-                                            <TextBlock Text="{Binding History.AppVersion}" Foreground="#888" FontSize="10" FontWeight="Bold"/>
+                                            <TextBlock Text="App: " Foreground="{DynamicResource TextMuted}" FontSize="10"/>
+                                            <TextBlock Text="{Binding History.AppVersion}" Foreground="{DynamicResource TextSecondary}" FontSize="10" FontWeight="Bold"/>
                                         </StackPanel>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
-                                        <Border x:Name="CompBadge" HorizontalAlignment="Left" Padding="8,2" CornerRadius="4" Background="#121212">
-                                            <TextBlock x:Name="CompText" Text="COMPATIBLE" FontSize="9" FontWeight="Bold" Foreground="#4CAF50"/>
+                                        <Border x:Name="CompBadge" HorizontalAlignment="Left" Padding="8,2" CornerRadius="4" Background="{DynamicResource CardInnerSectionBackground}" Margin="0,0,0,5">
+                                            <TextBlock x:Name="CompText" Text="COMPATIBLE" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource AccentSuccess}"/>
                                         </Border>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                                    ToolTip="Open Link" 
+                                                    Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                    CommandParameter="{Binding History.DownloadUrl}"
+                                                    Margin="0,0,5,0">
+                                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource AccentSuccess}" FontSize="12"/>
+                                            </Button>
+                                            <Button Style="{DynamicResource ActionIconButtonStyle}" 
+                                                    ToolTip="Copy Link" 
+                                                    Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                    CommandParameter="{Binding History.DownloadUrl}">
+                                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12"/>
+                                            </Button>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Content="ROLLBACK" 
-            Command="{Binding DataContext.RollbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-            CommandParameter="{Binding}"
-            IsEnabled="{Binding CanRollback}" 
-            Padding="15,6" 
-            Background="#3F51B5" 
-            Foreground="White" 
-            FontWeight="Bold" 
-            BorderThickness="0"
-            Margin="0,0,10,0">
-                                            <Button.Style>
-                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsEnabled" Value="False">
-                                                            <Setter Property="Opacity" Value="0.3"/>
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
+                                                Command="{Binding DataContext.RollbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding CanRollback}"
+                                                Style="{DynamicResource PrimaryActionButtonStyle}"
+                                                Padding="15,6" Margin="0,0,10,0"/>
 
                                         <Button Command="{Binding DataContext.DeleteHistoryItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-            CommandParameter="{Binding}"
-            Background="Transparent" 
-            BorderThickness="0"
-            Padding="8"
-            Cursor="Hand"
-            ToolTip="Delete this history record">
+                                                CommandParameter="{Binding}"
+                                                Style="{DynamicResource ActionIconButtonStyle}"
+                                                ToolTip="Delete this history record">
                                             <TextBlock Text="&#xE74D;" 
-                   FontFamily="Segoe MDL2 Assets" 
-                   FontSize="14" 
-                   Foreground="#444">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Foreground" Value="#F44336"/>
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                                       FontFamily="Segoe MDL2 Assets" 
+                                                       FontSize="14" 
+                                                       Foreground="{DynamicResource AccentDanger}"/>
                                         </Button>
                                     </StackPanel>
                                 </Grid>
@@ -125,7 +105,7 @@
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsCompatible}" Value="False">
                                     <Setter TargetName="CompText" Property="Text" Value="VERSION MISMATCH"/>
-                                    <Setter TargetName="CompText" Property="Foreground" Value="#F44336"/>
+                                    <Setter TargetName="CompText" Property="Foreground" Value="{DynamicResource AccentDanger}"/>
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
@@ -135,14 +115,14 @@
 
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                         Visibility="{Binding HasHistory, Converter={StaticResource InverseBoolToVis}}">
-                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="64" Foreground="#252525" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                <TextBlock Text="No History Found" FontSize="20" FontWeight="Bold" Foreground="#444" HorizontalAlignment="Center"/>
-                <TextBlock Text="This mod hasn't been updated since it was first installed." Foreground="#333" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="64" Foreground="{DynamicResource BorderMuted}" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                <TextBlock Text="No History Found" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"/>
+                <TextBlock Text="This mod hasn't been updated since it was first installed." Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#333" Padding="0,15,0,0">
-            <Button Command="{Binding BackCommand}" Background="Transparent" Foreground="#888" BorderThickness="0" HorizontalAlignment="Left" Cursor="Hand">
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderMuted}" Padding="0,15,0,0">
+            <Button Command="{Binding BackCommand}" Style="{DynamicResource GhostActionButtonStyle}" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <TextBlock Text="Back to Library" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>

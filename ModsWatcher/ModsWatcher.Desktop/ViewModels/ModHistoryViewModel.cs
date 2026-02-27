@@ -8,12 +8,13 @@ using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class ModHistoryViewModel : BaseViewModel, IInitializable<(Mod Mod, ModdedApp App)>
+    public class ModHistoryViewModel : BaseViewModel, IInitializable<(ModItemViewModel Mod, ModdedApp App)>
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
         private readonly CommonUtils _commonUtils;
+        private ModItemViewModel _selectedItem;
         private Mod _mod;
         private ModdedApp _parentApp;
         private string _selectedModName = "Mod History";
@@ -58,9 +59,10 @@ namespace ModsWatcher.Desktop.ViewModels
             _dialogService = dialog;
         }
 
-        public void Initialize((Mod Mod, ModdedApp App) data)
+        public void Initialize((ModItemViewModel Mod, ModdedApp App) data)
         {
-            _mod = data.Mod;
+            _selectedItem = data.Mod;
+            _mod = _selectedItem?.Shell;
             _parentApp = data.App;
 
             this._selectedModName = _mod.Name;
@@ -117,9 +119,37 @@ namespace ModsWatcher.Desktop.ViewModels
             }
         });
 
+        public ICommand OpenUrlCommand => new RelayCommand(obj => ExecuteOpenUrl(obj as string));
+
+        public ICommand CopyUrlCommand => new RelayCommand(obj => ExecuteCopyUrl(obj as string));
+
         public ICommand BackCommand => new RelayCommand(o =>
         {
-            _navigationService.NavigateTo<LibraryViewModel, ModdedApp>(_parentApp);
+            _navigationService.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>((_parentApp, _selectedItem));
         });
+
+        private void ExecuteCopyUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Windows.Clipboard.SetText(url);
+            }
+            catch { /* Handle clipboard access issues if necessary */ }
+        }
+
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch { /* Handle missing protocol handler/browser issues */ }
+        }
     }
 }

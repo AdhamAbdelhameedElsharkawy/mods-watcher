@@ -22,6 +22,18 @@ namespace ModsWatcher.Desktop.Views
         public LibraryView()
         {
             InitializeComponent();
+            // Listen for when the view is navigated back to
+            this.Loaded += (s, e) =>
+            {
+                // Give the UI a millisecond to finish rendering the list
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (ModListBox.SelectedItem != null)
+                    {
+                        ModListBox.ScrollIntoView(ModListBox.SelectedItem);
+                    }
+                }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+            };
         }
 
         private async void ModSearchBox_TextChanged(object sender, TextChangedEventArgs e)

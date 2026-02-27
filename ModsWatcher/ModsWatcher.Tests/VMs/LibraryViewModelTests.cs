@@ -48,7 +48,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
 
             // Act
-            _vm.Initialize(_testApp);
+            _vm.Initialize((_testApp, null));
             await Task.Delay(10); // Wait for async LoadLibrary
 
             // Assert

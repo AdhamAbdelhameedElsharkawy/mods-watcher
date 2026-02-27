@@ -7,28 +7,50 @@
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None">
-    
-    <Grid x:Name="ModalOverlay" Background="#AA000000" Visibility="Visible">
-        <Border Width="500" Background="#1E1E1E" CornerRadius="12" Padding="25">
+
+    <Grid x:Name="ModalOverlay" Background="#AA000000">
+        <Border Width="500" 
+                Background="{DynamicResource CardBackground}" 
+                CornerRadius="12" 
+                Padding="25">
             <StackPanel>
-                <TextBlock Text="Application Details" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
+                <TextBlock Text="Application Details" 
+                           FontSize="20" 
+                           FontWeight="Bold" 
+                           Foreground="{DynamicResource TextPrimary}" 
+                           Margin="0,0,0,20"/>
 
-                <TextBlock Text="App Name" Foreground="#888" Margin="0,0,0,5"/>
-                <TextBox Text="{Binding Name}" IsReadOnly="{Binding IsEditMode}" Height="35" Background="#252525" Foreground="White" BorderBrush="#333"/>
+                <TextBlock Text="App Name" 
+                           Foreground="{DynamicResource TextSecondary}" 
+                           Margin="0,0,0,5"/>
+                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" 
+                         IsReadOnly="{Binding IsEditMode}" 
+                         Height="35"/>
 
-                <TextBlock Text="Description" Foreground="#888" Margin="0,15,0,5"/>
-                <TextBox Text="{Binding Description}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" 
-             Background="#252525" Foreground="White" BorderBrush="#333" VerticalContentAlignment="Top" Padding="5"/>
+                <TextBlock Text="Description" 
+                           Foreground="{DynamicResource TextSecondary}" 
+                           Margin="0,15,0,5"/>
+                <TextBox Text="{Binding Description}" 
+                         Height="60" 
+                         TextWrapping="Wrap" 
+                         AcceptsReturn="True" 
+                         VerticalContentAlignment="Top"/>
 
                 <UniformGrid Columns="2" Margin="0,15,0,0">
                     <StackPanel Margin="0,0,10,0">
-                        <TextBlock Text="Installed Version" Foreground="#888" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding InstalledVersion}" Height="35" Background="#252525" Foreground="White" BorderBrush="#333"/>
+                        <TextBlock Text="Installed Version" 
+                                   Foreground="{DynamicResource TextSecondary}" 
+                                   Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding InstalledVersion, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" 
+                                 Height="35"/>
                     </StackPanel>
 
                     <StackPanel Margin="10,0,0,0">
-                        <TextBlock Text="Latest Version" Foreground="#888" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding LatestVersion}" Height="35" Background="#252525" Foreground="White" BorderBrush="#333"/>
+                        <TextBlock Text="Latest Version" 
+                                   Foreground="{DynamicResource TextSecondary}" 
+                                   Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding LatestVersion, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" 
+                                 Height="35"/>
                     </StackPanel>
                 </UniformGrid>
 
@@ -37,8 +59,18 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button Content="Cancel" Command="{Binding CancelCommand}" Background="Transparent" Foreground="#666" BorderThickness="0"/>
-                    <Button Grid.Column="1" Content="Save Entity" Command="{Binding SaveCommand}" Background="#3F51B5" Foreground="White" Height="40"/>
+
+                    <Button Content="Cancel" 
+                            Command="{Binding CancelCommand}" 
+                            Style="{DynamicResource ActionIconButtonStyle}"
+                            Foreground="{DynamicResource TextMuted}"/>
+
+                    <Button Grid.Column="1" 
+                            Content="Save Entity" 
+                            Command="{Binding SaveCommand}" 
+                            Background="{DynamicResource AccentPrimary}" 
+                            Foreground="{DynamicResource TextPrimary}" 
+                            Height="40"/>
                 </Grid>
             </StackPanel>
         </Border>

@@ -31,7 +31,7 @@ public class AppDialogViewModel : BaseViewModel
         get => App.Description;
         set { App.Description = value; OnPropertyChanged(); }
     }
-    [Required(ErrorMessage = "Installed Version is required. Format must be X.X or X.X.X")]
+    [Required(ErrorMessage = "Installed Version is required.\n Format must be X.X or X.X.X")]
     [RegularExpression(@"^\d+\.\d+(\.\d+)?$", ErrorMessage = "Format must be X.X or X.X.X")]
     public string InstalledVersion
     {
@@ -42,7 +42,7 @@ public class AppDialogViewModel : BaseViewModel
             ValidateVersionComparison();
             OnPropertyChanged(); }
     }
-    [Required(ErrorMessage = "Latest Version is required. Format must be X.X or X.X.X")]
+    [Required(ErrorMessage = "Latest Version is required.\n Format must be X.X or X.X.X")]
     [RegularExpression(@"^\d+\.\d+(\.\d+)?$", ErrorMessage = "Format must be X.X or X.X.X")]
     public string LatestVersion
     {
@@ -106,7 +106,7 @@ public class AppDialogViewModel : BaseViewModel
 
     private void ValidateVersionComparison()
     {
-        const string errorMsg = "Latest version must be greater than or equal to installed.";
+        const string errorMsg = "Latest version must be\n greater than or equal to installed.";
 
         // Version.TryParse handles strings like "1.2" or "1.2.3" automatically
         if (Version.TryParse(InstalledVersion, out var vInst) &&

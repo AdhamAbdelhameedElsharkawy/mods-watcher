@@ -20,6 +20,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly ModHistoryViewModel _vm;
         private readonly Mod _testMod;
         private readonly ModdedApp _testApp;
+        private readonly Mock<ModItemViewModel> _itemViewModel;
 
         public ModHistoryViewModelTests()
         {
@@ -33,6 +34,7 @@ namespace ModsWatcher.Tests.VMs
 
             _testMod = new Mod { Id = Guid.NewGuid(), Name = "UI Overhaul" };
             _testApp = new ModdedApp { Id = 1, InstalledVersion = "2.0" };
+            _itemViewModel.Object.Shell = _testMod;
         }
 
         [Fact]
@@ -47,7 +49,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetInstalledModHistoryAsync(_testMod.Id)).ReturnsAsync(history);
 
             // Act
-            _vm.Initialize((_testMod, _testApp));
+            _vm.Initialize((_itemViewModel.Object, _testApp));
             await Task.Delay(50); // Wait for async void LoadHistory
 
             // Assert
@@ -65,7 +67,7 @@ namespace ModsWatcher.Tests.VMs
             var history = new List<InstalledModHistory> { new InstalledModHistory { AppVersion = "1.0" } };
             _storageMock.Setup(s => s.GetInstalledModHistoryAsync(It.IsAny<Guid>())).ReturnsAsync(history);
 
-            _vm.Initialize((_testMod, _testApp));
+            _vm.Initialize((_itemViewModel.Object, _testApp));
             await Task.Delay(10);
             var item = _vm.HistoryItems[0];
 
@@ -81,7 +83,7 @@ namespace ModsWatcher.Tests.VMs
         public void BackCommand_ShouldNavigateToLibrary()
         {
             // Arrange
-            _vm.Initialize((_testMod, _testApp));
+            _vm.Initialize((_itemViewModel.Object, _testApp));
 
             // Act
             _vm.BackCommand.Execute(null);

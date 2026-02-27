@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
 {
-    public class LibraryViewModel : BaseViewModel, IInitializable<ModdedApp>, IDropTarget
+    public class LibraryViewModel : BaseViewModel, IInitializable<(ModdedApp, ModItemViewModel)>, IDropTarget
     {
         private readonly INavigationService _navigationService;
         private readonly IStorageService _storageService;
@@ -132,7 +132,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
             // NAVIGATION FLOW
             NavToVersionsManagerCommand = new RelayCommand(_ =>
-                _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((null, SelectedApp)));
+                _navigationService.NavigateTo<AvailableVersionsViewModel, (ModItemViewModel? Shell, ModdedApp App)>((null, SelectedApp)));
             NavToSingleModVersionsCommand = new RelayCommand(obj => ExecuteNavToVersions(obj));
 
             NavToAppsCommand = new RelayCommand(_ => _navigationService.NavigateTo<AppSelectionViewModel>());
@@ -151,10 +151,18 @@ namespace ModsWatcher.Desktop.ViewModels
 
         }
 
-        public void Initialize(ModdedApp app)
+        public void Initialize((ModdedApp, ModItemViewModel) data)
         {
-            SelectedApp = app;
+            SelectedApp = data.Item1;
+            
             LoadLibrary();
+
+            if (data.Item2 != null)
+            {
+                // 2. Find the object in the NEW list that matches the old one by ID/Path
+                // Assuming your ModItemViewModel has a unique property like 'Id' or 'ModPath'
+                SelectedMod = Mods.FirstOrDefault(m => m.Shell.Id == data.Item2.Shell.Id);
+            }
         }
 
         private async Task LoadLibrary()
@@ -253,13 +261,13 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             var target = obj as ModItemViewModel ?? SelectedMod;
             if (target == null) return;
-            _navigationService.NavigateTo<AvailableVersionsViewModel, (Mod? Shell, ModdedApp App)>((target.Shell, SelectedApp));
+            _navigationService.NavigateTo<AvailableVersionsViewModel, (ModItemViewModel? Shell, ModdedApp App)>((target, SelectedApp));
         }
 
         private void ViewModHistory()
         {
             if (SelectedMod == null) return;
-            _navigationService.NavigateTo<ModHistoryViewModel, (Mod, ModdedApp)>((SelectedMod.Shell, SelectedApp));
+            _navigationService.NavigateTo<ModHistoryViewModel, (ModItemViewModel, ModdedApp)>((SelectedMod, SelectedApp));
         }
 
         private async void ToggleModActivation()
@@ -367,7 +375,8 @@ namespace ModsWatcher.Desktop.ViewModels
 
                         await _watcherService.RunStatusCheckAsync(nonCheckedMods);
                         foreach (var mod in targetMods) mod.RefreshSummary();
-                        Loading.BusyMessage = $"Checking for updates for {targetMods.Count} Mods Completed...";
+                        Loading.BusyMessage = $"Checking Completed for {nonCheckedMods.Count} Mods...";
+                        _dialogService.ShowInfo($"Checking Completed for {nonCheckedMods.Count} Mods...");
                     }
                 }
             }
