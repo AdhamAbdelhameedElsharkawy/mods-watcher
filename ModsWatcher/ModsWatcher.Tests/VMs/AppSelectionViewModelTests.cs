@@ -18,6 +18,7 @@ namespace ModsWatcher.Tests.VMs
         private readonly Mock<IWatcherService> _watcherMock;
         private readonly Mock<IDialogService> _dialogMock;
         private readonly Mock<ILogger<AppSelectionViewModel>> _loggerMock;
+        private readonly Mock<ModItemViewModel> _modItemViewModelMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
 
         public AppSelectionViewModelTests()
@@ -28,6 +29,7 @@ namespace ModsWatcher.Tests.VMs
             _dialogMock = new Mock<IDialogService>();
             _loggerMock = new Mock<ILogger<AppSelectionViewModel>>();
             var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            _modItemViewModelMock = new Mock<ModItemViewModel>();
             _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
 
             // Default setup for LoadApps in constructor
@@ -68,8 +70,8 @@ namespace ModsWatcher.Tests.VMs
             vm.SelectAppCommand.Execute(appItem);
 
             // Assert
-            _navMock.Verify(n => n.NavigateTo<LibraryViewModel, ModdedApp>(
-                It.Is<ModdedApp>(a => a.Id == 10)),
+            _navMock.Verify(n => n.NavigateTo<LibraryViewModel, (ModdedApp, ModItemViewModel)>(
+                It.Is<(ModdedApp, ModItemViewModel)>(a => a.Item1.Id == 10)),
                 Times.Once);
         }
 

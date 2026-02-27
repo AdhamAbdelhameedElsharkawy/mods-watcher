@@ -27,8 +27,10 @@ namespace ModsWatcher.Desktop.ViewModels
         public bool CanRollback => IsCompatible || _isOverrideActive();
 
         // Call this when the "Override" checkbox in the parent VM changes
+        // or when the filter logic needs to refresh the UI state
         public void RefreshCompatibility()
         {
+            OnPropertyChanged(nameof(IsCompatible));
             OnPropertyChanged(nameof(CanRollback));
         }
     }

@@ -20,12 +20,63 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _isOverrideEnabled, value);
         }
 
-        // The collection of wrapped versions
-        public ObservableCollection<AvailableVersionItemViewModel> Versions { get; set; } = new();
+        // NEW: Source of truth for all versions
+        public List<AvailableVersionItemViewModel> AllVersions { get; set; } = new();
 
-        public ModVersionGroupViewModel(ILogger logger): base(logger) 
+        // NEW: Filtered collection for the UI ItemsControl
+        private ObservableCollection<AvailableVersionItemViewModel> _displayedVersions = new();
+        public ObservableCollection<AvailableVersionItemViewModel> DisplayedVersions
         {
-            
+            get => _displayedVersions;
+            set => SetProperty(ref _displayedVersions, value);
+        }
+
+        // NEW: Options for the ComboBox
+        public ObservableCollection<string> AppVersionFilterOptions { get; set; } = new();
+
+        private string _selectedAppVersionFilter = "All";
+        public string SelectedAppVersionFilter
+        {
+            get => _selectedAppVersionFilter;
+            set
+            {
+                if (SetProperty(ref _selectedAppVersionFilter, value))
+                    ApplyFilter();
+            }
+        }
+
+        public ModVersionGroupViewModel(ILogger logger) : base(logger) { }
+
+        public void InitializeFilters()
+        {
+            // Extract unique versions from the comma-separated strings in Entity.SupportedAppVersions
+            var versions = AllVersions
+                .SelectMany(v => v.Entity.SupportedAppVersions?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>())
+                .Select(v => v.Trim())
+                .Distinct()
+                .OrderByDescending(v => v)
+                .ToList();
+
+            versions.Insert(0, "All");
+            AppVersionFilterOptions = new ObservableCollection<string>(versions);
+
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            if (SelectedAppVersionFilter == "All")
+            {
+                DisplayedVersions = new ObservableCollection<AvailableVersionItemViewModel>(AllVersions);
+            }
+            else
+            {
+                var filtered = AllVersions.Where(v =>
+                    v.Entity.SupportedAppVersions != null &&
+                    v.Entity.SupportedAppVersions.Split(',').Select(x => x.Trim()).Contains(SelectedAppVersionFilter));
+
+                DisplayedVersions = new ObservableCollection<AvailableVersionItemViewModel>(filtered);
+            }
         }
     }
 }
