@@ -49,14 +49,19 @@ namespace ModsWatcher.Services
 
         #region ModdedApp Methods
 
-        public async Task AddAppAsync(ModdedApp app)
+        public async Task<bool> AddAppAsync(ModdedApp app)
         {
             using var connection = _connectionFactory.CreateConnection();
             // Ensure the connection is open for the repository
             if (connection.State != System.Data.ConnectionState.Open)
                 connection.Open();
 
+            if (await AppNameExistsAsync(app.Name, connection))
+                return false;
+
             await _appRepo.InsertAsync(app, connection);
+
+            return true;
         }
 
         public async Task UpdateAppAsync(ModdedApp app)
@@ -79,6 +84,8 @@ namespace ModsWatcher.Services
 
             return await _appRepo.QueryAllAsync(connection);
         }
+
+        
 
         public async Task<IEnumerable<AppSummaryDto>> GetAllAppSummariesAsync()
         {
@@ -179,14 +186,19 @@ namespace ModsWatcher.Services
 
         #region Mod Shell & Config Unified Methods
 
-        public async Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config)
+        public async Task<bool> SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config)
         {
             using var connection = _connectionFactory.CreateConnection();
             if (connection.State != System.Data.ConnectionState.Open)
                 connection.Open();
 
+            if (await ModNameExistsForAppAsync(mod.Name, mod.AppId, connection))
+                return false;
+
+
             // Pass connection to the repository; the repository handles the transaction internally
             await _modRepo.SaveModWithConfigAsync(mod, config, connection);
+            return true;
         }
 
         public async Task UpdateModWithConfigAsync(Mod mod, ModCrawlerConfig config)
@@ -782,8 +794,29 @@ namespace ModsWatcher.Services
             );
         }
 
-        
+        // Sub-method: only meant to be called from within AddAppAsync, sharing its connection.
+        private async Task<bool> AppNameExistsAsync(string name, IDbConnection connection, IDbTransaction? transaction = null)
+        {
+            var trimmedName = (name ?? string.Empty).Trim();
+            var apps = await _appRepo.QueryAllAsync(connection, transaction);
+            return apps.Any(a => string.Equals(a.Name?.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+        }
 
-        
+        // Sub-method: only meant to be called from within SaveModWithConfigAsync, sharing its connection.
+        private async Task<bool> ModNameExistsForAppAsync(string name, int appId, IDbConnection connection, IDbTransaction? transaction = null)
+        {
+            var trimmedName = (name ?? string.Empty).Trim();
+
+            // 1. Check against currently active mod shells for this app
+            var activeMods = await _modRepo.GetByAppIdAsync(appId, connection, transaction);
+            if (activeMods.Any(m => string.Equals(m.Name?.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            // 2. Check against retired/unused mod snapshots for this app
+            var retiredMods = await _unUsedModRepo.FindByModdedAppIdAsync(appId, connection, transaction);
+            return retiredMods.Any(m => string.Equals(m.Name?.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+        }
+
+
     }
 }

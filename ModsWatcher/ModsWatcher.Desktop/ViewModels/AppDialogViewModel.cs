@@ -2,6 +2,7 @@
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
+using ModsWatcher.Desktop.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Windows;
 using System.Windows.Input;
@@ -9,6 +10,7 @@ using System.Windows.Input;
 public class AppDialogViewModel : BaseViewModel
 {
     private readonly IStorageService _storageService;
+    private readonly IDialogService _dialogService;
     public ModdedApp App { get; }
     public bool IsEditMode { get; }
 
@@ -56,9 +58,10 @@ public class AppDialogViewModel : BaseViewModel
     public ICommand CancelCommand { get; }
     public event Action RequestClose;
 
-    public AppDialogViewModel(IStorageService storageService, ILogger logger, ModdedApp? existingApp = null):base(logger)
+    public AppDialogViewModel(IStorageService storageService, ILogger logger, IDialogService dialogService, ModdedApp? existingApp = null):base(logger)
     {
         _storageService = storageService;
+        this._dialogService = dialogService;
         IsEditMode = existingApp != null;
 
         // Use provided app for Edit, or new app for Add
@@ -82,7 +85,15 @@ public class AppDialogViewModel : BaseViewModel
             if (IsEditMode)
                 await _storageService.UpdateAppAsync(App);
             else
-                await _storageService.AddAppAsync(App);
+            {
+                bool saved = await _storageService.AddAppAsync(App);
+                if (!saved)
+                {
+                    _dialogService.ShowError($"An app named '{App.Name}' already exists.");
+                    _logger.LogError($"An app named '{App.Name}' already exists.");
+                    return;
+                }
+            }
 
             Close(true);
         }

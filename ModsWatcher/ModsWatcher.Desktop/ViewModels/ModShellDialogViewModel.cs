@@ -198,7 +198,13 @@ namespace ModsWatcher.Desktop.ViewModels
                 }
                 else
                 {
-                    await _storageService.SaveModWithConfigAsync(Shell, Config);
+                    bool saved = await _storageService.SaveModWithConfigAsync(Shell, Config);
+                    if (!saved)
+                    {
+                        _dialogService.ShowError($"A mod named '{Shell.Name}' already exists for this app.");
+                        _logger.LogError($"A mod named '{Shell.Name}' already exists for this app.");
+                        return;
+                    }
                 }
                 Close(true);
             }
