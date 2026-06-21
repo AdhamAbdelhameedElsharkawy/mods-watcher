@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,6 +16,12 @@ namespace ModsWatcher.Desktop.ViewModels
     {
         private readonly IStorageService _storageService;
         private readonly IDialogService _dialogService;
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        };
+
         public Mod Shell { get; }
         public ModCrawlerConfig Config { get; }
         public bool IsEditMode { get; }
@@ -106,7 +115,7 @@ namespace ModsWatcher.Desktop.ViewModels
         #region Config Properties (Stage-Wise)
 
         // STAGE 1: The Watcher (Required if IsWatchable)
-        
+
         public string WatcherXPath
         {
             get => Config.WatcherXPath;
@@ -161,6 +170,8 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand ExportConfigCommand { get; }
+        public ICommand ImportConfigCommand { get; }
 
         public ModShellDialogViewModel(IStorageService storageService, int appId, IDialogService dialogService, ILogger logger, Mod? existingMod = null, ModCrawlerConfig? existingConfig = null) : base(logger)
         {
@@ -182,9 +193,13 @@ namespace ModsWatcher.Desktop.ViewModels
 
             SaveCommand = new RelayCommand(async _ => await SaveAsync(), _ => !HasErrors);
             CancelCommand = new RelayCommand(_ => Close(false));
+            ExportConfigCommand = new RelayCommand(async _ => await ExportConfigAsync());
+            ImportConfigCommand = new RelayCommand(async _ => await ImportConfigAsync());
 
             ValidateAll();
         }
+
+
 
         private async Task SaveAsync()
         {
@@ -234,7 +249,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
             if (IsWatchable && string.IsNullOrEmpty(WatcherXPath))
             {
-                    AddCustomError(nameof(WatcherXPath), errorMsg);
+                AddCustomError(nameof(WatcherXPath), errorMsg);
             }
             else
             {
@@ -270,6 +285,117 @@ namespace ModsWatcher.Desktop.ViewModels
             }
         }
 
-        
+       
+        private async Task ExportConfigAsync()
+        {
+            try
+            {
+                if (!IsUsed || !IsWatchable)
+                {
+                    _dialogService.ShowError("This mod must be at least 'Used' and 'Watchable' before its config can be exported.");
+                    return;
+                }
+
+                var defaultFileName = $"{SanitizeFileName(Shell.Name)}-config.json";
+                var path = _dialogService.ShowSaveFileDialog("Export Mod Config", "JSON files (*.json)|*.json", defaultFileName);
+                if (string.IsNullOrEmpty(path))
+                    return; // User cancelled
+
+                ModCrawlerConfigExportDto dto = new ModCrawlerConfigExportDto
+                {
+                    SourceModName = Shell.Name,
+                    WatcherXPath = Config.WatcherXPath,
+                    ModNameRegex = Config.ModNameRegex,
+                    VersionXPath = Config.VersionXPath,
+                    ReleaseDateXPath = Config.ReleaseDateXPath,
+                    SizeXPath = Config.SizeXPath,
+                    DownloadUrlXPath = Config.DownloadUrlXPath,
+                    SupportedAppVersionsXPath = Config.SupportedAppVersionsXPath,
+                    PackageFilesNumberXPath = Config.PackageFilesNumberXPath
+                };
+
+                var json = JsonSerializer.Serialize(dto, _jsonOptions);
+                await File.WriteAllTextAsync(path, json);
+
+                _dialogService.ShowInfo("Config exported successfully.");
+                _logger.LogInformation("Exported mod config for '{ModName}' to {Path}", Shell.Name, path);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Failed to export config: {ex.Message}");
+                _logger.LogError(ex, "Error exporting config for mod: {ModName}", Shell.Name);
+            }
+        }
+
+        private async Task ImportConfigAsync()
+        {
+            try
+            {
+                var path = _dialogService.ShowOpenFileDialog("Import Mod Config", "JSON files (*.json)|*.json");
+                if (string.IsNullOrEmpty(path))
+                    return; // User cancelled
+
+                var json = await File.ReadAllTextAsync(path);
+                var dto = JsonSerializer.Deserialize<ModCrawlerConfigExportDto>(json, _jsonOptions);
+
+                if (dto == null)
+                {
+                    _dialogService.ShowError("The selected file doesn't contain a valid mod config.");
+                    return;
+                }
+
+                if (!IsUsed || !IsWatchable || !IsCrawlable)
+                {
+                    bool proceed = _dialogService.ShowConfirmation(
+                        "This mod isn't fully enabled (Used / Watchable / Crawlable), so the imported config won't take effect until all three are checked." +
+                        Environment.NewLine + Environment.NewLine +
+                        "Enable them now and continue with the import?",
+                        "Mod Not Fully Enabled");
+
+                    if (!proceed)
+                        return; // Cancelled - nothing changes
+
+                    // Set in cascade order (Used -> Watchable -> Crawlable) so the
+                    // downward-cascade logic in each setter doesn't fight itself
+                    IsUsed = true;
+                    IsWatchable = true;
+                    IsCrawlable = true;
+                }
+
+                // Apply through the public property setters so validation and UI
+                // binding update exactly as if the user had typed these values in.
+                WatcherXPath = dto.WatcherXPath ?? string.Empty;
+                ModNameRegex = dto.ModNameRegex ?? string.Empty;
+                VersionXPath = dto.VersionXPath;
+                ReleaseDateXPath = dto.ReleaseDateXPath;
+                SizeXPath = dto.SizeXPath;
+                DownloadUrlXPath = dto.DownloadUrlXPath;
+                SupportedAppVersionsXPath = dto.SupportedAppVersionsXPath;
+                PackageFilesNumberXPath = dto.PackageFilesNumberXPath;
+
+                _logger.LogInformation("Imported mod config from {Path} (originally from '{SourceModName}') into mod: {ModName}", path, dto.SourceModName, Shell.Name);
+            }
+            catch (JsonException ex)
+            {
+                _dialogService.ShowError("The selected file isn't valid JSON.");
+                _logger.LogError(ex, "Error parsing imported config file");
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Failed to import config: {ex.Message}");
+                _logger.LogError(ex, "Error importing config for mod: {ModName}", Shell.Name);
+            }
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "mod";
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sanitized = new string(name.Select(c => invalidChars.Contains(c) ? '-' : c).ToArray());
+            return sanitized.Replace(' ', '-').ToLowerInvariant();
+        }
+
     }
 }

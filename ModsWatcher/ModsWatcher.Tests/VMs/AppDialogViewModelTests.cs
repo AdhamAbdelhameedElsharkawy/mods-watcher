@@ -68,7 +68,7 @@ namespace ModsWatcher.Tests.VMs
         public async Task SaveCommand_ShouldUpdateLastUpdatedDate_AndCallAddApp()
         {
             // Arrange
-            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, null);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, _dialogServiceMock.Object);
             vm.Name = "Test Game";
             vm.InstalledVersion = "1.0";
             vm.LatestVersion = "1.0";
