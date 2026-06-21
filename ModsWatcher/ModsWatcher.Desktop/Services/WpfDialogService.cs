@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
@@ -85,6 +86,29 @@ namespace ModsWatcher.Desktop.Services
                 return dialog.ResponseText;
             }
             return null;
+        }
+
+        public string? ShowSaveFileDialog(string title, string filter, string defaultFileName = "")
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                FileName = defaultFileName
+            };
+
+            return dialog.ShowDialog(App.Current.MainWindow) == true ? dialog.FileName : null;
+        }
+
+        public string? ShowOpenFileDialog(string title, string filter)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = title,
+                Filter = filter
+            };
+
+            return dialog.ShowDialog(App.Current.MainWindow) == true ? dialog.FileName : null;
         }
     }
 }
