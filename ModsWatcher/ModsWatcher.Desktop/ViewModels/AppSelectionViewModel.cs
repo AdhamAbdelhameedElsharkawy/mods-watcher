@@ -118,7 +118,7 @@ namespace ModsWatcher.Desktop.ViewModels
 
         private void AddNewApp() {
             // Create the ViewModel for the dialog (Add Mode)
-            var dialogVM = new AppDialogViewModel(_storageService, _logger);
+            var dialogVM = new AppDialogViewModel(_storageService, _logger, _dialogService);
 
             // Create the View (the Window)
             var dialog = new Views.AddAppDialog
@@ -137,7 +137,7 @@ namespace ModsWatcher.Desktop.ViewModels
             if (item == null) return;
 
             // Create ViewModel in Edit Mode
-            var dialogVM = new AppDialogViewModel(_storageService,_logger, item.App);
+            var dialogVM = new AppDialogViewModel(_storageService,_logger, _dialogService, item.App);
 
             var dialog = new Views.AddAppDialog
             {

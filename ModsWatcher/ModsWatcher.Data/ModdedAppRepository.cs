@@ -38,7 +38,7 @@ namespace ModsWatcher.Data
         return (ModdedApp?)e;
     }, true, connection, transaction);
 
-
+        //Name is not update as it's unique identifier for the app, if you want to change it, you should delete the old one and insert a new one with the new name.
         public Task<ModdedApp?> UpdateAsync(ModdedApp e, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
             => ExecuteAsync(async (c, t) =>
             {

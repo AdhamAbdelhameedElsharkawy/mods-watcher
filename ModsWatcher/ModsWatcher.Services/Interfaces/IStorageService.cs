@@ -11,7 +11,7 @@ namespace ModsWatcher.Services.Interfaces
 
         Task<IEnumerable<AppSummaryDto>> GetAllAppSummariesAsync();
 
-        Task AddAppAsync(ModdedApp app);
+        Task<bool> AddAppAsync(ModdedApp app);
 
         Task UpdateAppAsync(ModdedApp app);
 
@@ -22,7 +22,7 @@ namespace ModsWatcher.Services.Interfaces
         Task UpdateModsOrderAsync(IEnumerable<Mod> orderedShells);
 
         // Unified methods to handle both entities together
-        Task SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config);
+        Task<bool> SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config);
         Task UpdateModWithConfigAsync(Mod mod, ModCrawlerConfig config);
 
         Task<(Mod? Shell, ModCrawlerConfig? Config)> GetModPackageAsync(Guid modId);

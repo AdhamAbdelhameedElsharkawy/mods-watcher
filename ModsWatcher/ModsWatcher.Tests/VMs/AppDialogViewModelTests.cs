@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services.Interfaces;
 using Moq;
@@ -11,18 +12,20 @@ namespace ModsWatcher.Tests.VMs
     {
         private readonly Mock<IStorageService> _storageMock;
         private readonly Mock<ILogger<AppDialogViewModel>> _loggerMock;
+        private readonly Mock<IDialogService> _dialogServiceMock;
 
         public AppDialogViewModelTests()
         {
             _storageMock = new Mock<IStorageService>();
             _loggerMock = new Mock<ILogger<AppDialogViewModel>>();
+            _dialogServiceMock = new Mock<IDialogService>();
         }
 
         [Fact]
         public void Constructor_AddMode_ShouldInitializeEmptyApp()
         {
             // Act
-            var vm = new AppDialogViewModel(_storageMock.Object, null);
+            var vm = new AppDialogViewModel(_storageMock.Object, null, _dialogServiceMock.Object);
 
             // Assert
             Assert.False(vm.IsEditMode);
@@ -37,7 +40,7 @@ namespace ModsWatcher.Tests.VMs
             var existing = new ModdedApp { Name = "Skyrim", Id = 1 };
 
             // Act
-            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, existing);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, _dialogServiceMock.Object, existing);
 
             // Assert
             Assert.True(vm.IsEditMode);
@@ -49,13 +52,13 @@ namespace ModsWatcher.Tests.VMs
         public void PropertyChanged_ShouldTriggerOnSetters()
         {
             // Arrange
-            var vm = new AppDialogViewModel(_storageMock.Object, null);
+            var vm = new AppDialogViewModel(_storageMock.Object, null, _dialogServiceMock.Object);
             bool wasNotified = false;
             vm.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(vm.Name)) wasNotified = true; };
 
             // Act
             vm.Name = "New Game";
-
+            
             // Assert
             Assert.True(wasNotified);
             Assert.Equal("New Game", vm.App.Name);
@@ -86,7 +89,7 @@ namespace ModsWatcher.Tests.VMs
         {
             // Arrange
             var existing = new ModdedApp { Id = 5, Name = "Old Name", InstalledVersion = "1.0", LatestVersion = "2.0" };
-            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, existing);
+            var vm = new AppDialogViewModel(_storageMock.Object, _loggerMock.Object, _dialogServiceMock.Object, existing);
             vm.Name = "Updated Name";
 
             // Act
