@@ -1,0 +1,105 @@
+﻿<Window x:Class="ModsWatcher.Desktop.Views.DependencyImpactDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        Width="520">
+
+    <Border Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource BorderMuted}"
+            BorderThickness="1" CornerRadius="12" Padding="25">
+        <StackPanel>
+
+            <!-- Header -->
+            <TextBlock Text="DEPENDENCY IMPACT" Style="{DynamicResource SectionHeaderStyle}"/>
+            <TextBlock Text="{Binding Title}"
+                       Style="{DynamicResource ModTitleTextStyle}"
+                       FontSize="18" Margin="0,0,0,6" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Subtitle}"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+            <!-- Impact Tree -->
+            <Border Background="{DynamicResource CardInnerSectionBackground}"
+                    CornerRadius="8" Padding="15" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="AFFECTED MODS" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,10"/>
+                    <TreeView ItemsSource="{Binding TreeSource}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              MaxHeight="240">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="True"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets"
+                                               Foreground="#E57373" FontSize="11"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding ModName}"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </StackPanel>
+            </Border>
+
+            <!-- Actions -->
+            <TextBlock Text="CHOOSE AN ACTION" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,12"/>
+
+            <Button Command="{Binding RemoveDependentCommand}"
+                    Style="{DynamicResource SecondaryActionButtonStyle}"
+                    Foreground="#E57373"
+                    Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding RemoveDependentLabel}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding DeactivateDependentCommand}"
+                    Visibility="{Binding DeactivateButtonVisibility}"
+                    Style="{DynamicResource SecondaryActionButtonStyle}"
+                    Foreground="#FFC107"
+                    Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xEA3A;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Deactivate all dependent mods (keep relations)" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding BreakDependencyCommand}"
+                    Visibility="{Binding BreakLinkButtonVisibility}"
+                    Style="{DynamicResource SecondaryActionButtonStyle}"
+                    Foreground="{DynamicResource TextMuted}"
+                    Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Break all dependency links (keep all mods)" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Cancel -->
+            <Button Command="{Binding CancelCommand}"
+                    Style="{DynamicResource GhostActionButtonStyle}"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Cancel — do nothing" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+        </StackPanel>
+    </Border>
+</Window>

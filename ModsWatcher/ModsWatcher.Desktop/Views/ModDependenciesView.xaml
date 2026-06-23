@@ -1,0 +1,144 @@
+﻿<UserControl x:Class="ModsWatcher.Desktop.Views.ModDependenciesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:ModsWatcher.Desktop.Services"
+             Background="{DynamicResource WindowBackground}">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisConverter x:Key="InverseBoolToVisConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="MOD RELATIONS" Style="{DynamicResource InspectorSectionHeaderStyle}"/>
+            <TextBlock Text="{Binding ModName}" Style="{DynamicResource ModTitleTextStyle}" FontSize="24"/>
+            <TextBlock Text="Manage which mods this mod depends on, and see what depends on it."
+                       Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- DEPENDS ON (parents) -->
+                <TextBlock Text="THIS MOD DEPENDS ON" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,10"/>
+
+                <!-- Empty state -->
+                <TextBlock Text="No dependencies set — this mod is fully independent."
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
+                           Visibility="{Binding HasParents, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+                <!-- Parents list -->
+                <ItemsControl ItemsSource="{Binding Parents}"
+                              Visibility="{Binding HasParents, Converter={StaticResource BoolToVis}}"
+                              Margin="0,0,0,20">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="{DynamicResource AccentPrimary}"
+                                                   FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding ModName}"
+                                                   Foreground="{DynamicResource TextPrimary}"
+                                                   FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding DataContext.RemoveDependencyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{DynamicResource ActionIconButtonStyle}"
+                                            ToolTip="Remove this dependency">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="#E57373" FontSize="14"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Add dependency section -->
+                <TextBlock Text="ADD DEPENDENCY" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,10"/>
+
+                <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6"
+                        Visibility="{Binding HasAvailableParents, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <ComboBox ItemsSource="{Binding AvailableParents}"
+                                  SelectedItem="{Binding SelectedAvailableParent}"
+                                  DisplayMemberPath="ModName"
+                                  Margin="0,0,0,8"
+                                  Background="{DynamicResource CardInnerSectionBackground}"
+                                  Foreground="{DynamicResource TextPrimary}"
+                                  BorderBrush="{DynamicResource BorderMuted}"/>
+
+                        <TextBlock Foreground="{DynamicResource TextMuted}" FontSize="11" Margin="0,0,0,10">
+    <Run Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"/>
+    <Run Text="  Some mods are excluded to prevent circular dependencies."/>
+                        </TextBlock>
+
+                        <Button Content="+ Add Dependency"
+                                Command="{Binding AddDependencyCommand}"
+                                Style="{DynamicResource SecondaryActionButtonStyle}"
+                                Foreground="{DynamicResource AccentPrimary}"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="All mods in this app are already dependencies or would create a circular reference."
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
+                           Visibility="{Binding HasAvailableParents, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+                <!-- DEPENDED ON BY (dependents) — read only -->
+                <TextBlock Text="DEPENDED ON BY" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,20,0,10"/>
+
+                <TextBlock Text="No other mods depend on this mod."
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
+                           Visibility="{Binding HasDependents, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+                <ItemsControl ItemsSource="{Binding Dependents}"
+                              Visibility="{Binding HasDependents, Converter={StaticResource BoolToVis}}"
+                              Margin="0,0,0,20">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets"
+                                               Foreground="{DynamicResource TextMuted}"
+                                               FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBlock Text="{Binding ModName}"
+                                               Foreground="{DynamicResource TextSecondary}"
+                                               FontSize="14" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderMuted}" Padding="0,15,0,0">
+            <Button Command="{Binding GoBackCommand}" Style="{DynamicResource GhostActionButtonStyle}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Back to Library" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Border>
+    </Grid>
+</UserControl>

@@ -334,7 +334,12 @@
                             <Button Content="Edit Shell Metadata" 
                             Command="{Binding EditModShellCommand}" 
                             Style="{DynamicResource InspectorMutedButtonStyle}" 
-                            Foreground="White"/>
+                            Foreground="White"
+                            Margin="0,0,0,5"/>
+                            <Button Content="Manage Dependencies" 
+                            Command="{Binding NavToDependenciesCommand}" 
+                            Style="{DynamicResource InspectorMutedButtonStyle}" 
+                            Foreground="#4A69FF"/>
                         </StackPanel>
                     </ScrollViewer>
 

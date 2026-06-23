@@ -25,6 +25,7 @@ namespace ModsWatcher.Tests.Services
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly Mock<ILogger<StorageService>> _loggerMock;
+        private readonly Mock<IModDependencyRepository> _modDepMock;
 
         private readonly StorageService _service;
 
@@ -42,6 +43,7 @@ namespace ModsWatcher.Tests.Services
             var optionsMock = new Mock<IOptions<WatcherSettings>>();
             _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<StorageService>>();
+            _modDepMock = new Mock<IModDependencyRepository>();
 
 
 
@@ -57,6 +59,7 @@ namespace ModsWatcher.Tests.Services
                 _installedModHistoryRepoMock.Object,
                 _configRepoMock.Object,
                 _availableModRepoMock.Object,
+                _modDepMock.Object,
                 _commonUtilsMock.Object,
                 _loggerMock.Object
             );

@@ -32,6 +32,10 @@
         <DataTemplate DataType="{x:Type viewmodels:RetiredModsViewModel}">
             <views:RetiredModsView />
         </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:ModDependenciesViewModel}">
+            <views:ModDependenciesView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
