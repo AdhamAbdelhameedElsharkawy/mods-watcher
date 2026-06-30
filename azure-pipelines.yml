@@ -20,6 +20,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: dryRun
+    displayName: 'Dry run (skip GitHub release)'
+    type: boolean
+    default: false
+
 variables:
   buildConfiguration: 'Release'
   publishOutputDir: '$(Build.ArtifactStagingDirectory)/publish'
@@ -66,18 +71,19 @@ steps:
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
       replaceExistingArchive: true
 
-  - task: GitHubRelease@1
-    displayName: 'Create GitHub Release'
-    inputs:
-      gitHubConnection: 'github-mods-watcher-pat'  # name of your service connection
-      repositoryName: '$(Build.Repository.Name)'
-      action: 'create'
-      target: '$(Build.SourceVersion)'  # commit currently on main
-      tagSource: 'userSpecifiedTag'
-      tag: 'v${{ parameters.versionNumber }}'
-      title: 'v${{ parameters.versionNumber }}'
-      releaseNotesSource: 'inline'
-      releaseNotesInline: '${{ parameters.releaseNotes }}'
-      assets: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
-      isPreRelease: ${{ parameters.isPrerelease }}
-      addChangeLog: false
+  - ${{ if eq(parameters.dryRun, false) }}:
+    - task: GitHubRelease@1
+      displayName: 'Create GitHub Release'
+      inputs:
+        gitHubConnection: 'github-mods-watcher-pat'  # name of your service connection
+        repositoryName: '$(Build.Repository.Name)'
+        action: 'create'
+        target: '$(Build.SourceVersion)'  # commit currently on main
+        tagSource: 'userSpecifiedTag'
+        tag: 'v${{ parameters.versionNumber }}'
+        title: 'v${{ parameters.versionNumber }}'
+        releaseNotesSource: 'inline'
+        releaseNotesInline: '${{ parameters.releaseNotes }}'
+        assets: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
+        isPreRelease: ${{ parameters.isPrerelease }}
+        addChangeLog: false
