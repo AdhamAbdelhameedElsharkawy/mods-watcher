@@ -71,6 +71,12 @@ steps:
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
       replaceExistingArchive: true
 
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish zip as pipeline artifact'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
+      ArtifactName: 'mods-watcher-release'
+
   - ${{ if eq(parameters.dryRun, false) }}:
     - task: GitHubRelease@1
       displayName: 'Create GitHub Release'
