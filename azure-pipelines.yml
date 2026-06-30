@@ -1,0 +1,83 @@
+trigger: none  # manual runs only
+
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+parameters:
+  - name: versionNumber
+    displayName: 'Version number (e.g. 2.0.0)'
+    type: string
+
+  - name: releaseNotes
+    displayName: 'Release notes'
+    type: string
+    default: ' '
+
+  - name: isPrerelease
+    displayName: 'Mark as pre-release'
+    type: boolean
+    default: false
+
+variables:
+  buildConfiguration: 'Release'
+  publishOutputDir: '$(Build.ArtifactStagingDirectory)/publish'
+  zipFileName: 'mods-watcher-v${{ parameters.versionNumber }}.zip'
+
+resources:
+  repositories:
+    - repository: self
+      type: git
+      ref: refs/heads/main  # always build off main's current HEAD
+
+steps:
+  - checkout: self
+    fetchDepth: 0  # full history, needed for tagging
+
+  # Pin exact .NET 10 SDK in case the hosted image isn't current
+  - task: UseDotNet@2
+    displayName: 'Install .NET 10 SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '10.0.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Restore'
+    inputs:
+      command: 'restore'
+      projects: 'ModsWatcher/ModsWatcher.Desktop/ModsWatcher.Desktop.csproj'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Publish app'
+    inputs:
+      command: 'publish'
+      publishWebProjects: false
+      projects: 'ModsWatcher/ModsWatcher.Desktop/ModsWatcher.Desktop.csproj'
+      arguments: '-c $(buildConfiguration) -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o $(publishOutputDir)'
+      zipAfterPublish: false
+
+  - task: ArchiveFiles@2
+    displayName: 'Zip published output'
+    inputs:
+      rootFolderOrFile: '$(publishOutputDir)'
+      includeRootFolder: false
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
+      replaceExistingArchive: true
+
+  - task: GitHubRelease@1
+    displayName: 'Create GitHub Release'
+    inputs:
+      gitHubConnection: 'github-mods-watcher-pat'  # name of your service connection
+      repositoryName: '$(Build.Repository.Name)'
+      action: 'create'
+      target: '$(Build.SourceVersion)'  # commit currently on main
+      tagSource: 'userSpecifiedTag'
+      tag: 'v${{ parameters.versionNumber }}'
+      title: 'v${{ parameters.versionNumber }}'
+      releaseNotesSource: 'inline'
+      releaseNotesInline: '${{ parameters.releaseNotes }}'
+      assets: '$(Build.ArtifactStagingDirectory)/$(zipFileName)'
+      isPreRelease: ${{ parameters.isPrerelease }}
+      addChangeLog: false
