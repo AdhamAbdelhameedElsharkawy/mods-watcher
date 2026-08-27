@@ -48,6 +48,7 @@ namespace ModsWatcher.Tests.VMs
             };
 
             _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
+            _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
 
             // Act
             _vm.Initialize((_testApp, null));

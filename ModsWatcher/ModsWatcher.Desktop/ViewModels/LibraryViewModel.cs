@@ -1,5 +1,6 @@
 ﻿using GongSolutions.Wpf.DragDrop;
 using Microsoft.Extensions.Logging;
+using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Interfaces;
@@ -71,6 +72,10 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public ICommand NavToAppsCommand { get; }
 
+        public ICommand NavToDependenciesCommand { get; }
+
+        public ICommand NavToAlternativesCommand { get; }
+
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
 
@@ -137,6 +142,18 @@ namespace ModsWatcher.Desktop.ViewModels
 
             NavToAppsCommand = new RelayCommand(_ => _navigationService.NavigateTo<AppSelectionViewModel>());
 
+            NavToDependenciesCommand = new RelayCommand(_ =>
+            {
+                if (SelectedMod != null)
+                    _navigationService.NavigateTo<ModDependenciesViewModel, (ModdedApp, ModItemViewModel)>((SelectedApp, SelectedMod));
+            });
+
+            NavToAlternativesCommand = new RelayCommand(_ =>
+            {
+                if (SelectedMod != null)
+                    _navigationService.NavigateTo<ModAlternativesViewModel, (ModdedApp, ModItemViewModel)>((SelectedApp, SelectedMod));
+            });
+
             // Misc Actions
             //TODO: not binding to anything currently, but we can add a "View History" button in the UI if we want to surface this more prominently instead of hiding it in the versions dialog
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
@@ -177,11 +194,17 @@ namespace ModsWatcher.Desktop.ViewModels
             // 2. Sort the tuples by the shell's PriorityOrder
             var sortedData = libraryData.OrderBy(x => x.Shell.PriorityOrder);
 
+            // Batched lookup so the "ALT" badge doesn't require an N+1 query per mod
+            var modsWithAlternatives = await _storageService.GetModIdsWithAlternativesByAppIdAsync(SelectedApp.Id);
+
             // 3. Iterate over the SORTED data
             foreach (var (shell, installed, config) in sortedData)
             {
                 // Use SelectedApp.Version (or your specific property name) for the constructor
-                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils, _logger));
+                Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils, _logger)
+                {
+                    HasAlternatives = modsWithAlternatives.Contains(shell.Id)
+                });
             }
         }
 
@@ -277,33 +300,85 @@ namespace ModsWatcher.Desktop.ViewModels
             bool currentlyActive = SelectedMod.IsUsed;
             string action = currentlyActive ? "Deactivate" : "Activate";
 
-            // Using the IDialogService pattern
+            // Only check dependency impact when deactivating a mod that others depend on
+            if (currentlyActive)
+            {
+                var impactTree = await _storageService.GetDependencyImpactTreeAsync(SelectedMod.Shell.Id);
+                if (impactTree != null)
+                {
+                    var result = ShowDependencyImpactDialog(SelectedMod.Shell.Name, impactTree, isDeactivation: true);
+                    switch (result)
+                    {
+                        case DependencyImpactAction.Cancel:
+                            return;
+                        case DependencyImpactAction.RemoveDependent:
+                            await RetireAllDependentsAsync(impactTree);
+                            break;
+                        case DependencyImpactAction.DeactivateDependent:
+                            await DeactivateAllDependentsAsync(impactTree);
+                            break;
+                            // BreakDependency: fall through to deactivate, relation stays intact
+                    }
+                }
+            }
+            else
+            {
+                // Activating: if this mod belongs to an alternative group, only one member
+                // of the group may be active at a time — check for a conflict first.
+                var group = (await _storageService.GetAlternativeGroupAsync(SelectedMod.Shell.Id)).ToList();
+                var activeAlternative = group.FirstOrDefault(g => g.IsActive);
+
+                if (activeAlternative != null)
+                {
+                    if (!await SwapActiveAlternativeAsync(SelectedMod, activeAlternative))
+                        return;
+
+                    SelectedMod.IsUsed = true;
+                    await _storageService.UpdateModShellAsync(SelectedMod.Shell);
+                    SelectedMod.RefreshSummary();
+                    OnPropertyChanged(nameof(CanToggleActivation));
+                    await LoadLibrary();
+                    return;
+                }
+            }
+
             if (_dialogService.ShowConfirmation($"{action} {SelectedMod.Shell.Name}?", $"{action} Mod"))
             {
-                // 1. Update the Shell property
                 SelectedMod.IsUsed = !currentlyActive;
-
-                // 2. Persist to the correct table (Mod Shell)
                 await _storageService.UpdateModShellAsync(SelectedMod.Shell);
-
-                // 3. Refresh UI notifications
                 SelectedMod.RefreshSummary();
                 OnPropertyChanged(nameof(CanToggleActivation));
+                await LoadLibrary();
             }
-            
         }
 
         private async void HardWipeSelectedMod()
         {
             if (SelectedMod == null) return;
 
-            // Ask for the reason
+            // Check dependency impact before proceeding
+            var impactTree = await _storageService.GetDependencyImpactTreeAsync(SelectedMod.Shell.Id);
+            if (impactTree != null)
+            {
+                var result = ShowDependencyImpactDialog(SelectedMod.Shell.Name, impactTree, isDeactivation: false);
+                switch (result)
+                {
+                    case DependencyImpactAction.Cancel:
+                        return;
+                    case DependencyImpactAction.RemoveDependent:
+                        await RetireAllDependentsAsync(impactTree);
+                        break;
+                    case DependencyImpactAction.BreakDependency:
+                        await BreakAllDependenciesAsync(impactTree);
+                        break;
+                        // DeactivateDependent not applicable for hard wipe
+                }
+            }
+
             string? reason = _dialogService.ShowPrompt(
                 $"Why are you retiring '{SelectedMod.Shell.Name}'?",
                 "Retirement Reason");
 
-            // If they close the dialog or hit cancel, reason is null. 
-            // We can either abort or proceed with a default.
             if (reason == null) return;
 
             await _storageService.HardWipeModAsync(
@@ -315,6 +390,102 @@ namespace ModsWatcher.Desktop.ViewModels
 
             SelectedMod = null;
             await LoadLibrary();
+        }
+
+        private DependencyImpactAction ShowDependencyImpactDialog(string modName, DependencyTreeNodeDto tree, bool isDeactivation)
+        {
+            var vm = new DependencyImpactDialogViewModel(modName, tree, isDeactivation, _logger);
+            var dialog = new Views.DependencyImpactDialog
+            {
+                DataContext = vm,
+                Owner = Application.Current.MainWindow
+            };
+            dialog.ShowDialog();
+            return vm.SelectedAction;
+        }
+
+        private bool ShowAlternativeConflictDialog(string newModName, string activeModName)
+        {
+            var vm = new AlternativeConflictDialogViewModel(newModName, activeModName, _logger);
+            var dialog = new Views.AlternativeConflictDialog
+            {
+                DataContext = vm,
+                Owner = Application.Current.MainWindow
+            };
+            dialog.ShowDialog();
+            return vm.Confirmed;
+        }
+
+        // Notifies the user another mod in the alternative group is active, confirms the
+        // swap, then deactivates the outgoing mod (honoring its own dependency impact)
+        // before the caller activates the new one. Returns false if the user cancelled.
+        private async Task<bool> SwapActiveAlternativeAsync(ModItemViewModel newMod, ModAlternativeDisplayDto activeAlternative)
+        {
+            if (!ShowAlternativeConflictDialog(newMod.Shell.Name, activeAlternative.ModName))
+                return false;
+
+            var oldMod = Mods.FirstOrDefault(m => m.Shell.Id == Guid.Parse(activeAlternative.ModId));
+            if (oldMod == null)
+                return true;
+
+            var impactTree = await _storageService.GetDependencyImpactTreeAsync(oldMod.Shell.Id);
+            if (impactTree != null)
+            {
+                var result = ShowDependencyImpactDialog(oldMod.Shell.Name, impactTree, isDeactivation: true);
+                switch (result)
+                {
+                    case DependencyImpactAction.Cancel:
+                        return false;
+                    case DependencyImpactAction.RemoveDependent:
+                        await RetireAllDependentsAsync(impactTree);
+                        break;
+                    case DependencyImpactAction.DeactivateDependent:
+                        await DeactivateAllDependentsAsync(impactTree);
+                        break;
+                        // BreakDependency: fall through to deactivate, relation stays intact
+                }
+            }
+
+            oldMod.IsUsed = false;
+            await _storageService.UpdateModShellAsync(oldMod.Shell);
+            return true;
+        }
+
+        private async Task RetireAllDependentsAsync(DependencyTreeNodeDto tree)
+        {
+            foreach (var child in tree.Children)
+            {
+                var childGuid = Guid.Parse(child.ModId);
+                var mod = Mods.FirstOrDefault(m => m.Shell.Id == childGuid);
+                if (mod != null)
+                    await _storageService.HardWipeModAsync(mod.Shell, SelectedApp, mod.Config, "Retired due to parent mod removal");
+
+                await RetireAllDependentsAsync(child);
+            }
+        }
+
+        private async Task DeactivateAllDependentsAsync(DependencyTreeNodeDto tree)
+        {
+            foreach (var child in tree.Children)
+            {
+                var childGuid = Guid.Parse(child.ModId);
+                var mod = Mods.FirstOrDefault(m => m.Shell.Id == childGuid);
+                if (mod != null)
+                {
+                    mod.IsUsed = false;
+                    await _storageService.UpdateModShellAsync(mod.Shell);
+                }
+                await DeactivateAllDependentsAsync(child);
+            }
+        }
+
+        private async Task BreakAllDependenciesAsync(DependencyTreeNodeDto tree)
+        {
+            foreach (var child in tree.Children)
+            {
+                await _storageService.RemoveDependencyAsync(Guid.Parse(child.ModId), Guid.Parse(tree.ModId));
+                await BreakAllDependenciesAsync(child);
+            }
         }
 
         private async Task RegisterNewMod()
@@ -618,6 +789,8 @@ namespace ModsWatcher.Desktop.ViewModels
             Clipboard.SetText(url);
             // Optional: You could add a temporary 'Copied!' status message here if you have a status bar
         }
+
+
 
         public void DragOver(IDropInfo dropInfo)
         {

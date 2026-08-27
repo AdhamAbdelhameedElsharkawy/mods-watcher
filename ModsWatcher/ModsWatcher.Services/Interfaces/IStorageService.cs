@@ -69,6 +69,23 @@ namespace ModsWatcher.Services.Interfaces
 
         Task<InstalledMod?> ProcessCrawlResultsAsync(string appVersion, Guid shellId, AvailableMod? primary, List<AvailableMod> scrapedMods);
 
+        // Mod Dependencies
+
+        Task AddDependencyAsync(Guid dependentModId, Guid parentModId);
+        Task RemoveDependencyAsync(Guid dependentModId, Guid parentModId);
+        Task<IEnumerable<ModDependency>> GetDependentsAsync(Guid parentModId);
+        Task<IEnumerable<ModDependency>> GetParentsAsync(Guid dependentModId);
+        Task<DependencyTreeNodeDto?> GetDependencyImpactTreeAsync(Guid parentModId);
+        Task<bool> WouldCreateCircularDependencyAsync(Guid dependentModId, Guid parentModId);
+        Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId);
+
+        // Mod Alternatives
+
+        Task AddAlternativeAsync(Guid modId, Guid alternativeModId);
+        Task RemoveAlternativeAsync(Guid modId, Guid alternativeModId);
+        Task<IEnumerable<ModAlternativeDisplayDto>> GetAlternativeGroupAsync(Guid modId);
+        Task<HashSet<Guid>> GetModIdsWithAlternativesByAppIdAsync(int appId);
+
 
 
         //Mod installation and uninstallation

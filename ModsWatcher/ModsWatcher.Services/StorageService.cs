@@ -18,8 +18,11 @@ namespace ModsWatcher.Services
         private readonly IInstalledModHistoryRepository _installedModHistoryRepo;
         private readonly IModCrawlerConfigRepository _modCrawlerConfigRepo;
         private readonly IAvailableModRepository _availableModRepo;
+        private readonly IModDependencyRepository _modDependencyRepo;
+        private readonly IModAlternativeRepository _modAlternativeRepo;
         private readonly CommonUtils _commonUtils;
         private readonly ILogger<StorageService> _logger;
+
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
@@ -31,8 +34,11 @@ namespace ModsWatcher.Services
             IInstalledModHistoryRepository installedModHistoryRepo,
             IModCrawlerConfigRepository modCrawlerConfigRepo,
             IAvailableModRepository availableModRepo,
+            IModDependencyRepository modDependencyRepository,
+            IModAlternativeRepository modAlternativeRepository,
             CommonUtils commonUtils,
-            ILogger<StorageService> logger)
+            ILogger<StorageService> logger
+            )
         {
             _connectionFactory = connectionFactory;
             _appRepo = appRepo;
@@ -42,8 +48,11 @@ namespace ModsWatcher.Services
             _installedModHistoryRepo = installedModHistoryRepo;
             _modCrawlerConfigRepo = modCrawlerConfigRepo;
             _availableModRepo = availableModRepo;
+            _modDependencyRepo = modDependencyRepository;
+            _modAlternativeRepo = modAlternativeRepository;
             _commonUtils = commonUtils;
             _logger = logger;
+
         }
 
 
@@ -778,7 +787,279 @@ namespace ModsWatcher.Services
 
         #endregion
 
-       
+        #region Mod Dependencies
+
+        public async Task<bool> WouldCreateCircularDependencyAsync(Guid dependentModId, Guid parentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            // Adding "dependentModId depends on parentModId" closes a loop if parentModId
+            // already (directly or transitively) depends on dependentModId — i.e. dependentModId
+            // is already one of parentModId's ancestors.
+            var ancestorsOfParent = await _modDependencyRepo.GetAllAncestorsAsync(parentModId, connection);
+            return ancestorsOfParent.Any(a => a.ParentModId == dependentModId);
+        }
+
+        public async Task AddDependencyAsync(Guid dependentModId, Guid parentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            if (dependentModId == parentModId)
+                throw new InvalidOperationException("A mod cannot depend on itself.");
+
+            if (await WouldCreateCircularDependencyAsync(dependentModId, parentModId))
+                throw new InvalidOperationException("Adding this dependency would create a circular reference.");
+
+            var dependency = new ModDependency
+            {
+                DependentModId = dependentModId,
+                ParentModId = parentModId
+            };
+
+            await _modDependencyRepo.AddAsync(dependency, connection);
+            _logger.LogInformation("Added dependency: {DependentModId} depends on {ParentModId}", dependentModId, parentModId);
+        }
+
+        public async Task RemoveDependencyAsync(Guid dependentModId, Guid parentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modDependencyRepo.DeleteAsync(dependentModId, parentModId, connection);
+            _logger.LogInformation("Removed dependency: {DependentModId} no longer depends on {ParentModId}", dependentModId, parentModId);
+        }
+
+        public async Task<IEnumerable<ModDependency>> GetDependentsAsync(Guid parentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            return await _modDependencyRepo.GetDependentsAsync(parentModId, connection);
+        }
+
+        public async Task<IEnumerable<ModDependency>> GetParentsAsync(Guid dependentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            return await _modDependencyRepo.GetParentsAsync(dependentModId, connection);
+        }
+
+        public async Task<DependencyTreeNodeDto?> GetDependencyImpactTreeAsync(Guid parentModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var directDependents = await _modDependencyRepo.GetDependentsAsync(parentModId, connection);
+            if (!directDependents.Any())
+                return null;
+
+            var allDescendants = (await _modDependencyRepo.GetAllDescendantsAsync(parentModId, connection)).ToList();
+
+            var allIds = allDescendants
+                .SelectMany(d => new[] { d.DependentModId, d.ParentModId })
+                .Append(parentModId)
+                .Distinct()
+                .ToList();
+
+            var modNames = new Dictionary<Guid, string>();
+            foreach (var id in allIds)
+            {
+                var mod = await _modRepo.GetByIdAsync(id, connection);
+                modNames[id] = mod?.Name ?? id.ToString();
+            }
+
+            var root = new DependencyTreeNodeDto
+            {
+                ModId = parentModId.ToString(),
+                ModName = modNames.GetValueOrDefault(parentModId, parentModId.ToString())
+            };
+
+            BuildTree(root, allDescendants, modNames);
+            return root;
+        }
+
+        public async Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var mods = (await _modRepo.GetByAppIdAsync(appId, connection)).ToList();
+            var modNames = mods.ToDictionary(m => m.Id, m => m.Name);
+
+            var edges = (await _modDependencyRepo.GetAllByAppIdAsync(appId, connection)).ToList();
+
+            // Roots are mods that are not a dependent of any other mod (i.e. have no parents).
+            var dependentIds = edges.Select(e => e.DependentModId).ToHashSet();
+            var roots = mods.Where(m => !dependentIds.Contains(m.Id)).OrderBy(m => m.Name);
+
+            var forest = new List<DependencyTreeNodeDto>();
+            foreach (var root in roots)
+            {
+                var node = new DependencyTreeNodeDto
+                {
+                    ModId = root.Id.ToString(),
+                    ModName = root.Name
+                };
+
+                BuildTree(node, edges, modNames);
+                forest.Add(node);
+            }
+
+            return forest;
+        }
+
+        private static void BuildTree(DependencyTreeNodeDto node, List<ModDependency> allDescendants, Dictionary<Guid, string> modNames)
+        {
+            var nodeGuid = Guid.Parse(node.ModId);
+            var directChildren = allDescendants
+                .Where(d => d.ParentModId == nodeGuid)
+                .OrderBy(d => modNames.GetValueOrDefault(d.DependentModId, d.DependentModId.ToString()));
+            foreach (var child in directChildren)
+            {
+                var childNode = new DependencyTreeNodeDto
+                {
+                    ModId = child.DependentModId.ToString(),
+                    ModName = modNames.GetValueOrDefault(child.DependentModId, child.DependentModId.ToString())
+                };
+
+                BuildTree(childNode, allDescendants, modNames);
+                node.Children.Add(childNode);
+            }
+        }
+
+        #endregion
+
+        #region Mod Alternatives
+
+        public async Task AddAlternativeAsync(Guid modId, Guid alternativeModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            if (modId == alternativeModId)
+                throw new InvalidOperationException("A mod cannot be an alternative to itself.");
+
+            var existing = await _modAlternativeRepo.GetDirectAlternativesAsync(modId, connection);
+            if (existing.Any(e => e.ModId == alternativeModId || e.AlternativeModId == alternativeModId))
+                throw new InvalidOperationException("This alternative relationship already exists.");
+
+            var relation = new ModAlternative
+            {
+                ModId = modId,
+                AlternativeModId = alternativeModId
+            };
+
+            await _modAlternativeRepo.AddAsync(relation, connection);
+            _logger.LogInformation("Added alternative relation: {ModId} <-> {AlternativeModId}", modId, alternativeModId);
+        }
+
+        public async Task RemoveAlternativeAsync(Guid modId, Guid alternativeModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modAlternativeRepo.DeleteAsync(modId, alternativeModId, connection);
+            _logger.LogInformation("Removed alternative relation: {ModId} <-> {AlternativeModId}", modId, alternativeModId);
+        }
+
+        public async Task<IEnumerable<ModAlternativeDisplayDto>> GetAlternativeGroupAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var mod = await _modRepo.GetByIdAsync(modId, connection);
+            if (mod == null)
+                return Enumerable.Empty<ModAlternativeDisplayDto>();
+
+            var allMods = (await _modRepo.GetByAppIdAsync(mod.AppId, connection)).ToDictionary(m => m.Id);
+            var edges = (await _modAlternativeRepo.GetAllByAppIdAsync(mod.AppId, connection)).ToList();
+
+            var group = FindConnectedGroup(modId, edges);
+
+            return group
+                .Where(allMods.ContainsKey)
+                .Select(id => new ModAlternativeDisplayDto
+                {
+                    ModId = id.ToString(),
+                    ModName = allMods[id].Name,
+                    IsActive = allMods[id].IsUsed
+                })
+                .OrderBy(d => d.ModName);
+        }
+
+        public async Task<HashSet<Guid>> GetModIdsWithAlternativesByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var edges = await _modAlternativeRepo.GetAllByAppIdAsync(appId, connection);
+
+            var ids = new HashSet<Guid>();
+            foreach (var edge in edges)
+            {
+                ids.Add(edge.ModId);
+                ids.Add(edge.AlternativeModId);
+            }
+
+            return ids;
+        }
+
+        // Traverses the undirected alternative graph and returns every mod reachable
+        // from modId (excluding modId itself) — i.e. the full mutually-exclusive group.
+        private static HashSet<Guid> FindConnectedGroup(Guid modId, List<ModAlternative> edges)
+        {
+            var adjacency = new Dictionary<Guid, HashSet<Guid>>();
+            void AddEdge(Guid a, Guid b)
+            {
+                if (!adjacency.TryGetValue(a, out var neighbors))
+                    adjacency[a] = neighbors = new HashSet<Guid>();
+                neighbors.Add(b);
+            }
+
+            foreach (var edge in edges)
+            {
+                AddEdge(edge.ModId, edge.AlternativeModId);
+                AddEdge(edge.AlternativeModId, edge.ModId);
+            }
+
+            var visited = new HashSet<Guid> { modId };
+            var queue = new Queue<Guid>();
+            queue.Enqueue(modId);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (!adjacency.TryGetValue(current, out var neighbors))
+                    continue;
+
+                foreach (var neighbor in neighbors)
+                {
+                    if (visited.Add(neighbor))
+                        queue.Enqueue(neighbor);
+                }
+            }
+
+            visited.Remove(modId);
+            return visited;
+        }
+
+        #endregion
+
+
         private bool IsDuplicate(AvailableMod scraped, IEnumerable<AvailableMod> existing)
         {
             return existing.Any(e =>

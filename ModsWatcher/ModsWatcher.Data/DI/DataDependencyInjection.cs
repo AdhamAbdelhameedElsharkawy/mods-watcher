@@ -28,7 +28,9 @@ namespace ModsWatcher.Data.DI
             services.AddScoped<IInstalledModHistoryRepository, InstalledModHistoryRepository>();
             services.AddScoped<IUnusedModHistoryRepository, UnusedModHistoryRepository>();
             services.AddScoped<IModCrawlerConfigRepository, ModCrawlerConfigRepository>();
-            
+            services.AddScoped<IModDependencyRepository, ModDependencyRepository>();
+            services.AddScoped<IModAlternativeRepository, ModAlternativeRepository>();
+
 
             return services;
         }
