@@ -43,7 +43,11 @@
 
 	<Target Name="ForcePlaywrightToPublish" AfterTargets="ComputeFilesToPublish">
 		<ItemGroup>
-			<_CustomPayLoad Include="bin\Release\net10.0-windows\.playwright\**\*.*" />
+			<!-- $(OutDir) resolves to the actual build output for this build (RID- and
+			     config-qualified, e.g. bin\Release\net10.0-windows\win-x64\ for a
+			     -r win-x64 publish) — a hardcoded literal path here misses the RID
+			     segment and silently drops node.exe from the published payload. -->
+			<_CustomPayLoad Include="$(OutDir).playwright\**\*.*" />
 			<ResolvedFileToPublish Include="@(_CustomPayLoad)">
 				<RelativePath>.playwright\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
 				<CopyToPublishDirectory>Always</CopyToPublishDirectory>
