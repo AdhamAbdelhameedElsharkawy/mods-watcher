@@ -61,6 +61,7 @@ steps:
       projects: 'ModsWatcher/ModsWatcher.Desktop/ModsWatcher.Desktop.csproj'
       arguments: '-c $(buildConfiguration) -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o $(publishOutputDir)'
       zipAfterPublish: false
+      modifyOutputPath: false
 
   - task: ArchiveFiles@2
     displayName: 'Zip published output'
