@@ -132,6 +132,28 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _isPackage, value);
         }
 
+        private bool _isDependencyParent;
+        /// <summary>
+        /// True when one or more other mods depend on this mod. Set by the parent
+        /// LibraryViewModel after a batched lookup — drives the "PARENT" card badge.
+        /// </summary>
+        public bool IsDependencyParent
+        {
+            get => _isDependencyParent;
+            set => SetProperty(ref _isDependencyParent, value);
+        }
+
+        private bool _isDependencyChild;
+        /// <summary>
+        /// True when this mod depends on one or more other mods. Set by the parent
+        /// LibraryViewModel after a batched lookup — drives the "CHILD" card badge.
+        /// </summary>
+        public bool IsDependencyChild
+        {
+            get => _isDependencyChild;
+            set => SetProperty(ref _isDependencyChild, value);
+        }
+
 
 
         // --- UI Logic Methods ---

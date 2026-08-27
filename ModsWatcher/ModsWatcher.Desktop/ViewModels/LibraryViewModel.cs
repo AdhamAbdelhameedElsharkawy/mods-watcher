@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ModsWatcher.Core.DTO;
 using ModsWatcher.Core.Entities;
 using ModsWatcher.Core.Enums;
+using ModsWatcher.Desktop.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Services;
 using ModsWatcher.Services.Interfaces;
@@ -24,6 +25,35 @@ namespace ModsWatcher.Desktop.ViewModels
         private ModItemViewModel _selectedMod;
 
         public ObservableCollection<ModItemViewModel> Mods { get; set; }
+
+        // The list actually bound to the UI — Mods filtered by SelectedStateFilter.
+        public ObservableCollection<ModItemViewModel> FilteredMods { get; } = new();
+
+        public IReadOnlyList<ModStateFilterOption> StateFilterOptions { get; } = new List<ModStateFilterOption>
+        {
+            new() { Value = ModStateFilter.Active, Label = "Active" },
+            new() { Value = ModStateFilter.Inactive, Label = "Inactive" },
+            new() { Value = ModStateFilter.DependencyParent, Label = "Dependency — Parent" },
+            new() { Value = ModStateFilter.DependencyChild, Label = "Dependency — Child" },
+            new() { Value = ModStateFilter.Package, Label = "Package" },
+            new() { Value = ModStateFilter.VersionMismatch, Label = "Version Mismatch" },
+            new() { Value = ModStateFilter.All, Label = "All" },
+        };
+
+        private ModStateFilterOption _selectedStateFilter;
+        public ModStateFilterOption SelectedStateFilter
+        {
+            get => _selectedStateFilter;
+            set
+            {
+                if (SetProperty(ref _selectedStateFilter, value))
+                    ApplyStateFilter();
+            }
+        }
+
+        // Reordering (drag-drop, Move Up/Down) relies on index positions within the full
+        // list, which are meaningless once a filter hides some mods — only safe on "All".
+        public bool CanReorder => SelectedStateFilter?.Value == ModStateFilter.All;
 
         public ModItemViewModel SelectedMod
         {
@@ -97,6 +127,7 @@ namespace ModsWatcher.Desktop.ViewModels
             _dialogService = dialogService;
             _commonUtils = commonUtils;
             Mods = new ObservableCollection<ModItemViewModel>();
+            _selectedStateFilter = StateFilterOptions.First(o => o.Value == ModStateFilter.Active);
 
             // Initialization & Setup
             AddModShellCommand = new RelayCommand(async _ => await RegisterNewMod());
@@ -202,9 +233,10 @@ namespace ModsWatcher.Desktop.ViewModels
             // 2. Sort the tuples by the shell's PriorityOrder
             var sortedData = libraryData.OrderBy(x => x.Shell.PriorityOrder);
 
-            // Batched lookups so the "ALT"/"PACKAGE" badges don't require an N+1 query per mod
+            // Batched lookups so the "ALT"/"PACKAGE"/"PARENT"/"CHILD" badges don't require an N+1 query per mod
             var modsWithAlternatives = await _storageService.GetModIdsWithAlternativesByAppIdAsync(SelectedApp.Id);
             var packageMainModIds = await _storageService.GetPackageMainModIdsByAppIdAsync(SelectedApp.Id);
+            var dependencyRoles = await _storageService.GetDependencyRolesByAppIdAsync(SelectedApp.Id);
 
             // 3. Iterate over the SORTED data
             foreach (var (shell, installed, config) in sortedData)
@@ -213,9 +245,36 @@ namespace ModsWatcher.Desktop.ViewModels
                 Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils, _logger)
                 {
                     HasAlternatives = modsWithAlternatives.Contains(shell.Id),
-                    IsPackage = packageMainModIds.Contains(shell.Id)
+                    IsPackage = packageMainModIds.Contains(shell.Id),
+                    IsDependencyParent = dependencyRoles.Parents.Contains(shell.Id),
+                    IsDependencyChild = dependencyRoles.Children.Contains(shell.Id)
                 });
             }
+
+            ApplyStateFilter();
+        }
+
+        // Rebuilds FilteredMods (what the UI actually shows) from Mods, based on
+        // SelectedStateFilter. Text search then narrows within this filtered set.
+        private void ApplyStateFilter()
+        {
+            FilteredMods.Clear();
+
+            IEnumerable<ModItemViewModel> source = SelectedStateFilter?.Value switch
+            {
+                ModStateFilter.Active => Mods.Where(m => m.IsUsed),
+                ModStateFilter.Inactive => Mods.Where(m => !m.IsUsed),
+                ModStateFilter.DependencyParent => Mods.Where(m => m.IsDependencyParent),
+                ModStateFilter.DependencyChild => Mods.Where(m => m.IsDependencyChild),
+                ModStateFilter.Package => Mods.Where(m => m.IsPackage),
+                ModStateFilter.VersionMismatch => Mods.Where(m => !m.IsCompatible),
+                _ => Mods
+            };
+
+            foreach (var mod in source)
+                FilteredMods.Add(mod);
+
+            OnPropertyChanged(nameof(CanReorder));
         }
 
         private void UpdateModsWithAppVersion()
@@ -588,12 +647,20 @@ namespace ModsWatcher.Desktop.ViewModels
         {
             if (mod == null) return;
 
-            int oldIndex = Mods.IndexOf(mod);
+            if (!CanReorder)
+            {
+                _dialogService.ShowInfo("Switch the filter to 'All' before reordering mods.", "Reordering Unavailable");
+                return;
+            }
+
+            // Only reachable on the "All" filter, where FilteredMods mirrors Mods exactly —
+            // so index positions here are safe and unambiguous.
+            int oldIndex = FilteredMods.IndexOf(mod);
             int newIndex = oldIndex + direction;
 
-            if (newIndex < 0 || newIndex >= Mods.Count) return;
+            if (oldIndex < 0 || newIndex < 0 || newIndex >= FilteredMods.Count) return;
 
-            var targetMod = Mods[newIndex];
+            var targetMod = FilteredMods[newIndex];
 
             // 1. Swap the PriorityOrder values
             int tempOrder = mod.PriorityOrder;
@@ -604,15 +671,8 @@ namespace ModsWatcher.Desktop.ViewModels
             await _storageService.UpdateModShellAsync(mod.Shell);
             await _storageService.UpdateModShellAsync(targetMod.Shell);
 
-            // 3. Update the UI collection position
-            Mods.Move(oldIndex, newIndex);
-
-            // 4. Refresh the properties so the UI stops showing "0"
-            // We notify the UI that the Shell property on these specific objects is updated
-            OnPropertyChanged(nameof(Mods));
-            //mod.RefreshSummary();
-            //targetMod.RefreshSummary();
-
+            // 3. Reload so Mods/FilteredMods reflect the new PriorityOrder-sorted order
+            await LoadLibrary();
         }
 
         public async Task RunFullSync(ModItemViewModel modItem)
@@ -822,30 +882,43 @@ namespace ModsWatcher.Desktop.ViewModels
 
             if (dropInfo.Data is not ModItemViewModel sourceItem) return;
 
+            if (!CanReorder)
+            {
+                _dialogService.ShowError("Switch the filter to 'All' before reordering mods.");
+                return;
+            }
+
             try
             {
                 Loading.IsBusy = true;
                 Loading.BusyMessage = "Saving order...";
 
-                int oldIndex = Mods.IndexOf(sourceItem);
+                // Only reachable on the "All" filter, where FilteredMods mirrors Mods exactly —
+                // dropInfo.InsertIndex is a position in that same list, so indices line up.
+                int oldIndex = FilteredMods.IndexOf(sourceItem);
                 int targetIndex = dropInfo.InsertIndex;
                 if (targetIndex > oldIndex) targetIndex--;
                 if (oldIndex == targetIndex) return;
 
-                // 1. Visual Move
-                Mods.Move(oldIndex, targetIndex);
-                for (int i = 0; i < Mods.Count; i++)
+                var reordered = FilteredMods.ToList();
+
+                // Redistribute the exact set of PriorityOrder values already in use across
+                // the new order, rather than renumbering from 0 — keeps this safe even if
+                // the underlying values aren't a clean contiguous 0..n-1 range.
+                var existingOrders = reordered.Select(m => m.PriorityOrder).OrderBy(x => x).ToList();
+
+                reordered.RemoveAt(oldIndex);
+                reordered.Insert(targetIndex, sourceItem);
+
+                for (int i = 0; i < reordered.Count; i++)
                 {
-                    Mods[i].PriorityOrder = i;
-                    //Mods[i].RefreshSummary();
+                    reordered[i].PriorityOrder = existingOrders[i];
+                    await _storageService.UpdateModShellAsync(reordered[i].Shell);
                 }
-                OnPropertyChanged(nameof(Mods));
-                
-                // 2. Just extract the Shells in their new order and send them off
-                var shells = Mods.Select(vm => vm.Shell).ToList();
-                await _storageService.UpdateModsOrderAsync(shells);
 
                 _logger.LogInformation("Library reordered via Drag-and-Drop.");
+
+                await LoadLibrary();
             }
             catch (Exception ex)
             {

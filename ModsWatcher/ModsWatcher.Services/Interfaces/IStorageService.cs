@@ -19,7 +19,6 @@ namespace ModsWatcher.Services.Interfaces
         Task AddModShellAsync(Mod shell);
         Task UpdateModShellAsync(Mod shell);
 
-        Task UpdateModsOrderAsync(IEnumerable<Mod> orderedShells);
 
         // Unified methods to handle both entities together
         Task<bool> SaveModWithConfigAsync(Mod mod, ModCrawlerConfig config);
@@ -78,6 +77,7 @@ namespace ModsWatcher.Services.Interfaces
         Task<DependencyTreeNodeDto?> GetDependencyImpactTreeAsync(Guid parentModId);
         Task<bool> WouldCreateCircularDependencyAsync(Guid dependentModId, Guid parentModId);
         Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId);
+        Task<(HashSet<Guid> Parents, HashSet<Guid> Children)> GetDependencyRolesByAppIdAsync(int appId);
 
         // Mod Alternatives
 

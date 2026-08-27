@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using GongSolutions.Wpf.DragDrop;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
+using ModsWatcher.Desktop.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.ViewModels;
 using ModsWatcher.Services;
@@ -33,6 +35,9 @@ namespace ModsWatcher.Tests.VMs
             _loggerMock = new Mock<ILogger<LibraryViewModel>>();
             _modItemViewModel = new Mock<ModItemViewModel>();
 
+            // BaseViewModel.Loading is static and required by any path touching it (e.g. Drop)
+            BaseViewModel.Initialize(new Mock<ILoadingService>().Object);
+
             _vm = new LibraryViewModel(_navMock.Object, _storageMock.Object, _watcherMock.Object, _dialogServiceMock.Object, _commonUtilsMock.Object, _loggerMock.Object);
             _testApp = new ModdedApp { Id = 1, Name = "Test App", InstalledVersion = "1.0" };
         }
@@ -50,6 +55,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
             _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id)).ReturnsAsync((new HashSet<Guid>(), new HashSet<Guid>()));
 
             // Act
             _vm.Initialize((_testApp, null));
@@ -79,21 +85,139 @@ namespace ModsWatcher.Tests.VMs
         [Fact]
         public async Task MoveModOrder_ShouldSwapPriority_AndPersistToStorage()
         {
-            // Arrange
-            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
-            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
-            _vm.Mods.Add(mod1);
-            _vm.Mods.Add(mod2);
+            // Arrange: reordering only works on the "All" filter (see CanReorder)
+            _vm.SelectedApp = _testApp;
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.All);
+
+            var mod1Shell = new Mod { Id = Guid.NewGuid(), Name = "Mod1", PriorityOrder = 0 };
+            var mod2Shell = new Mod { Id = Guid.NewGuid(), Name = "Mod2", PriorityOrder = 1 };
+
+            var data = new List<(Mod Shell, InstalledMod Installed, ModCrawlerConfig Config)>
+            {
+                (mod1Shell, null, null),
+                (mod2Shell, null, null)
+            };
+
+            _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
+            _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id)).ReturnsAsync((new HashSet<Guid>(), new HashSet<Guid>()));
+
+            _vm.Initialize((_testApp, null));
+            await Task.Delay(10);
+
+            var mod1 = _vm.Mods.First(m => m.Shell.Id == mod1Shell.Id);
 
             // Act
             // Using the Hybrid RelayCommand's ExecuteAsync
             await ((RelayCommand)_vm.MoveDownCommand).ExecuteAsync(mod1);
 
             // Assert
-            Assert.Equal(1, mod1.Shell.PriorityOrder);
-            Assert.Equal(0, mod2.Shell.PriorityOrder);
+            Assert.Equal(1, mod1Shell.PriorityOrder);
+            Assert.Equal(0, mod2Shell.PriorityOrder);
             _storageMock.Verify(s => s.UpdateModShellAsync(It.IsAny<Mod>()), Times.Exactly(2));
-            Assert.Equal(mod1, _vm.Mods[1]); // Verified UI collection swap
+            Assert.Equal("Mod2", _vm.Mods[0].Shell.Name); // Re-sorted by new PriorityOrder after reload
+            Assert.Equal("Mod1", _vm.Mods[1].Shell.Name);
+        }
+
+        [Fact]
+        public async Task MoveModOrder_ShouldDoNothing_WhenFilterIsNotAll()
+        {
+            // Arrange: default filter is Active, not All
+            var mod1 = new ModItemViewModel(new Mod { PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
+            var mod2 = new ModItemViewModel(new Mod { PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object);
+            _vm.Mods.Add(mod1);
+            _vm.Mods.Add(mod2);
+
+            // Act
+            await ((RelayCommand)_vm.MoveDownCommand).ExecuteAsync(mod1);
+
+            // Assert: nothing moved, nothing persisted
+            Assert.Equal(0, mod1.Shell.PriorityOrder);
+            Assert.Equal(1, mod2.Shell.PriorityOrder);
+            _storageMock.Verify(s => s.UpdateModShellAsync(It.IsAny<Mod>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Drop_ShouldRedistributeExistingPriorityOrderSet_NotRenumberFromZero()
+        {
+            // Arrange: reordering only works on the "All" filter (see CanReorder). Values
+            // {0,1,3,4} (a gap at 2) verify Drop redistributes the existing set rather than
+            // blindly renumbering from 0 — defensive even though a real gap can't arise
+            // under "All" today, since every mod is included there.
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.All);
+
+            var mods = new List<ModItemViewModel>
+            {
+                new(new Mod { Name = "A", PriorityOrder = 0 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object),
+                new(new Mod { Name = "B", PriorityOrder = 1 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object),
+                new(new Mod { Name = "C", PriorityOrder = 3 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object),
+                new(new Mod { Name = "D", PriorityOrder = 4 }, null, null, "1.0", _commonUtilsMock.Object, _loggerMock.Object),
+            };
+            foreach (var mod in mods)
+            {
+                _vm.Mods.Add(mod);
+                _vm.FilteredMods.Add(mod);
+            }
+
+            var sourceItem = mods[0]; // "A", currently at index 0
+
+            var dropInfoMock = new Mock<IDropInfo>();
+            dropInfoMock.Setup(d => d.Data).Returns(sourceItem);
+            dropInfoMock.Setup(d => d.InsertIndex).Returns(3); // drop it at the end
+
+            // Act
+            _vm.Drop(dropInfoMock.Object);
+            await Task.Delay(10); // Drop is async void
+
+            // Assert: the same 4 values {0,1,3,4} are still in use, just redistributed
+            var usedOrders = mods.Select(m => m.Shell.PriorityOrder).OrderBy(x => x).ToList();
+            Assert.Equal(new List<int> { 0, 1, 3, 4 }, usedOrders);
+        }
+
+        [Fact]
+        public void SelectedStateFilter_ShouldDefaultToActive()
+        {
+            // Assert
+            Assert.Equal(ModStateFilter.Active, _vm.SelectedStateFilter.Value);
+            Assert.False(_vm.CanReorder);
+        }
+
+        [Fact]
+        public async Task ApplyStateFilter_ShouldNarrowFilteredMods_ByDependencyRole()
+        {
+            // Arrange
+            var parentMod = new Mod { Id = Guid.NewGuid(), Name = "Parent Mod", IsUsed = true };
+            var childMod = new Mod { Id = Guid.NewGuid(), Name = "Child Mod", IsUsed = true };
+
+            var data = new List<(Mod Shell, InstalledMod Installed, ModCrawlerConfig Config)>
+            {
+                (parentMod, null, null),
+                (childMod, null, null)
+            };
+
+            _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
+            _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id))
+                .ReturnsAsync((new HashSet<Guid> { parentMod.Id }, new HashSet<Guid> { childMod.Id }));
+
+            _vm.Initialize((_testApp, null));
+            await Task.Delay(10);
+
+            // Act: switch to the Dependency — Parent filter
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.DependencyParent);
+
+            // Assert
+            Assert.Single(_vm.FilteredMods);
+            Assert.Equal("Parent Mod", _vm.FilteredMods[0].Shell.Name);
+
+            // Act: switch to the Dependency — Child filter
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.DependencyChild);
+
+            // Assert
+            Assert.Single(_vm.FilteredMods);
+            Assert.Equal("Child Mod", _vm.FilteredMods[0].Shell.Name);
         }
 
         [Fact]
