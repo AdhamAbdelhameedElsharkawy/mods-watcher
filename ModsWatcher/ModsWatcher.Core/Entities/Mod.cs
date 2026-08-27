@@ -18,6 +18,7 @@ namespace ModsWatcher.Core.Entities
         private string _rootSourceUrl = string.Empty;
         private bool _isDeprecated;
         private string? _description;
+        private string? _notes;
         private bool _isUsed;
         private bool _isWatchable;
         private bool _isCrawlable;
@@ -32,6 +33,7 @@ namespace ModsWatcher.Core.Entities
         public string RootSourceUrl { get => _rootSourceUrl; set => _rootSourceUrl = value; }
         public bool IsDeprecated { get => _isDeprecated; set => _isDeprecated = value; }
         public string? Description { get => _description; set => _description = value; }
+        public string? Notes { get => _notes; set => _notes = value; }
         public bool IsUsed { get => _isUsed; set => _isUsed = value; }
         public string? Author { get => _author; set => _author = value; }
         public bool IsWatchable { get => _isWatchable; set => _isWatchable = value; }

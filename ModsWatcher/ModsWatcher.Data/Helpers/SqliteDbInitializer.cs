@@ -198,6 +198,13 @@ namespace ModsWatcher.Data.Helpers
                     await conn.ExecuteAsync("UPDATE DbSchemaVersion SET Version = 5;", transaction: transaction);
                 }
 
+                // --- VERSION 6: Mod Notes ---
+                if (currentVersion < 6)
+                {
+                    await conn.ExecuteAsync("ALTER TABLE Mod ADD COLUMN Notes TEXT;", transaction: transaction);
+                    await conn.ExecuteAsync("UPDATE DbSchemaVersion SET Version = 6;", transaction: transaction);
+                }
+
 
                 transaction.Commit();
             }

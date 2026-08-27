@@ -115,9 +115,9 @@ namespace ModsWatcher.Data
             {
                 const string sql = @"
         INSERT INTO Mod
-        (Id, AppId, Name, Author, RootSourceUrl, IsDeprecated, Description, IsUsed, IsWatchable, IsCrawlable, LastWatched, WatcherStatus, LastWatcherHash, PriorityOrder)
+        (Id, AppId, Name, Author, RootSourceUrl, IsDeprecated, Description, Notes, IsUsed, IsWatchable, IsCrawlable, LastWatched, WatcherStatus, LastWatcherHash, PriorityOrder)
         VALUES
-        (@Id, @AppId, @Name, @Author, @RootSourceUrl, @IsDeprecated, @Description, @IsUsed, @IsWatchable, @IsCrawlable, @LastWatched, @WatcherStatus, @LastWatcherHash, 
+        (@Id, @AppId, @Name, @Author, @RootSourceUrl, @IsDeprecated, @Description, @Notes, @IsUsed, @IsWatchable, @IsCrawlable, @LastWatched, @WatcherStatus, @LastWatcherHash,
             (SELECT IFNULL(MAX(PriorityOrder), -1) + 1 FROM Mod WHERE AppId = @AppId)
         );";
 
@@ -131,6 +131,7 @@ namespace ModsWatcher.Data
                         entity.RootSourceUrl,
                         entity.IsDeprecated,
                         entity.Description,
+                        entity.Notes,
                         entity.IsUsed,
                         entity.IsWatchable,
                         entity.IsCrawlable,
@@ -167,6 +168,7 @@ namespace ModsWatcher.Data
                     RootSourceUrl = @RootSourceUrl,
                     IsDeprecated = @IsDeprecated,
                     Description = @Description,
+                    Notes = @Notes,
                     IsUsed = @IsUsed,
                     IsWatchable = @IsWatchable,
                     IsCrawlable = @IsCrawlable,
@@ -185,6 +187,7 @@ namespace ModsWatcher.Data
                         entity.RootSourceUrl,
                         entity.IsDeprecated,
                         entity.Description,
+                        entity.Notes,
                         entity.IsUsed,
                         entity.IsWatchable,
                         entity.IsCrawlable,
@@ -206,9 +209,9 @@ namespace ModsWatcher.Data
                 // 1. Insert Mod
                 const string modSql = @"
         INSERT INTO Mod
-        (Id, AppId, Name, Author, RootSourceUrl, IsDeprecated, Description, IsUsed, IsWatchable, IsCrawlable, LastWatched, WatcherStatus, LastWatcherHash, PriorityOrder)
+        (Id, AppId, Name, Author, RootSourceUrl, IsDeprecated, Description, Notes, IsUsed, IsWatchable, IsCrawlable, LastWatched, WatcherStatus, LastWatcherHash, PriorityOrder)
         VALUES
-        (@Id, @AppId, @Name, @Author, @RootSourceUrl, @IsDeprecated, @Description, @IsUsed, @IsWatchable, @IsCrawlable, @LastWatched, @WatcherStatus, @LastWatcherHash, 
+        (@Id, @AppId, @Name, @Author, @RootSourceUrl, @IsDeprecated, @Description, @Notes, @IsUsed, @IsWatchable, @IsCrawlable, @LastWatched, @WatcherStatus, @LastWatcherHash,
             (SELECT IFNULL(MAX(PriorityOrder), -1) + 1 FROM Mod WHERE AppId = @AppId)
         );";
 
@@ -238,6 +241,7 @@ Name = @Name,
 Author = @Author,
 RootSourceUrl = @RootSourceUrl,
                 Description = @Description,
+                Notes = @Notes,
                 IsUsed = @IsUsed,
                 IsWatchable = @IsWatchable,
                 IsCrawlable = @IsCrawlable,

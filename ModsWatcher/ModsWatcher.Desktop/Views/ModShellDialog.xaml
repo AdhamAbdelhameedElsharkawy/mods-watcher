@@ -12,6 +12,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <conv:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+        <conv:InverseBoolToVisConverter x:Key="InverseBoolToVisConverter" />
     </Window.Resources>
 
     <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderMuted}" BorderThickness="1" CornerRadius="12" Padding="25">
@@ -26,8 +27,26 @@
                 <TextBlock Text="Author" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,15,0,8"/>
                 <TextBox Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}"/>
 
-                <TextBlock Text="Description" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,15,0,8"/>
-                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                <Grid Margin="0,15,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Notes" Command="{Binding ShowNotesTabCommand}"
+                            Style="{DynamicResource GhostActionButtonStyle}"
+                            Opacity="{Binding IsNotesTabActive, Converter={StaticResource BoolToOpacityConverter}}"
+                            HorizontalAlignment="Left" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Description" Command="{Binding ShowDescriptionTabCommand}"
+                            Style="{DynamicResource GhostActionButtonStyle}"
+                            Opacity="{Binding IsDescriptionTabActive, Converter={StaticResource BoolToOpacityConverter}}"
+                            HorizontalAlignment="Left"/>
+                </Grid>
+
+                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                         Visibility="{Binding IsNotesTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         AcceptsReturn="True" TextWrapping="Wrap" Height="80" VerticalScrollBarVisibility="Auto"/>
+                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                         Visibility="{Binding IsDescriptionTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"
                          AcceptsReturn="True" TextWrapping="Wrap" Height="80" VerticalScrollBarVisibility="Auto"/>
 
                 <TextBlock Text="Root Source URL" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,15,0,8"/>

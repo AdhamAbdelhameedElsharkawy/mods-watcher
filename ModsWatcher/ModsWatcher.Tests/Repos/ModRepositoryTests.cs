@@ -103,16 +103,35 @@ namespace ModsWatcher.Tests.Repos
             await Connection.ExecuteAsync("INSERT INTO Mod (Id, AppId, Name, PriorityOrder, IsUsed, IsDeprecated) VALUES (@Id, @AppId, 'N', 0, 1, 0)", new { Id = modId, AppId = appId });
             await Connection.ExecuteAsync("INSERT INTO ModCrawlerConfig (ModId, VersionXPath) VALUES (@Id, 'old')", new { Id = modId });
 
-            var mod = new Mod { Id = modId, Description = "UpdatedDesc" };
+            var mod = new Mod { Id = modId, Description = "UpdatedDesc", Notes = "UpdatedNotes" };
             var config = new ModCrawlerConfig { ModId = modId, VersionXPath = "new" };
 
             await _repo.UpdateModWithConfigAsync(mod, config, Connection);
 
             var desc = await Connection.ExecuteScalarAsync<string>("SELECT Description FROM Mod WHERE Id = @Id", new { Id = modId });
+            var notes = await Connection.ExecuteScalarAsync<string>("SELECT Notes FROM Mod WHERE Id = @Id", new { Id = modId });
             var xpath = await Connection.ExecuteScalarAsync<string>("SELECT VersionXPath FROM ModCrawlerConfig WHERE ModId = @Id", new { Id = modId });
 
             Assert.Equal("UpdatedDesc", desc);
+            Assert.Equal("UpdatedNotes", notes);
             Assert.Equal("new", xpath);
+        }
+
+        [Fact]
+        public async Task InsertAsync_ShouldPersistNotes_AsOptionalField()
+        {
+            int appId = await SeedParentAppAsync();
+            var modWithNotes = new Mod { Id = Guid.NewGuid(), AppId = appId, Name = "Annotated", Notes = "Load after base game" };
+            var modWithoutNotes = new Mod { Id = Guid.NewGuid(), AppId = appId, Name = "Plain" };
+
+            await _repo.InsertAsync(modWithNotes, Connection);
+            await _repo.InsertAsync(modWithoutNotes, Connection);
+
+            var persistedNotes = await Connection.ExecuteScalarAsync<string>("SELECT Notes FROM Mod WHERE Id = @Id", new { modWithNotes.Id });
+            var persistedNull = await Connection.ExecuteScalarAsync<string?>("SELECT Notes FROM Mod WHERE Id = @Id", new { modWithoutNotes.Id });
+
+            Assert.Equal("Load after base game", persistedNotes);
+            Assert.Null(persistedNull);
         }
 
         [Fact]

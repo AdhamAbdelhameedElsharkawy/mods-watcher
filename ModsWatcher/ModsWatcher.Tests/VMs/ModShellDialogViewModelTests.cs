@@ -60,11 +60,45 @@ namespace ModsWatcher.Tests.VMs
             vm.Name = "New Texture Mod";
             vm.RootSourceUrl = "https://nexusmods.com/test";
             vm.Description = "A cool description";
+            vm.Notes = "Personal reminder to update this later";
 
             // Assert
             Assert.Equal("New Texture Mod", vm.Shell.Name);
             Assert.Equal("https://nexusmods.com/test", vm.Shell.RootSourceUrl);
             Assert.Equal("A cool description", vm.Shell.Description);
+            Assert.Equal("Personal reminder to update this later", vm.Shell.Notes);
+        }
+
+        [Fact]
+        public void NotesTab_ShouldBeActiveByDefault()
+        {
+            // Arrange
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, _loggerMock.Object);
+
+            // Assert
+            Assert.True(vm.IsNotesTabActive);
+            Assert.False(vm.IsDescriptionTabActive);
+        }
+
+        [Fact]
+        public void ShowDescriptionTabCommand_ShouldSwitchActiveTab()
+        {
+            // Arrange
+            var vm = new ModShellDialogViewModel(_serviceMock.Object, TestAppId, _dialogMock.Object, _loggerMock.Object);
+
+            // Act
+            vm.ShowDescriptionTabCommand.Execute(null);
+
+            // Assert
+            Assert.False(vm.IsNotesTabActive);
+            Assert.True(vm.IsDescriptionTabActive);
+
+            // Act: switch back
+            vm.ShowNotesTabCommand.Execute(null);
+
+            // Assert
+            Assert.True(vm.IsNotesTabActive);
+            Assert.False(vm.IsDescriptionTabActive);
         }
 
         [Fact]
