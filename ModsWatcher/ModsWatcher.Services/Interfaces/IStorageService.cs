@@ -77,6 +77,7 @@ namespace ModsWatcher.Services.Interfaces
         Task<IEnumerable<ModDependency>> GetParentsAsync(Guid dependentModId);
         Task<DependencyTreeNodeDto?> GetDependencyImpactTreeAsync(Guid parentModId);
         Task<bool> WouldCreateCircularDependencyAsync(Guid dependentModId, Guid parentModId);
+        Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId);
 
 
 

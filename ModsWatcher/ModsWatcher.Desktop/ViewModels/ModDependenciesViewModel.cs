@@ -20,6 +20,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public ObservableCollection<ModDependencyDisplayDto> Parents { get; } = new();
         public ObservableCollection<ModDependencyDisplayDto> Dependents { get; } = new();
         public ObservableCollection<ModDependencyDisplayDto> AvailableParents { get; } = new();
+        public ObservableCollection<DependencyTreeNodeDto> DependencyForest { get; } = new();
 
         private ModDependencyDisplayDto? _selectedAvailableParent;
         public ModDependencyDisplayDto? SelectedAvailableParent
@@ -32,6 +33,7 @@ namespace ModsWatcher.Desktop.ViewModels
         public bool HasParents => Parents.Count > 0;
         public bool HasDependents => Dependents.Count > 0;
         public bool HasAvailableParents => AvailableParents.Count > 0;
+        public bool HasDependencyForest => DependencyForest.Count > 0;
 
         public ICommand GoBackCommand { get; }
         public ICommand AddDependencyCommand { get; }
@@ -71,6 +73,7 @@ namespace ModsWatcher.Desktop.ViewModels
             Parents.Clear();
             Dependents.Clear();
             AvailableParents.Clear();
+            DependencyForest.Clear();
             SelectedAvailableParent = null;
 
             var currentModId = _modItem.Shell.Id;
@@ -119,6 +122,11 @@ namespace ModsWatcher.Desktop.ViewModels
                     ModName = mod.Shell.Name
                 });
             }
+
+            // Full expandable tree of every dependency relation in this app, for browsing.
+            var forest = await _storageService.GetDependencyForestByAppIdAsync(_parentApp.Id);
+            foreach (var root in forest)
+                DependencyForest.Add(root);
 
             NotifyCollectionStateChanged();
         }
@@ -183,6 +191,7 @@ namespace ModsWatcher.Desktop.ViewModels
             OnPropertyChanged(nameof(HasParents));
             OnPropertyChanged(nameof(HasDependents));
             OnPropertyChanged(nameof(HasAvailableParents));
+            OnPropertyChanged(nameof(HasDependencyForest));
         }
     }
 }

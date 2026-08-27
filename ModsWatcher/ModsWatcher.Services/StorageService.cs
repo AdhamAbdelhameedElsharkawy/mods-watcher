@@ -792,8 +792,11 @@ namespace ModsWatcher.Services
             if (connection.State != System.Data.ConnectionState.Open)
                 connection.Open();
 
-            var ancestors = await _modDependencyRepo.GetAllAncestorsAsync(dependentModId, connection);
-            return ancestors.Any(a => a.ParentModId == parentModId);
+            // Adding "dependentModId depends on parentModId" closes a loop if parentModId
+            // already (directly or transitively) depends on dependentModId — i.e. dependentModId
+            // is already one of parentModId's ancestors.
+            var ancestorsOfParent = await _modDependencyRepo.GetAllAncestorsAsync(parentModId, connection);
+            return ancestorsOfParent.Any(a => a.ParentModId == dependentModId);
         }
 
         public async Task AddDependencyAsync(Guid dependentModId, Guid parentModId)
@@ -881,10 +884,43 @@ namespace ModsWatcher.Services
             return root;
         }
 
+        public async Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var mods = (await _modRepo.GetByAppIdAsync(appId, connection)).ToList();
+            var modNames = mods.ToDictionary(m => m.Id, m => m.Name);
+
+            var edges = (await _modDependencyRepo.GetAllByAppIdAsync(appId, connection)).ToList();
+
+            // Roots are mods that are not a dependent of any other mod (i.e. have no parents).
+            var dependentIds = edges.Select(e => e.DependentModId).ToHashSet();
+            var roots = mods.Where(m => !dependentIds.Contains(m.Id)).OrderBy(m => m.Name);
+
+            var forest = new List<DependencyTreeNodeDto>();
+            foreach (var root in roots)
+            {
+                var node = new DependencyTreeNodeDto
+                {
+                    ModId = root.Id.ToString(),
+                    ModName = root.Name
+                };
+
+                BuildTree(node, edges, modNames);
+                forest.Add(node);
+            }
+
+            return forest;
+        }
+
         private static void BuildTree(DependencyTreeNodeDto node, List<ModDependency> allDescendants, Dictionary<Guid, string> modNames)
         {
             var nodeGuid = Guid.Parse(node.ModId);
-            var directChildren = allDescendants.Where(d => d.ParentModId == nodeGuid);
+            var directChildren = allDescendants
+                .Where(d => d.ParentModId == nodeGuid)
+                .OrderBy(d => modNames.GetValueOrDefault(d.DependentModId, d.DependentModId.ToString()));
             foreach (var child in directChildren)
             {
                 var childNode = new DependencyTreeNodeDto

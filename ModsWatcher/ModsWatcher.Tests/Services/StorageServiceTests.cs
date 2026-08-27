@@ -494,7 +494,255 @@ namespace ModsWatcher.Tests.Services
         
         #endregion
 
-        
+        #region Mod Dependency Tests
+
+        [Fact]
+        public async Task WouldCreateCircularDependencyAsync_ShouldReturnTrue_WhenProposedParentAlreadyDependsOnDependentThroughChain()
+        {
+            // Arrange: modA -> modB -> modC (modA depends on modB, modB depends on modC).
+            // Proposing that modC depends on modA would close the loop: A -> B -> C -> A.
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+            var modC = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetAllAncestorsAsync(modA, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>
+                {
+                    new() { DependentModId = modA, ParentModId = modB },
+                    new() { DependentModId = modB, ParentModId = modC }
+                });
+
+            // Act
+            var result = await _service.WouldCreateCircularDependencyAsync(modC, modA);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task WouldCreateCircularDependencyAsync_ShouldReturnFalse_WhenNoCycleExists()
+        {
+            // Arrange
+            var dependentModId = Guid.NewGuid();
+            var parentModId = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetAllAncestorsAsync(parentModId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>());
+
+            // Act
+            var result = await _service.WouldCreateCircularDependencyAsync(dependentModId, parentModId);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task WouldCreateCircularDependencyAsync_ShouldReturnFalse_ForADiamondShapedDependency()
+        {
+            // Arrange: modD depends on modX, and modX depends on modP.
+            // Proposing that modD ALSO depends directly on modP is a diamond
+            // shape, not a cycle, so it must be allowed.
+            var modD = Guid.NewGuid();
+            var modP = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetAllAncestorsAsync(modP, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>());
+
+            // Act
+            var result = await _service.WouldCreateCircularDependencyAsync(modD, modP);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task AddDependencyAsync_ShouldThrow_WhenModDependsOnItself()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.AddDependencyAsync(modId, modId));
+
+            Assert.Contains("cannot depend on itself", ex.Message, StringComparison.OrdinalIgnoreCase);
+            _modDepMock.Verify(r => r.AddAsync(It.IsAny<ModDependency>(), It.IsAny<IDbConnection>(), null, default), Times.Never);
+        }
+
+        [Fact]
+        public async Task AddDependencyAsync_ShouldThrow_WhenItWouldCreateACircularReference()
+        {
+            // Arrange: modA -> modB -> modC (modA depends on modB, modB depends on modC).
+            // Adding "modC depends on modA" would close the loop: A -> B -> C -> A.
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+            var modC = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetAllAncestorsAsync(modA, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>
+                {
+                    new() { DependentModId = modA, ParentModId = modB },
+                    new() { DependentModId = modB, ParentModId = modC }
+                });
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.AddDependencyAsync(modC, modA));
+
+            Assert.Contains("circular", ex.Message, StringComparison.OrdinalIgnoreCase);
+            _modDepMock.Verify(r => r.AddAsync(It.IsAny<ModDependency>(), It.IsAny<IDbConnection>(), null, default), Times.Never);
+        }
+
+        [Fact]
+        public async Task AddDependencyAsync_ShouldInsertRelation_WhenValid()
+        {
+            // Arrange
+            var dependentModId = Guid.NewGuid();
+            var parentModId = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetAllAncestorsAsync(parentModId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>());
+
+            // Act
+            await _service.AddDependencyAsync(dependentModId, parentModId);
+
+            // Assert
+            _modDepMock.Verify(r => r.AddAsync(
+                It.Is<ModDependency>(d => d.DependentModId == dependentModId && d.ParentModId == parentModId),
+                It.IsAny<IDbConnection>(),
+                null,
+                default),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task RemoveDependencyAsync_ShouldCallDelete_WithCorrectIds()
+        {
+            // Arrange
+            var dependentModId = Guid.NewGuid();
+            var parentModId = Guid.NewGuid();
+
+            // Act
+            await _service.RemoveDependencyAsync(dependentModId, parentModId);
+
+            // Assert
+            _modDepMock.Verify(r => r.DeleteAsync(dependentModId, parentModId, It.IsAny<IDbConnection>(), null, default), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetDependencyImpactTreeAsync_ShouldReturnNull_WhenModHasNoDependents()
+        {
+            // Arrange
+            var parentModId = Guid.NewGuid();
+            _modDepMock.Setup(r => r.GetDependentsAsync(parentModId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>());
+
+            // Act
+            var result = await _service.GetDependencyImpactTreeAsync(parentModId);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetDependencyImpactTreeAsync_ShouldBuildMultiLevelTree_FromDescendants()
+        {
+            // Arrange: Root -> Child -> Grandchild
+            var rootId = Guid.NewGuid();
+            var childId = Guid.NewGuid();
+            var grandchildId = Guid.NewGuid();
+
+            _modDepMock.Setup(r => r.GetDependentsAsync(rootId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency> { new() { DependentModId = childId, ParentModId = rootId } });
+
+            _modDepMock.Setup(r => r.GetAllDescendantsAsync(rootId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>
+                {
+                    new() { DependentModId = childId, ParentModId = rootId },
+                    new() { DependentModId = grandchildId, ParentModId = childId }
+                });
+
+            _shellModRepoMock.Setup(r => r.GetByIdAsync(rootId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new Mod { Id = rootId, Name = "Root Mod" });
+            _shellModRepoMock.Setup(r => r.GetByIdAsync(childId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new Mod { Id = childId, Name = "Child Mod" });
+            _shellModRepoMock.Setup(r => r.GetByIdAsync(grandchildId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new Mod { Id = grandchildId, Name = "Grandchild Mod" });
+
+            // Act
+            var tree = await _service.GetDependencyImpactTreeAsync(rootId);
+
+            // Assert
+            Assert.NotNull(tree);
+            Assert.Equal("Root Mod", tree!.ModName);
+            Assert.Single(tree.Children);
+
+            var child = tree.Children[0];
+            Assert.Equal("Child Mod", child.ModName);
+            Assert.Single(child.Children);
+
+            var grandchild = child.Children[0];
+            Assert.Equal("Grandchild Mod", grandchild.ModName);
+            Assert.Empty(grandchild.Children);
+        }
+
+        [Fact]
+        public async Task GetDependencyForestByAppIdAsync_ShouldGroupModsUnderRootsWithNoParents()
+        {
+            // Arrange: App has 3 mods. Root -> Leaf, and an unrelated standalone mod.
+            int appId = 5;
+            var rootId = Guid.NewGuid();
+            var leafId = Guid.NewGuid();
+            var standaloneId = Guid.NewGuid();
+
+            var mods = new List<Mod>
+            {
+                new() { Id = rootId, Name = "Root Mod", AppId = appId },
+                new() { Id = leafId, Name = "Leaf Mod", AppId = appId },
+                new() { Id = standaloneId, Name = "Standalone Mod", AppId = appId }
+            };
+
+            _shellModRepoMock.Setup(r => r.GetByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(mods);
+
+            _modDepMock.Setup(r => r.GetAllByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>
+                {
+                    new() { DependentModId = leafId, ParentModId = rootId }
+                });
+
+            // Act
+            var forest = (await _service.GetDependencyForestByAppIdAsync(appId)).ToList();
+
+            // Assert: two roots (Root Mod with a child, Standalone Mod with none)
+            Assert.Equal(2, forest.Count);
+
+            var rootNode = forest.Single(n => n.ModName == "Root Mod");
+            Assert.Single(rootNode.Children);
+            Assert.Equal("Leaf Mod", rootNode.Children[0].ModName);
+
+            var standaloneNode = forest.Single(n => n.ModName == "Standalone Mod");
+            Assert.Empty(standaloneNode.Children);
+        }
+
+        [Fact]
+        public async Task GetDependencyForestByAppIdAsync_ShouldReturnEmpty_WhenAppHasNoMods()
+        {
+            // Arrange
+            int appId = 7;
+            _shellModRepoMock.Setup(r => r.GetByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<Mod>());
+            _modDepMock.Setup(r => r.GetAllByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModDependency>());
+
+            // Act
+            var forest = await _service.GetDependencyForestByAppIdAsync(appId);
+
+            // Assert
+            Assert.Empty(forest);
+        }
+
+        #endregion
 
     }
 }

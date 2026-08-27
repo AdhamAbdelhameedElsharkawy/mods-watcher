@@ -97,5 +97,18 @@ namespace ModsWatcher.Data
                 return await c.QueryAsync<ModDependency>(
                     new CommandDefinition(sql, new { ModId = modId }, t, cancellationToken: cancellationToken));
             }, false, connection, transaction);
+
+        public Task<IEnumerable<ModDependency>> GetAllByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+            => ExecuteAsync(async (c, t) =>
+            {
+                const string sql = @"
+                    SELECT md.DependentModId, md.ParentModId
+                    FROM ModDependency md
+                    INNER JOIN Mod m ON m.Id = md.DependentModId
+                    WHERE m.AppId = @AppId;";
+
+                return await c.QueryAsync<ModDependency>(
+                    new CommandDefinition(sql, new { AppId = appId }, t, cancellationToken: cancellationToken));
+            }, false, connection, transaction);
     }
 }

@@ -16,5 +16,7 @@ namespace ModsWatcher.Core.Interfaces
         Task<IEnumerable<ModDependency>> GetAllAncestorsAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
 
         Task<IEnumerable<ModDependency>> GetAllDescendantsAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        Task<IEnumerable<ModDependency>> GetAllByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
     }
 }
