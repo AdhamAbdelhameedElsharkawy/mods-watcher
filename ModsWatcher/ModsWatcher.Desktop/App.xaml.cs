@@ -87,6 +87,7 @@ namespace ModsWatcher.Desktop
             services.AddTransient<AvailableVersionsViewModel>();
             services.AddTransient<ModDependenciesViewModel>();
             services.AddTransient<ModAlternativesViewModel>();
+            services.AddTransient<ModPackageViewModel>();
             services.AddSingleton<ILoadingService, LoadingService>();
 
             ServiceProvider = services.BuildServiceProvider();

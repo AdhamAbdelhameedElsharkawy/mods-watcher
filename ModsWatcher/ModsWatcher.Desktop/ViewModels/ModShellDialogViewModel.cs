@@ -59,6 +59,33 @@ namespace ModsWatcher.Desktop.ViewModels
             set { Shell.Description = value; OnPropertyChanged(); }
         }
 
+        // Not required, not validated — a free-form scratchpad for the mod's owner.
+        public string? Notes
+        {
+            get => Shell.Notes;
+            set { Shell.Notes = value; OnPropertyChanged(); }
+        }
+
+        #endregion
+
+        #region Notes / Description Tab
+
+        private bool _isNotesTabActive = true;
+        public bool IsNotesTabActive
+        {
+            get => _isNotesTabActive;
+            set
+            {
+                if (SetProperty(ref _isNotesTabActive, value))
+                    OnPropertyChanged(nameof(IsDescriptionTabActive));
+            }
+        }
+
+        public bool IsDescriptionTabActive => !IsNotesTabActive;
+
+        public ICommand ShowNotesTabCommand { get; }
+        public ICommand ShowDescriptionTabCommand { get; }
+
         #endregion
 
         #region Cascading Flag Logic
@@ -195,6 +222,8 @@ namespace ModsWatcher.Desktop.ViewModels
             CancelCommand = new RelayCommand(_ => Close(false));
             ExportConfigCommand = new RelayCommand(async _ => await ExportConfigAsync());
             ImportConfigCommand = new RelayCommand(async _ => await ImportConfigAsync());
+            ShowNotesTabCommand = new RelayCommand(_ => IsNotesTabActive = true);
+            ShowDescriptionTabCommand = new RelayCommand(_ => IsNotesTabActive = false);
 
             ValidateAll();
         }

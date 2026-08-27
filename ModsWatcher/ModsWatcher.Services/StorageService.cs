@@ -20,6 +20,7 @@ namespace ModsWatcher.Services
         private readonly IAvailableModRepository _availableModRepo;
         private readonly IModDependencyRepository _modDependencyRepo;
         private readonly IModAlternativeRepository _modAlternativeRepo;
+        private readonly IModPackageMemberRepository _modPackageMemberRepo;
         private readonly CommonUtils _commonUtils;
         private readonly ILogger<StorageService> _logger;
 
@@ -36,6 +37,7 @@ namespace ModsWatcher.Services
             IAvailableModRepository availableModRepo,
             IModDependencyRepository modDependencyRepository,
             IModAlternativeRepository modAlternativeRepository,
+            IModPackageMemberRepository modPackageMemberRepository,
             CommonUtils commonUtils,
             ILogger<StorageService> logger
             )
@@ -50,6 +52,7 @@ namespace ModsWatcher.Services
             _availableModRepo = availableModRepo;
             _modDependencyRepo = modDependencyRepository;
             _modAlternativeRepo = modAlternativeRepository;
+            _modPackageMemberRepo = modPackageMemberRepository;
             _commonUtils = commonUtils;
             _logger = logger;
 
@@ -147,32 +150,6 @@ namespace ModsWatcher.Services
             await _modRepo.UpdateAsync(shell, connection);
 
 
-        }
-
-        public async Task UpdateModsOrderAsync(IEnumerable<Mod> shells)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-                connection.Open();
-
-            using var transaction = connection.BeginTransaction();
-            try
-            {
-                int priority = 0;
-                foreach (var shell in shells)
-                {
-                    shell.PriorityOrder = priority++;
-                    // Pass the transaction into your repository method
-                    await _modRepo.UpdateAsync(shell, connection, transaction);
-                }
-
-                transaction.Commit();
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
         }
 
         public async Task<IEnumerable<(Mod Shell, InstalledMod? Installed, ModCrawlerConfig? Config)>> GetFullModsByAppId(int appId)
@@ -430,6 +407,9 @@ namespace ModsWatcher.Services
                 await _availableModRepo.DeleteByAppIdAsync(appId, connection, transaction);
                 await _installedModHistoryRepo.DeleteByAppIdAsync(appId, connection, transaction);
                 await _modCrawlerConfigRepo.DeleteByAppIdAsync(appId, connection, transaction);
+                await _modPackageMemberRepo.DeleteByAppIdAsync(appId, connection, transaction);
+                await _modDependencyRepo.DeleteAllByAppIdAsync(appId, connection, transaction);
+                await _modAlternativeRepo.DeleteAllByAppIdAsync(appId, connection, transaction);
 
                 // 3. Wipe Mod shells
                 await _modRepo.DeleteByAppIdAsync(appId, connection, transaction);
@@ -489,6 +469,9 @@ namespace ModsWatcher.Services
                 await _availableModRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
                 await _installedModHistoryRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
                 await _modCrawlerConfigRepo.DeleteByModIdAsync(mod.Id, connection, transaction);
+                await _modPackageMemberRepo.DeleteByMainModIdAsync(mod.Id, connection, transaction);
+                await _modDependencyRepo.DeleteAllForModAsync(mod.Id, connection, transaction);
+                await _modAlternativeRepo.DeleteAllForModAsync(mod.Id, connection, transaction);
 
                 // 3. Delete the Mod Shell itself
                 await _modRepo.DeleteAsync(mod.Id, connection, transaction);
@@ -918,6 +901,25 @@ namespace ModsWatcher.Services
             return forest;
         }
 
+        public async Task<(HashSet<Guid> Parents, HashSet<Guid> Children)> GetDependencyRolesByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var edges = await _modDependencyRepo.GetAllByAppIdAsync(appId, connection);
+
+            var parents = new HashSet<Guid>();
+            var children = new HashSet<Guid>();
+            foreach (var edge in edges)
+            {
+                parents.Add(edge.ParentModId);
+                children.Add(edge.DependentModId);
+            }
+
+            return (parents, children);
+        }
+
         private static void BuildTree(DependencyTreeNodeDto node, List<ModDependency> allDescendants, Dictionary<Guid, string> modNames)
         {
             var nodeGuid = Guid.Parse(node.ModId);
@@ -1055,6 +1057,87 @@ namespace ModsWatcher.Services
 
             visited.Remove(modId);
             return visited;
+        }
+
+        #endregion
+
+        #region Mod Packages
+
+        public async Task<IEnumerable<ModPackageMember>> GetPackageMembersAsync(Guid mainModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            return await _modPackageMemberRepo.FindByMainModIdAsync(mainModId, connection);
+        }
+
+        public async Task<ModPackageMember> AddPackageMemberAsync(Guid mainModId, string name, string? notes, string? url)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var existing = (await _modPackageMemberRepo.FindByMainModIdAsync(mainModId, connection)).ToList();
+            var nextOrder = existing.Count == 0 ? 0 : existing.Max(m => m.PriorityOrder) + 1;
+
+            var member = new ModPackageMember
+            {
+                MainModId = mainModId,
+                Name = name,
+                Notes = notes,
+                Url = url,
+                PriorityOrder = nextOrder
+            };
+
+            var inserted = await _modPackageMemberRepo.InsertAsync(member, connection);
+            _logger.LogInformation("Added package member '{Name}' to package {MainModId}", name, mainModId);
+            return inserted!;
+        }
+
+        public async Task RemovePackageMemberAsync(int memberInternalId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modPackageMemberRepo.DeleteAsync(memberInternalId, connection);
+            _logger.LogInformation("Removed package member {MemberId}", memberInternalId);
+        }
+
+        public async Task ReorderPackageMembersAsync(IEnumerable<ModPackageMember> orderedMembers)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                int priority = 0;
+                foreach (var member in orderedMembers)
+                {
+                    member.PriorityOrder = priority++;
+                    await _modPackageMemberRepo.UpdateAsync(member, connection, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<HashSet<Guid>> GetPackageMainModIdsByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var mainModIds = await _modPackageMemberRepo.GetMainModIdsByAppIdAsync(appId, connection);
+            return mainModIds.ToHashSet();
         }
 
         #endregion

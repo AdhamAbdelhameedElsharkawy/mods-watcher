@@ -57,5 +57,28 @@ namespace ModsWatcher.Data
                 return await c.QueryAsync<ModAlternative>(
                     new CommandDefinition(sql, new { AppId = appId }, t, cancellationToken: cancellationToken));
             }, false, connection, transaction);
+
+        public Task<bool> DeleteAllForModAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+            => ExecuteAsync(async (c, t) =>
+            {
+                const string sql = @"
+                    DELETE FROM ModAlternative
+                    WHERE ModId = @ModId OR AlternativeModId = @ModId;";
+
+                var affected = await c.ExecuteAsync(new CommandDefinition(sql, new { ModId = modId }, t, cancellationToken: cancellationToken));
+                return affected > 0;
+            }, true, connection, transaction);
+
+        public Task<bool> DeleteAllByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+            => ExecuteAsync(async (c, t) =>
+            {
+                const string sql = @"
+                    DELETE FROM ModAlternative
+                    WHERE ModId IN (SELECT Id FROM Mod WHERE AppId = @AppId)
+                       OR AlternativeModId IN (SELECT Id FROM Mod WHERE AppId = @AppId);";
+
+                var affected = await c.ExecuteAsync(new CommandDefinition(sql, new { AppId = appId }, t, cancellationToken: cancellationToken));
+                return affected > 0;
+            }, true, connection, transaction);
     }
 }

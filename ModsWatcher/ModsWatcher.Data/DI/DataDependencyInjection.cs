@@ -30,6 +30,7 @@ namespace ModsWatcher.Data.DI
             services.AddScoped<IModCrawlerConfigRepository, ModCrawlerConfigRepository>();
             services.AddScoped<IModDependencyRepository, ModDependencyRepository>();
             services.AddScoped<IModAlternativeRepository, ModAlternativeRepository>();
+            services.AddScoped<IModPackageMemberRepository, ModPackageMemberRepository>();
 
 
             return services;
