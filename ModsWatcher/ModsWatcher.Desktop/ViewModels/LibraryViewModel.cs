@@ -76,6 +76,8 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public ICommand NavToAlternativesCommand { get; }
 
+        public ICommand NavToPackageCommand { get; }
+
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
 
@@ -154,6 +156,12 @@ namespace ModsWatcher.Desktop.ViewModels
                     _navigationService.NavigateTo<ModAlternativesViewModel, (ModdedApp, ModItemViewModel)>((SelectedApp, SelectedMod));
             });
 
+            NavToPackageCommand = new RelayCommand(_ =>
+            {
+                if (SelectedMod != null)
+                    _navigationService.NavigateTo<ModPackageViewModel, (ModdedApp, ModItemViewModel)>((SelectedApp, SelectedMod));
+            });
+
             // Misc Actions
             //TODO: not binding to anything currently, but we can add a "View History" button in the UI if we want to surface this more prominently instead of hiding it in the versions dialog
             ShowHistoryCommand = new RelayCommand(_ => ViewModHistory());
@@ -194,8 +202,9 @@ namespace ModsWatcher.Desktop.ViewModels
             // 2. Sort the tuples by the shell's PriorityOrder
             var sortedData = libraryData.OrderBy(x => x.Shell.PriorityOrder);
 
-            // Batched lookup so the "ALT" badge doesn't require an N+1 query per mod
+            // Batched lookups so the "ALT"/"PACKAGE" badges don't require an N+1 query per mod
             var modsWithAlternatives = await _storageService.GetModIdsWithAlternativesByAppIdAsync(SelectedApp.Id);
+            var packageMainModIds = await _storageService.GetPackageMainModIdsByAppIdAsync(SelectedApp.Id);
 
             // 3. Iterate over the SORTED data
             foreach (var (shell, installed, config) in sortedData)
@@ -203,7 +212,8 @@ namespace ModsWatcher.Desktop.ViewModels
                 // Use SelectedApp.Version (or your specific property name) for the constructor
                 Mods.Add(new ModItemViewModel(shell, installed, config, SelectedApp.InstalledVersion, _commonUtils, _logger)
                 {
-                    HasAlternatives = modsWithAlternatives.Contains(shell.Id)
+                    HasAlternatives = modsWithAlternatives.Contains(shell.Id),
+                    IsPackage = packageMainModIds.Contains(shell.Id)
                 });
             }
         }

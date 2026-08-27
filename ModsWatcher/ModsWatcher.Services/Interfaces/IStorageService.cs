@@ -86,6 +86,14 @@ namespace ModsWatcher.Services.Interfaces
         Task<IEnumerable<ModAlternativeDisplayDto>> GetAlternativeGroupAsync(Guid modId);
         Task<HashSet<Guid>> GetModIdsWithAlternativesByAppIdAsync(int appId);
 
+        // Mod Packages
+
+        Task<IEnumerable<ModPackageMember>> GetPackageMembersAsync(Guid mainModId);
+        Task<ModPackageMember> AddPackageMemberAsync(Guid mainModId, string name, string? notes, string? url);
+        Task RemovePackageMemberAsync(int memberInternalId);
+        Task ReorderPackageMembersAsync(IEnumerable<ModPackageMember> orderedMembers);
+        Task<HashSet<Guid>> GetPackageMainModIdsByAppIdAsync(int appId);
+
 
 
         //Mod installation and uninstallation

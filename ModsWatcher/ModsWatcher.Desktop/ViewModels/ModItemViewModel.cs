@@ -120,6 +120,18 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _hasAlternatives, value);
         }
 
+        private bool _isPackage;
+        /// <summary>
+        /// True when this mod is the main mod of a package (has one or more lightweight
+        /// package members). Set by the parent LibraryViewModel after a batched lookup —
+        /// drives the "PACKAGE" card badge.
+        /// </summary>
+        public bool IsPackage
+        {
+            get => _isPackage;
+            set => SetProperty(ref _isPackage, value);
+        }
+
 
 
         // --- UI Logic Methods ---

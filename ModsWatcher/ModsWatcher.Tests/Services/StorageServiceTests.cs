@@ -27,6 +27,7 @@ namespace ModsWatcher.Tests.Services
         private readonly Mock<ILogger<StorageService>> _loggerMock;
         private readonly Mock<IModDependencyRepository> _modDepMock;
         private readonly Mock<IModAlternativeRepository> _modAltMock;
+        private readonly Mock<IModPackageMemberRepository> _modPackageMemberMock;
 
         private readonly StorageService _service;
 
@@ -46,6 +47,7 @@ namespace ModsWatcher.Tests.Services
             _loggerMock = new Mock<ILogger<StorageService>>();
             _modDepMock = new Mock<IModDependencyRepository>();
             _modAltMock = new Mock<IModAlternativeRepository>();
+            _modPackageMemberMock = new Mock<IModPackageMemberRepository>();
 
 
 
@@ -63,6 +65,7 @@ namespace ModsWatcher.Tests.Services
                 _availableModRepoMock.Object,
                 _modDepMock.Object,
                 _modAltMock.Object,
+                _modPackageMemberMock.Object,
                 _commonUtilsMock.Object,
                 _loggerMock.Object
             );
@@ -904,6 +907,161 @@ namespace ModsWatcher.Tests.Services
             Assert.Contains(modA, result);
             Assert.Contains(modB, result);
             Assert.DoesNotContain(unrelated, result);
+        }
+
+        #endregion
+
+        #region Mod Package Tests
+
+        [Fact]
+        public async Task AddPackageMemberAsync_ShouldAssignPriorityOrderZero_WhenPackageIsEmpty()
+        {
+            // Arrange
+            var mainModId = Guid.NewGuid();
+            _modPackageMemberMock.Setup(r => r.FindByMainModIdAsync(mainModId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModPackageMember>());
+
+            _modPackageMemberMock.Setup(r => r.InsertAsync(It.IsAny<ModPackageMember>(), It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync((ModPackageMember m, IDbConnection? c, IDbTransaction? t, CancellationToken ct) => m);
+
+            // Act
+            var result = await _service.AddPackageMemberAsync(mainModId, "Map Addon", "Optional notes", "https://example.com");
+
+            // Assert
+            Assert.Equal(0, result.PriorityOrder);
+            _modPackageMemberMock.Verify(r => r.InsertAsync(
+                It.Is<ModPackageMember>(m => m.MainModId == mainModId && m.Name == "Map Addon" && m.PriorityOrder == 0),
+                It.IsAny<IDbConnection>(),
+                null,
+                default),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task AddPackageMemberAsync_ShouldAppendAfterExistingMembers()
+        {
+            // Arrange: package already has members with PriorityOrder 0 and 1
+            var mainModId = Guid.NewGuid();
+            _modPackageMemberMock.Setup(r => r.FindByMainModIdAsync(mainModId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModPackageMember>
+                {
+                    new() { InternalId = 1, MainModId = mainModId, Name = "Base", PriorityOrder = 0 },
+                    new() { InternalId = 2, MainModId = mainModId, Name = "Addon A", PriorityOrder = 1 }
+                });
+
+            _modPackageMemberMock.Setup(r => r.InsertAsync(It.IsAny<ModPackageMember>(), It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync((ModPackageMember m, IDbConnection? c, IDbTransaction? t, CancellationToken ct) => m);
+
+            // Act
+            var result = await _service.AddPackageMemberAsync(mainModId, "Addon B", null, null);
+
+            // Assert
+            Assert.Equal(2, result.PriorityOrder);
+        }
+
+        [Fact]
+        public async Task RemovePackageMemberAsync_ShouldCallDelete_WithCorrectId()
+        {
+            // Arrange
+            int memberId = 42;
+
+            // Act
+            await _service.RemovePackageMemberAsync(memberId);
+
+            // Assert
+            _modPackageMemberMock.Verify(r => r.DeleteAsync(memberId, It.IsAny<IDbConnection>(), null, default), Times.Once);
+        }
+
+        [Fact]
+        public async Task ReorderPackageMembersAsync_ShouldAssignSequentialPriorityOrder_AndPersistEach()
+        {
+            // Arrange: caller passes members in the desired new order
+            var mainModId = Guid.NewGuid();
+            var members = new List<ModPackageMember>
+            {
+                new() { InternalId = 2, MainModId = mainModId, Name = "Addon B", PriorityOrder = 1 },
+                new() { InternalId = 1, MainModId = mainModId, Name = "Base", PriorityOrder = 0 }
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            // Act
+            await _service.ReorderPackageMembersAsync(members);
+
+            // Assert: re-indexed to match the new sequence
+            Assert.Equal(0, members[0].PriorityOrder);
+            Assert.Equal(1, members[1].PriorityOrder);
+
+            _modPackageMemberMock.Verify(r => r.UpdateAsync(
+                It.Is<ModPackageMember>(m => m.InternalId == 2 && m.PriorityOrder == 0),
+                It.IsAny<IDbConnection>(),
+                It.IsAny<IDbTransaction>(),
+                default),
+                Times.Once);
+
+            _modPackageMemberMock.Verify(r => r.UpdateAsync(
+                It.Is<ModPackageMember>(m => m.InternalId == 1 && m.PriorityOrder == 1),
+                It.IsAny<IDbConnection>(),
+                It.IsAny<IDbTransaction>(),
+                default),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GetPackageMainModIdsByAppIdAsync_ShouldReturnDistinctMainModIds()
+        {
+            // Arrange
+            int appId = 11;
+            var mainModId = Guid.NewGuid();
+
+            _modPackageMemberMock.Setup(r => r.GetMainModIdsByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<Guid> { mainModId });
+
+            // Act
+            var result = await _service.GetPackageMainModIdsByAppIdAsync(appId);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(mainModId, result);
+        }
+
+        [Fact]
+        public async Task HardWipeModAsync_ShouldAlsoCleanUpPackageMembers()
+        {
+            // Arrange
+            var mod = new Mod { Id = Guid.NewGuid(), AppId = 1, Name = "Package Main Mod" };
+            var app = new ModdedApp { Id = mod.AppId, Name = "Test App" };
+            var config = new ModCrawlerConfig { ModId = mod.Id };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            // Act
+            await _service.HardWipeModAsync(mod, app, config, "");
+
+            // Assert
+            _modPackageMemberMock.Verify(r => r.DeleteByMainModIdAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
+            _modDepMock.Verify(r => r.DeleteAllForModAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
+            _modAltMock.Verify(r => r.DeleteAllForModAsync(mod.Id, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
+        }
+
+        [Fact]
+        public async Task HardWipeAppAsync_ShouldAlsoCleanUpPackageMembers()
+        {
+            // Arrange
+            int appId = 20;
+
+            var transactionMock = new Mock<IDbTransaction>();
+            _connectionMock.Setup(c => c.BeginTransaction()).Returns(transactionMock.Object);
+
+            // Act
+            await _service.HardWipeAppAsync(appId);
+
+            // Assert
+            _modPackageMemberMock.Verify(r => r.DeleteByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
+            _modDepMock.Verify(r => r.DeleteAllByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
+            _modAltMock.Verify(r => r.DeleteAllByAppIdAsync(appId, _connectionMock.Object, It.IsAny<IDbTransaction>(), default), Times.Once);
         }
 
         #endregion

@@ -40,6 +40,10 @@
         <DataTemplate DataType="{x:Type viewmodels:ModAlternativesViewModel}">
             <views:ModAlternativesView />
         </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewmodels:ModPackageViewModel}">
+            <views:ModPackageView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
