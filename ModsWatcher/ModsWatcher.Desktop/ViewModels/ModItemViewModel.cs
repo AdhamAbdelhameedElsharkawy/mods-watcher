@@ -109,7 +109,18 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public bool HasUpdate => Shell.WatcherStatus == WatcherStatusType.UpdateFound;
 
-       
+        private bool _hasAlternatives;
+        /// <summary>
+        /// True when this mod belongs to a mutually-exclusive alternative group.
+        /// Set by the parent LibraryViewModel after a batched lookup — drives the "ALT" card badge.
+        /// </summary>
+        public bool HasAlternatives
+        {
+            get => _hasAlternatives;
+            set => SetProperty(ref _hasAlternatives, value);
+        }
+
+
 
         // --- UI Logic Methods ---
 

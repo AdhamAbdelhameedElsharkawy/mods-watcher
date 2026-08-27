@@ -26,6 +26,7 @@ namespace ModsWatcher.Tests.Services
         private readonly Mock<CommonUtils> _commonUtilsMock;
         private readonly Mock<ILogger<StorageService>> _loggerMock;
         private readonly Mock<IModDependencyRepository> _modDepMock;
+        private readonly Mock<IModAlternativeRepository> _modAltMock;
 
         private readonly StorageService _service;
 
@@ -44,6 +45,7 @@ namespace ModsWatcher.Tests.Services
             _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<StorageService>>();
             _modDepMock = new Mock<IModDependencyRepository>();
+            _modAltMock = new Mock<IModAlternativeRepository>();
 
 
 
@@ -60,6 +62,7 @@ namespace ModsWatcher.Tests.Services
                 _configRepoMock.Object,
                 _availableModRepoMock.Object,
                 _modDepMock.Object,
+                _modAltMock.Object,
                 _commonUtilsMock.Object,
                 _loggerMock.Object
             );
@@ -740,6 +743,167 @@ namespace ModsWatcher.Tests.Services
 
             // Assert
             Assert.Empty(forest);
+        }
+
+        #endregion
+
+        #region Mod Alternative Tests
+
+        [Fact]
+        public async Task AddAlternativeAsync_ShouldThrow_WhenModIsAlternativeToItself()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.AddAlternativeAsync(modId, modId));
+
+            Assert.Contains("cannot be an alternative to itself", ex.Message, StringComparison.OrdinalIgnoreCase);
+            _modAltMock.Verify(r => r.AddAsync(It.IsAny<ModAlternative>(), It.IsAny<IDbConnection>(), null, default), Times.Never);
+        }
+
+        [Fact]
+        public async Task AddAlternativeAsync_ShouldThrow_WhenRelationAlreadyExists()
+        {
+            // Arrange: the relation already exists in either direction.
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+
+            _modAltMock.Setup(r => r.GetDirectAlternativesAsync(modA, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModAlternative>
+                {
+                    new() { ModId = modB, AlternativeModId = modA }
+                });
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _service.AddAlternativeAsync(modA, modB));
+
+            Assert.Contains("already exists", ex.Message, StringComparison.OrdinalIgnoreCase);
+            _modAltMock.Verify(r => r.AddAsync(It.IsAny<ModAlternative>(), It.IsAny<IDbConnection>(), null, default), Times.Never);
+        }
+
+        [Fact]
+        public async Task AddAlternativeAsync_ShouldInsertRelation_WhenValid()
+        {
+            // Arrange
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+
+            _modAltMock.Setup(r => r.GetDirectAlternativesAsync(modA, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModAlternative>());
+
+            // Act
+            await _service.AddAlternativeAsync(modA, modB);
+
+            // Assert
+            _modAltMock.Verify(r => r.AddAsync(
+                It.Is<ModAlternative>(a => a.ModId == modA && a.AlternativeModId == modB),
+                It.IsAny<IDbConnection>(),
+                null,
+                default),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task RemoveAlternativeAsync_ShouldCallDelete_WithCorrectIds()
+        {
+            // Arrange
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+
+            // Act
+            await _service.RemoveAlternativeAsync(modA, modB);
+
+            // Assert
+            _modAltMock.Verify(r => r.DeleteAsync(modA, modB, It.IsAny<IDbConnection>(), null, default), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetAlternativeGroupAsync_ShouldReturnEmpty_WhenModDoesNotExist()
+        {
+            // Arrange
+            var modId = Guid.NewGuid();
+            _shellModRepoMock.Setup(r => r.GetByIdAsync(modId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync((Mod?)null);
+
+            // Act
+            var group = await _service.GetAlternativeGroupAsync(modId);
+
+            // Assert
+            Assert.Empty(group);
+        }
+
+        [Fact]
+        public async Task GetAlternativeGroupAsync_ShouldReturnTransitivelyConnectedMods_ExcludingSelf()
+        {
+            // Arrange: modA <-> modB <-> modC form one connected group via chained edges,
+            // even though modA and modC are never directly linked.
+            int appId = 3;
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+            var modC = Guid.NewGuid();
+            var unrelated = Guid.NewGuid();
+
+            var mods = new List<Mod>
+            {
+                new() { Id = modA, Name = "Mod A", AppId = appId, IsUsed = false },
+                new() { Id = modB, Name = "Mod B", AppId = appId, IsUsed = true },
+                new() { Id = modC, Name = "Mod C", AppId = appId, IsUsed = false },
+                new() { Id = unrelated, Name = "Unrelated Mod", AppId = appId, IsUsed = false }
+            };
+
+            _shellModRepoMock.Setup(r => r.GetByIdAsync(modA, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(mods[0]);
+            _shellModRepoMock.Setup(r => r.GetByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(mods);
+
+            _modAltMock.Setup(r => r.GetAllByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModAlternative>
+                {
+                    new() { ModId = modA, AlternativeModId = modB },
+                    new() { ModId = modB, AlternativeModId = modC }
+                });
+
+            // Act
+            var group = (await _service.GetAlternativeGroupAsync(modA)).ToList();
+
+            // Assert: modB and modC are in the group, modA (self) and the unrelated mod are not
+            Assert.Equal(2, group.Count);
+            Assert.Contains(group, g => g.ModName == "Mod B");
+            Assert.Contains(group, g => g.ModName == "Mod C");
+            Assert.DoesNotContain(group, g => g.ModName == "Mod A");
+            Assert.DoesNotContain(group, g => g.ModName == "Unrelated Mod");
+
+            // Mod B is currently active — the DTO must reflect that so the UI can warn on conflict
+            Assert.True(group.Single(g => g.ModName == "Mod B").IsActive);
+            Assert.False(group.Single(g => g.ModName == "Mod C").IsActive);
+        }
+
+        [Fact]
+        public async Task GetModIdsWithAlternativesByAppIdAsync_ShouldReturnAllModsInvolvedInAnyEdge()
+        {
+            // Arrange
+            int appId = 9;
+            var modA = Guid.NewGuid();
+            var modB = Guid.NewGuid();
+            var unrelated = Guid.NewGuid();
+
+            _modAltMock.Setup(r => r.GetAllByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<ModAlternative>
+                {
+                    new() { ModId = modA, AlternativeModId = modB }
+                });
+
+            // Act
+            var result = await _service.GetModIdsWithAlternativesByAppIdAsync(appId);
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Contains(modA, result);
+            Assert.Contains(modB, result);
+            Assert.DoesNotContain(unrelated, result);
         }
 
         #endregion

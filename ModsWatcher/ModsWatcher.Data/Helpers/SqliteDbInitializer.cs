@@ -164,6 +164,22 @@ namespace ModsWatcher.Data.Helpers
                     await conn.ExecuteAsync("UPDATE DbSchemaVersion SET Version = 3;", transaction: transaction);
                 }
 
+                // --- VERSION 4: Mod Alternatives ---
+                if (currentVersion < 4)
+                {
+                    var sqlV4 = @"
+                        CREATE TABLE IF NOT EXISTS ModAlternative (
+                            ModId TEXT NOT NULL,
+                            AlternativeModId TEXT NOT NULL,
+                            PRIMARY KEY(ModId, AlternativeModId),
+                            FOREIGN KEY(ModId) REFERENCES Mod(Id) ON DELETE CASCADE,
+                            FOREIGN KEY(AlternativeModId) REFERENCES Mod(Id) ON DELETE CASCADE
+                        );";
+
+                    await conn.ExecuteAsync(sqlV4, transaction: transaction);
+                    await conn.ExecuteAsync("UPDATE DbSchemaVersion SET Version = 4;", transaction: transaction);
+                }
+
 
                 transaction.Commit();
             }

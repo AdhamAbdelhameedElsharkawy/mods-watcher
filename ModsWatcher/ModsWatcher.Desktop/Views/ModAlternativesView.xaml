@@ -1,0 +1,119 @@
+<UserControl x:Class="ModsWatcher.Desktop.Views.ModAlternativesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:ModsWatcher.Desktop.Services"
+             Background="{DynamicResource WindowBackground}">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisConverter x:Key="InverseBoolToVisConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="MOD ALTERNATIVES" Style="{DynamicResource InspectorSectionHeaderStyle}"/>
+            <TextBlock Text="{Binding ModName}" Style="{DynamicResource ModTitleTextStyle}" FontSize="24"/>
+            <TextBlock Text="Manage which mods are mutually-exclusive alternatives to this one. Only one member of the group may be active at a time."
+                       Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- ALTERNATIVE GROUP -->
+                <TextBlock Text="ALTERNATIVE GROUP" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,10"/>
+
+                <!-- Empty state -->
+                <TextBlock Text="No alternatives set — this mod has no mutually-exclusive relations."
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
+                           Visibility="{Binding HasGroupMembers, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+                <!-- Group members list -->
+                <ItemsControl ItemsSource="{Binding GroupMembers}"
+                              Visibility="{Binding HasGroupMembers, Converter={StaticResource BoolToVis}}"
+                              Margin="0,0,0,20">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="#B39DDB"
+                                                   FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding ModName}"
+                                                   Foreground="{DynamicResource TextPrimary}"
+                                                   FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+
+                                        <Border Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"
+                                                Background="{DynamicResource ModBadgeActiveBackground}" CornerRadius="4"
+                                                Padding="8,3" Margin="10,0,0,0">
+                                            <TextBlock Text="ACTIVE" Foreground="#81C784" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding DataContext.RemoveAlternativeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{DynamicResource ActionIconButtonStyle}"
+                                            ToolTip="Remove this alternative relation">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="#E57373" FontSize="14"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Add alternative section -->
+                <TextBlock Text="ADD ALTERNATIVE" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,0,0,10"/>
+
+                <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6"
+                        Visibility="{Binding HasAvailableMods, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <ComboBox ItemsSource="{Binding AvailableMods}"
+                                  SelectedItem="{Binding SelectedAvailableMod}"
+                                  DisplayMemberPath="ModName"
+                                  Margin="0,0,0,8"
+                                  Background="{DynamicResource CardInnerSectionBackground}"
+                                  Foreground="{DynamicResource TextPrimary}"
+                                  BorderBrush="{DynamicResource BorderMuted}"/>
+
+                        <Button Content="+ Add Alternative"
+                                Command="{Binding AddAlternativeCommand}"
+                                Style="{DynamicResource SecondaryActionButtonStyle}"
+                                Foreground="{DynamicResource AccentPrimary}"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="All other mods in this app are already part of this group."
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
+                           Visibility="{Binding HasAvailableMods, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderMuted}" Padding="0,15,0,0">
+            <Button Command="{Binding GoBackCommand}" Style="{DynamicResource GhostActionButtonStyle}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Back to Library" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Border>
+    </Grid>
+</UserControl>

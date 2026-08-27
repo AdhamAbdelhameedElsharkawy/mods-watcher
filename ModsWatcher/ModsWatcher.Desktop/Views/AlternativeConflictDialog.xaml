@@ -1,0 +1,48 @@
+<Window x:Class="ModsWatcher.Desktop.Views.AlternativeConflictDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        Width="480">
+
+    <Border Background="{DynamicResource CardBackground}"
+            BorderBrush="{DynamicResource BorderMuted}"
+            BorderThickness="1" CornerRadius="12" Padding="25">
+        <StackPanel>
+
+            <!-- Header -->
+            <TextBlock Text="ALTERNATIVE MOD CONFLICT" Style="{DynamicResource SectionHeaderStyle}"/>
+            <TextBlock Text="{Binding Title}"
+                       Style="{DynamicResource ModTitleTextStyle}"
+                       FontSize="18" Margin="0,0,0,6" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Subtitle}"
+                       Foreground="{DynamicResource TextMuted}"
+                       FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+            <!-- Actions -->
+            <Button Command="{Binding ConfirmSwapCommand}"
+                    Style="{DynamicResource SecondaryActionButtonStyle}"
+                    Foreground="#FFC107"
+                    Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Swap — deactivate the other, activate this one" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Cancel -->
+            <Button Command="{Binding CancelCommand}"
+                    Style="{DynamicResource GhostActionButtonStyle}"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Cancel — do nothing" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+        </StackPanel>
+    </Border>
+</Window>

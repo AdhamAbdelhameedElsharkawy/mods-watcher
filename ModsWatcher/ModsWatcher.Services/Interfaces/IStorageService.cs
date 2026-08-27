@@ -79,6 +79,13 @@ namespace ModsWatcher.Services.Interfaces
         Task<bool> WouldCreateCircularDependencyAsync(Guid dependentModId, Guid parentModId);
         Task<IEnumerable<DependencyTreeNodeDto>> GetDependencyForestByAppIdAsync(int appId);
 
+        // Mod Alternatives
+
+        Task AddAlternativeAsync(Guid modId, Guid alternativeModId);
+        Task RemoveAlternativeAsync(Guid modId, Guid alternativeModId);
+        Task<IEnumerable<ModAlternativeDisplayDto>> GetAlternativeGroupAsync(Guid modId);
+        Task<HashSet<Guid>> GetModIdsWithAlternativesByAppIdAsync(int appId);
+
 
 
         //Mod installation and uninstallation

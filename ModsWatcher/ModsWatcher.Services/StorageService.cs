@@ -19,9 +19,10 @@ namespace ModsWatcher.Services
         private readonly IModCrawlerConfigRepository _modCrawlerConfigRepo;
         private readonly IAvailableModRepository _availableModRepo;
         private readonly IModDependencyRepository _modDependencyRepo;
+        private readonly IModAlternativeRepository _modAlternativeRepo;
         private readonly CommonUtils _commonUtils;
         private readonly ILogger<StorageService> _logger;
-        
+
 
         // We inject the Repository and the ConnectionFactory
         public StorageService(
@@ -34,6 +35,7 @@ namespace ModsWatcher.Services
             IModCrawlerConfigRepository modCrawlerConfigRepo,
             IAvailableModRepository availableModRepo,
             IModDependencyRepository modDependencyRepository,
+            IModAlternativeRepository modAlternativeRepository,
             CommonUtils commonUtils,
             ILogger<StorageService> logger
             )
@@ -47,9 +49,10 @@ namespace ModsWatcher.Services
             _modCrawlerConfigRepo = modCrawlerConfigRepo;
             _availableModRepo = availableModRepo;
             _modDependencyRepo = modDependencyRepository;
+            _modAlternativeRepo = modAlternativeRepository;
             _commonUtils = commonUtils;
             _logger = logger;
-           
+
         }
 
 
@@ -932,6 +935,126 @@ namespace ModsWatcher.Services
                 BuildTree(childNode, allDescendants, modNames);
                 node.Children.Add(childNode);
             }
+        }
+
+        #endregion
+
+        #region Mod Alternatives
+
+        public async Task AddAlternativeAsync(Guid modId, Guid alternativeModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            if (modId == alternativeModId)
+                throw new InvalidOperationException("A mod cannot be an alternative to itself.");
+
+            var existing = await _modAlternativeRepo.GetDirectAlternativesAsync(modId, connection);
+            if (existing.Any(e => e.ModId == alternativeModId || e.AlternativeModId == alternativeModId))
+                throw new InvalidOperationException("This alternative relationship already exists.");
+
+            var relation = new ModAlternative
+            {
+                ModId = modId,
+                AlternativeModId = alternativeModId
+            };
+
+            await _modAlternativeRepo.AddAsync(relation, connection);
+            _logger.LogInformation("Added alternative relation: {ModId} <-> {AlternativeModId}", modId, alternativeModId);
+        }
+
+        public async Task RemoveAlternativeAsync(Guid modId, Guid alternativeModId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            await _modAlternativeRepo.DeleteAsync(modId, alternativeModId, connection);
+            _logger.LogInformation("Removed alternative relation: {ModId} <-> {AlternativeModId}", modId, alternativeModId);
+        }
+
+        public async Task<IEnumerable<ModAlternativeDisplayDto>> GetAlternativeGroupAsync(Guid modId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var mod = await _modRepo.GetByIdAsync(modId, connection);
+            if (mod == null)
+                return Enumerable.Empty<ModAlternativeDisplayDto>();
+
+            var allMods = (await _modRepo.GetByAppIdAsync(mod.AppId, connection)).ToDictionary(m => m.Id);
+            var edges = (await _modAlternativeRepo.GetAllByAppIdAsync(mod.AppId, connection)).ToList();
+
+            var group = FindConnectedGroup(modId, edges);
+
+            return group
+                .Where(allMods.ContainsKey)
+                .Select(id => new ModAlternativeDisplayDto
+                {
+                    ModId = id.ToString(),
+                    ModName = allMods[id].Name,
+                    IsActive = allMods[id].IsUsed
+                })
+                .OrderBy(d => d.ModName);
+        }
+
+        public async Task<HashSet<Guid>> GetModIdsWithAlternativesByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var edges = await _modAlternativeRepo.GetAllByAppIdAsync(appId, connection);
+
+            var ids = new HashSet<Guid>();
+            foreach (var edge in edges)
+            {
+                ids.Add(edge.ModId);
+                ids.Add(edge.AlternativeModId);
+            }
+
+            return ids;
+        }
+
+        // Traverses the undirected alternative graph and returns every mod reachable
+        // from modId (excluding modId itself) — i.e. the full mutually-exclusive group.
+        private static HashSet<Guid> FindConnectedGroup(Guid modId, List<ModAlternative> edges)
+        {
+            var adjacency = new Dictionary<Guid, HashSet<Guid>>();
+            void AddEdge(Guid a, Guid b)
+            {
+                if (!adjacency.TryGetValue(a, out var neighbors))
+                    adjacency[a] = neighbors = new HashSet<Guid>();
+                neighbors.Add(b);
+            }
+
+            foreach (var edge in edges)
+            {
+                AddEdge(edge.ModId, edge.AlternativeModId);
+                AddEdge(edge.AlternativeModId, edge.ModId);
+            }
+
+            var visited = new HashSet<Guid> { modId };
+            var queue = new Queue<Guid>();
+            queue.Enqueue(modId);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (!adjacency.TryGetValue(current, out var neighbors))
+                    continue;
+
+                foreach (var neighbor in neighbors)
+                {
+                    if (visited.Add(neighbor))
+                        queue.Enqueue(neighbor);
+                }
+            }
+
+            visited.Remove(modId);
+            return visited;
         }
 
         #endregion
