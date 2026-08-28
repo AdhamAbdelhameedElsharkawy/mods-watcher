@@ -37,6 +37,9 @@ namespace ModsWatcher.Desktop.ViewModels
             new() { Value = ModStateFilter.DependencyChild, Label = "Dependency — Child" },
             new() { Value = ModStateFilter.Package, Label = "Package" },
             new() { Value = ModStateFilter.VersionMismatch, Label = "Version Mismatch" },
+            new() { Value = ModStateFilter.Watchable, Label = "Watchable" },
+            new() { Value = ModStateFilter.Crawlable, Label = "Crawlable" },
+            new() { Value = ModStateFilter.UpdateAvailable, Label = "Update Available" },
             new() { Value = ModStateFilter.All, Label = "All" },
         };
 
@@ -237,6 +240,7 @@ namespace ModsWatcher.Desktop.ViewModels
             var modsWithAlternatives = await _storageService.GetModIdsWithAlternativesByAppIdAsync(SelectedApp.Id);
             var packageMainModIds = await _storageService.GetPackageMainModIdsByAppIdAsync(SelectedApp.Id);
             var dependencyRoles = await _storageService.GetDependencyRolesByAppIdAsync(SelectedApp.Id);
+            var modsWithAvailableVersions = await _storageService.GetModIdsWithAvailableVersionsByAppIdAsync(SelectedApp.Id);
 
             // 3. Iterate over the SORTED data
             foreach (var (shell, installed, config) in sortedData)
@@ -247,7 +251,8 @@ namespace ModsWatcher.Desktop.ViewModels
                     HasAlternatives = modsWithAlternatives.Contains(shell.Id),
                     IsPackage = packageMainModIds.Contains(shell.Id),
                     IsDependencyParent = dependencyRoles.Parents.Contains(shell.Id),
-                    IsDependencyChild = dependencyRoles.Children.Contains(shell.Id)
+                    IsDependencyChild = dependencyRoles.Children.Contains(shell.Id),
+                    HasAvailableVersions = modsWithAvailableVersions.Contains(shell.Id)
                 });
             }
 
@@ -268,6 +273,9 @@ namespace ModsWatcher.Desktop.ViewModels
                 ModStateFilter.DependencyChild => Mods.Where(m => m.IsDependencyChild),
                 ModStateFilter.Package => Mods.Where(m => m.IsPackage),
                 ModStateFilter.VersionMismatch => Mods.Where(m => !m.IsCompatible),
+                ModStateFilter.Watchable => Mods.Where(m => m.Shell.IsWatchable),
+                ModStateFilter.Crawlable => Mods.Where(m => m.Shell.IsCrawlable),
+                ModStateFilter.UpdateAvailable => Mods.Where(m => m.HasUpdate),
                 _ => Mods
             };
 

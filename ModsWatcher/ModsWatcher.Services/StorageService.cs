@@ -920,6 +920,16 @@ namespace ModsWatcher.Services
             return (parents, children);
         }
 
+        public async Task<HashSet<Guid>> GetModIdsWithAvailableVersionsByAppIdAsync(int appId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            var modIds = await _availableModRepo.GetModIdsByAppIdAsync(appId, connection);
+            return modIds.ToHashSet();
+        }
+
         private static void BuildTree(DependencyTreeNodeDto node, List<ModDependency> allDescendants, Dictionary<Guid, string> modNames)
         {
             var nodeGuid = Guid.Parse(node.ModId);
