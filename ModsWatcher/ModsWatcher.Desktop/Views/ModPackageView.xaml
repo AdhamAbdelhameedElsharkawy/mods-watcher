@@ -71,6 +71,27 @@
                                                    Foreground="{DynamicResource TextMuted}"
                                                    FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                                    Visibility="{Binding Notes, Converter={StaticResource StringToVisibilityConverter}}"/>
+
+                                        <Border Style="{DynamicResource ModUrlContainerStyle}" Margin="0,6,0,0"
+                                                Visibility="{Binding Url, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <DockPanel LastChildFill="True">
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                    <Button Style="{DynamicResource ActionIconButtonStyle}"
+                                                            Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding Url}">
+                                                        <TextBlock Text="&#xE128;" FontFamily="Segoe MDL2 Assets" Foreground="#4A69FF" FontSize="12" Margin="5,0"/>
+                                                    </Button>
+                                                    <Button Style="{DynamicResource ActionIconButtonStyle}"
+                                                            Command="{Binding DataContext.CopyUrlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding Url}">
+                                                        <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0"/>
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Url}" Foreground="{DynamicResource TextSecondary}"
+                                                           FontSize="10" VerticalAlignment="Center" Margin="5,0"
+                                                           Opacity="0.6" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                        </Border>
                                     </StackPanel>
 
                                     <Button Grid.Column="2"

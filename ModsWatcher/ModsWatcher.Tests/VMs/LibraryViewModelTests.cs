@@ -32,6 +32,7 @@ namespace ModsWatcher.Tests.VMs
             _watcherMock = new Mock<IWatcherService>();
             _dialogServiceMock = new Mock<IDialogService>();
             var optionsMock = new Mock<IOptions<WatcherSettings>>();
+            optionsMock.Setup(o => o.Value).Returns(new WatcherSettings { CheckingThresholdHours = 8 });
             _commonUtilsMock = new Mock<CommonUtils>(optionsMock.Object);
             _loggerMock = new Mock<ILogger<LibraryViewModel>>();
             _modItemViewModel = new Mock<ModItemViewModel>();
@@ -264,6 +265,71 @@ namespace ModsWatcher.Tests.VMs
             _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.UpdateAvailable);
             Assert.Single(_vm.FilteredMods);
             Assert.Equal("Update Mod", _vm.FilteredMods[0].Shell.Name);
+        }
+
+        [Fact]
+        public async Task RunFullSync_ShouldClearStaleUpdateFlag_ForNonCrawlableMod_WhenHashUnchanged()
+        {
+            // Arrange: already flagged from a prior check, and this check's hash comparison
+            // finds nothing new (RunStatusCheckAsync leaves the mod untouched — simulated by
+            // not mutating it in the mock callback).
+            _vm.SelectedApp = _testApp;
+
+            var shell = new Mod
+            {
+                Id = Guid.NewGuid(),
+                Name = "Stale Mod",
+                IsCrawlable = false,
+                WatcherStatus = WatcherStatusType.UpdateFound,
+                LastWatcherHash = "existing-hash",
+                LastWatched = DateTime.Now.AddDays(-1)
+            };
+            var modItem = new ModItemViewModel(shell, null, new ModCrawlerConfig(), "1.0", _commonUtilsMock.Object, _loggerMock.Object);
+
+            _watcherMock.Setup(w => w.RunStatusCheckAsync(It.IsAny<IEnumerable<(Mod, ModCrawlerConfig)>>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await _vm.RunFullSync(modItem);
+
+            // Assert
+            Assert.Equal(WatcherStatusType.Idle, shell.WatcherStatus);
+            _storageMock.Verify(s => s.UpdateModShellAsync(It.Is<Mod>(m => m.Id == shell.Id)), Times.AtLeastOnce);
+            _dialogServiceMock.Verify(d => d.ShowConfirmation(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task RunFullSync_ShouldKeepUpdateFlag_ForNonCrawlableMod_WhenHashGenuinelyChanges()
+        {
+            // Arrange: same starting state as the stale case, but this check's hash
+            // comparison finds a real difference — simulated by the mock mutating the hash,
+            // the same way RunStatusCheckAsync's real hash-mismatch branch would.
+            _vm.SelectedApp = _testApp;
+
+            var shell = new Mod
+            {
+                Id = Guid.NewGuid(),
+                Name = "Freshly Changed Mod",
+                IsCrawlable = false,
+                WatcherStatus = WatcherStatusType.UpdateFound,
+                LastWatcherHash = "existing-hash",
+                LastWatched = DateTime.Now.AddDays(-1)
+            };
+            var modItem = new ModItemViewModel(shell, null, new ModCrawlerConfig(), "1.0", _commonUtilsMock.Object, _loggerMock.Object);
+
+            _watcherMock.Setup(w => w.RunStatusCheckAsync(It.IsAny<IEnumerable<(Mod, ModCrawlerConfig)>>()))
+                .Callback(() =>
+                {
+                    shell.LastWatcherHash = "new-hash";
+                    shell.WatcherStatus = WatcherStatusType.UpdateFound;
+                })
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await _vm.RunFullSync(modItem);
+
+            // Assert: a genuinely fresh detection is left flagged, not reset
+            Assert.Equal(WatcherStatusType.UpdateFound, shell.WatcherStatus);
         }
 
         [Fact]

@@ -701,13 +701,35 @@ namespace ModsWatcher.Desktop.ViewModels
 
                     Loading.BusyMessage = "Checking for updates...";
 
+                    // RunStatusCheckAsync only updates the hash (and sets UpdateFound) on a
+                    // real difference. Comparing the hash before/after this call is the
+                    // reliable way to tell "this check found something new" apart from
+                    // "nothing changed" — WatcherStatus itself can't be used for that, since
+                    // it gets force-set to Checking right below regardless of the outcome.
+                    string? hashBeforeCheck = modItem.Shell.LastWatcherHash;
+
                     modItem.Shell.WatcherStatus = WatcherStatusType.Checking;
                     var watchBundle = new List<(Mod, ModCrawlerConfig)> { (modItem.Shell, modItem.Config!) };
                     await _watcherService.RunStatusCheckAsync(watchBundle);
 
-                    if (modItem.Shell.WatcherStatus != WatcherStatusType.UpdateFound)
+                    bool checkFoundNoRealChange = modItem.Shell.LastWatcherHash == hashBeforeCheck;
+
+                    if (checkFoundNoRealChange)
                     {
-                       
+                        if (!modItem.Shell.IsCrawlable)
+                        {
+                            // Non-crawlable mods have no deep scan to offer — once the watcher
+                            // check itself finds nothing new, there's nothing further for Run
+                            // Full Sync to do, so finalize here instead of asking "scan
+                            // anyway?" for a scan that can't happen, and instead of falling
+                            // through into the (skipped, for non-crawlable) block below that
+                            // would otherwise leave this mod's status stuck unresolved.
+                            await FinalizeSyncState(modItem, WatcherStatusType.Idle);
+                            Loading.IsBusy = false;
+                            Loading.BusyMessage = string.Empty;
+                            return;
+                        }
+
                         forceSync = _dialogService.ShowConfirmation(
                                             "No new update detected by the watcher. Perform a deep scan anyway?",
                                             "No Update Found");
@@ -719,6 +741,13 @@ namespace ModsWatcher.Desktop.ViewModels
                             Loading.BusyMessage = string.Empty;
                             return;
                         }
+                    }
+                    else if (!modItem.Shell.IsCrawlable)
+                    {
+                        // A genuine new change was found on a non-crawlable mod — nothing
+                        // more to do, but refresh so the UPDATE badge appears immediately
+                        // rather than waiting for the next full library reload.
+                        modItem.RefreshSummary();
                     }
                 }
                 else

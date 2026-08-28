@@ -3,6 +3,7 @@ using ModsWatcher.Core.Entities;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Services.Interfaces;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ModsWatcher.Desktop.ViewModels
@@ -47,6 +48,8 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand RemoveMemberCommand { get; }
         public ICommand MoveMemberUpCommand { get; }
         public ICommand MoveMemberDownCommand { get; }
+        public ICommand OpenUrlCommand { get; }
+        public ICommand CopyUrlCommand { get; }
 
         public ModPackageViewModel(
             INavigationService navigationService,
@@ -73,6 +76,9 @@ namespace ModsWatcher.Desktop.ViewModels
 
             MoveMemberDownCommand = new RelayCommand(
                 async obj => await MoveMemberAsync(obj as ModPackageMember, 1));
+
+            OpenUrlCommand = new RelayCommand(obj => ExecuteOpenUrl(obj as string));
+            CopyUrlCommand = new RelayCommand(obj => ExecuteCopyUrl(obj as string));
         }
 
         public async void Initialize((ModdedApp App, ModItemViewModel Mod) data)
@@ -166,6 +172,29 @@ namespace ModsWatcher.Desktop.ViewModels
                 _dialogService.ShowError($"Failed to save the new order: {ex.Message}");
                 _logger.LogError(ex, "Unexpected error reordering package members");
             }
+        }
+
+        private void ExecuteOpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Could not open browser: {ex.Message}");
+            }
+        }
+
+        private void ExecuteCopyUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            Clipboard.SetText(url);
         }
 
         private void NotifyCollectionStateChanged()
