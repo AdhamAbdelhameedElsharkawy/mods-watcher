@@ -187,6 +187,7 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
                                     <TextBlock Grid.Row="0" Text="{Binding Name}" Style="{DynamicResource ModTitleTextStyle}"/>
@@ -232,12 +233,41 @@
                         ToolTip="This mod depends on other mods">
                                             <TextBlock Text="CHILD" Foreground="#7AE3A0" FontSize="9" FontWeight="Bold"/>
                                         </Border>
+
+                                        <Border Visibility="{Binding IsWatchableOnly, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="#2A3A45" CornerRadius="4" Padding="8,3" Margin="8,0,0,0"
+                        ToolTip="This mod is watched for source page changes">
+                                            <TextBlock Text="WATCH" Foreground="#7AB8E3" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+
+                                        <Border Visibility="{Binding Shell.IsCrawlable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="#3A2A45" CornerRadius="4" Padding="8,3" Margin="8,0,0,0"
+                        ToolTip="This mod can be deep-crawled for new versions">
+                                            <TextBlock Text="CRAWL" Foreground="#C77AE3" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+
+                                        <Border Visibility="{Binding HasUpdate, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="#453619" CornerRadius="4" Padding="8,3" Margin="8,0,0,0"
+                        ToolTip="The watched source page changed since the last check">
+                                            <TextBlock Text="UPDATE" Foreground="{DynamicResource AccentWarning}" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
                                     </StackPanel>
 
-                                    <TextBlock Grid.Row="3" Text="{Binding ModDescription}" Foreground="{DynamicResource TextMuted}" 
+                                    <TextBlock Grid.Row="3" Text="{Binding ModDescription}" Foreground="{DynamicResource TextMuted}"
                        FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15" Opacity="0.8"/>
 
-                                    <StackPanel Grid.Row="4" Visibility="{Binding Shell.RootSourceUrl, Converter={StaticResource NullToBoolConverter}}" Margin="0,0,0,15">
+                                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,15"
+                                                Visibility="{Binding HasNotes, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                ToolTip="{Binding Notes}">
+                                        <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                                   Foreground="{DynamicResource AccentWarning}"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Notes}" Foreground="{DynamicResource AccentWarning}"
+                                                   FontSize="11" FontStyle="Italic" Opacity="0.85"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="5" Visibility="{Binding Shell.RootSourceUrl, Converter={StaticResource NullToBoolConverter}}" Margin="0,0,0,15">
                                         <TextBlock Text="ROOT SOURCE" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,0,0,5"/>
                                         <Border Style="{DynamicResource ModUrlContainerStyle}">
                                             <DockPanel LastChildFill="True">
@@ -260,9 +290,10 @@
                                         </Border>
                                     </StackPanel>
 
-                                    <Button Grid.Row="5" Content="Check Versions" HorizontalAlignment="Right"
+                                    <Button Grid.Row="6" Content="Check Versions" HorizontalAlignment="Right"
                     Style="{DynamicResource VersionPillButtonStyle}"
-                    Command="{Binding DataContext.NavToSingleModVersionsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                    Visibility="{Binding HasAvailableVersions, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Command="{Binding DataContext.NavToSingleModVersionsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     CommandParameter="{Binding}"/>
                                 </Grid>
                             </Grid>

@@ -13,5 +13,9 @@ namespace ModsWatcher.Core.Interfaces
         Task<bool> DeleteByModIdAsync(Guid modId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
 
         Task<bool> DeleteByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
+
+        // Distinct ModIds that have at least one AvailableMod record, scoped to an app —
+        // used to batch-derive which mods have versions to show, mirroring the other badge lookups.
+        Task<IEnumerable<Guid>> GetModIdsByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default);
     }
 }

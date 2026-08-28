@@ -114,5 +114,20 @@ namespace ModsWatcher.Data
                 return affected > 0;
             }, true, connection, transaction);
         }
+
+        public Task<IEnumerable<Guid>> GetModIdsByAppIdAsync(int appId, IDbConnection? connection = null, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+        {
+            return ExecuteAsync(async (conn, trans) =>
+            {
+                const string sql = @"
+                    SELECT DISTINCT am.ModId
+                    FROM AvailableMod am
+                    INNER JOIN Mod m ON m.Id = am.ModId
+                    WHERE m.AppId = @AppId;";
+
+                return await conn.QueryAsync<Guid>(
+                    new CommandDefinition(sql, new { AppId = appId }, trans, cancellationToken: cancellationToken));
+            }, false, connection, transaction);
+        }
     }
 }

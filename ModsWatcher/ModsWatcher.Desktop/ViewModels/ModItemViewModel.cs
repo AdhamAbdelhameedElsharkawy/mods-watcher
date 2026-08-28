@@ -45,6 +45,10 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public string Description => Shell.Description ?? "";
 
+        public string Notes => Shell.Notes ?? "";
+
+        public bool HasNotes => !string.IsNullOrWhiteSpace(Shell.Notes);
+
         /// <summary>
         /// Logic: Returns true if:
         /// 1. There is no installation record (Shell only).
@@ -109,6 +113,13 @@ namespace ModsWatcher.Desktop.ViewModels
 
         public bool HasUpdate => Shell.WatcherStatus == WatcherStatusType.UpdateFound;
 
+        /// <summary>
+        /// True when this mod is watched but not also crawlable. Crawlable always implies
+        /// Watchable (enforced by the cascade in ModShellDialogViewModel), so showing both
+        /// the WATCH and CRAWL badges together would be redundant — this drives WATCH alone.
+        /// </summary>
+        public bool IsWatchableOnly => Shell.IsWatchable && !Shell.IsCrawlable;
+
         private bool _hasAlternatives;
         /// <summary>
         /// True when this mod belongs to a mutually-exclusive alternative group.
@@ -154,6 +165,19 @@ namespace ModsWatcher.Desktop.ViewModels
             set => SetProperty(ref _isDependencyChild, value);
         }
 
+        private bool _hasAvailableVersions;
+        /// <summary>
+        /// True when this mod has one or more crawled AvailableMod records. Set by the
+        /// parent LibraryViewModel after a batched lookup — drives whether the "Check
+        /// Versions" button is shown, since IsCrawlable alone doesn't guarantee there's
+        /// anything to show yet (or still, if crawling was later disabled).
+        /// </summary>
+        public bool HasAvailableVersions
+        {
+            get => _hasAvailableVersions;
+            set => SetProperty(ref _hasAvailableVersions, value);
+        }
+
 
 
         // --- UI Logic Methods ---
@@ -171,6 +195,9 @@ namespace ModsWatcher.Desktop.ViewModels
             OnPropertyChanged(nameof(ModDescription));
             OnPropertyChanged(nameof(Installed));
             OnPropertyChanged(nameof(WatcherError));
+            OnPropertyChanged(nameof(Notes));
+            OnPropertyChanged(nameof(HasNotes));
+            OnPropertyChanged(nameof(IsWatchableOnly));
         }
 
         ///// <summary>

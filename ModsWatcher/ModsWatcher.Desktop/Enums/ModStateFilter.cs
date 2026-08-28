@@ -8,6 +8,9 @@ namespace ModsWatcher.Desktop.Enums
         DependencyParent,
         DependencyChild,
         Package,
-        VersionMismatch
+        VersionMismatch,
+        Watchable,
+        Crawlable,
+        UpdateAvailable
     }
 }

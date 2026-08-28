@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModsWatcher.Core.Entities;
+using ModsWatcher.Core.Enums;
 using ModsWatcher.Desktop.Enums;
 using ModsWatcher.Desktop.Interfaces;
 using ModsWatcher.Desktop.ViewModels;
@@ -56,6 +57,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id)).ReturnsAsync((new HashSet<Guid>(), new HashSet<Guid>()));
+            _storageMock.Setup(s => s.GetModIdsWithAvailableVersionsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
 
             // Act
             _vm.Initialize((_testApp, null));
@@ -102,6 +104,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id)).ReturnsAsync((new HashSet<Guid>(), new HashSet<Guid>()));
+            _storageMock.Setup(s => s.GetModIdsWithAvailableVersionsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
 
             _vm.Initialize((_testApp, null));
             await Task.Delay(10);
@@ -201,6 +204,7 @@ namespace ModsWatcher.Tests.VMs
             _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
             _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id))
                 .ReturnsAsync((new HashSet<Guid> { parentMod.Id }, new HashSet<Guid> { childMod.Id }));
+            _storageMock.Setup(s => s.GetModIdsWithAvailableVersionsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
 
             _vm.Initialize((_testApp, null));
             await Task.Delay(10);
@@ -218,6 +222,48 @@ namespace ModsWatcher.Tests.VMs
             // Assert
             Assert.Single(_vm.FilteredMods);
             Assert.Equal("Child Mod", _vm.FilteredMods[0].Shell.Name);
+        }
+
+        [Fact]
+        public async Task ApplyStateFilter_ShouldNarrowFilteredMods_ByWatchableCrawlableAndUpdateAvailable()
+        {
+            // Arrange
+            var watchableMod = new Mod { Id = Guid.NewGuid(), Name = "Watchable Mod", IsUsed = true, IsWatchable = true };
+            var crawlableMod = new Mod { Id = Guid.NewGuid(), Name = "Crawlable Mod", IsUsed = true, IsCrawlable = true };
+            var updateMod = new Mod { Id = Guid.NewGuid(), Name = "Update Mod", IsUsed = true, WatcherStatus = WatcherStatusType.UpdateFound };
+            var plainMod = new Mod { Id = Guid.NewGuid(), Name = "Plain Mod", IsUsed = true };
+
+            var data = new List<(Mod Shell, InstalledMod Installed, ModCrawlerConfig Config)>
+            {
+                (watchableMod, null, null),
+                (crawlableMod, null, null),
+                (updateMod, null, null),
+                (plainMod, null, null)
+            };
+
+            _storageMock.Setup(s => s.GetFullModsByAppId(_testApp.Id)).ReturnsAsync(data);
+            _storageMock.Setup(s => s.GetModIdsWithAlternativesByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetPackageMainModIdsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+            _storageMock.Setup(s => s.GetDependencyRolesByAppIdAsync(_testApp.Id)).ReturnsAsync((new HashSet<Guid>(), new HashSet<Guid>()));
+            _storageMock.Setup(s => s.GetModIdsWithAvailableVersionsByAppIdAsync(_testApp.Id)).ReturnsAsync(new HashSet<Guid>());
+
+            _vm.Initialize((_testApp, null));
+            await Task.Delay(10);
+
+            // Act / Assert: Watchable
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.Watchable);
+            Assert.Single(_vm.FilteredMods);
+            Assert.Equal("Watchable Mod", _vm.FilteredMods[0].Shell.Name);
+
+            // Act / Assert: Crawlable
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.Crawlable);
+            Assert.Single(_vm.FilteredMods);
+            Assert.Equal("Crawlable Mod", _vm.FilteredMods[0].Shell.Name);
+
+            // Act / Assert: Update Available
+            _vm.SelectedStateFilter = _vm.StateFilterOptions.First(o => o.Value == ModStateFilter.UpdateAvailable);
+            Assert.Single(_vm.FilteredMods);
+            Assert.Equal("Update Mod", _vm.FilteredMods[0].Shell.Name);
         }
 
         [Fact]

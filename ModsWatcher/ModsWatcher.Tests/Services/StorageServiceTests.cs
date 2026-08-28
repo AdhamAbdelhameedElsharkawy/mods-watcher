@@ -911,6 +911,45 @@ namespace ModsWatcher.Tests.Services
 
         #endregion
 
+        #region Available Version Lookup Tests
+
+        [Fact]
+        public async Task GetModIdsWithAvailableVersionsByAppIdAsync_ShouldReturnDistinctModIdsWithVersions()
+        {
+            // Arrange
+            int appId = 12;
+            var modWithVersions = Guid.NewGuid();
+            var modWithoutVersions = Guid.NewGuid();
+
+            _availableModRepoMock.Setup(r => r.GetModIdsByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<Guid> { modWithVersions });
+
+            // Act
+            var result = await _service.GetModIdsWithAvailableVersionsByAppIdAsync(appId);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(modWithVersions, result);
+            Assert.DoesNotContain(modWithoutVersions, result);
+        }
+
+        [Fact]
+        public async Task GetModIdsWithAvailableVersionsByAppIdAsync_ShouldReturnEmpty_WhenNoVersionsExist()
+        {
+            // Arrange
+            int appId = 13;
+            _availableModRepoMock.Setup(r => r.GetModIdsByAppIdAsync(appId, It.IsAny<IDbConnection>(), null, default))
+                .ReturnsAsync(new List<Guid>());
+
+            // Act
+            var result = await _service.GetModIdsWithAvailableVersionsByAppIdAsync(appId);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        #endregion
+
         #region Mod Package Tests
 
         [Fact]

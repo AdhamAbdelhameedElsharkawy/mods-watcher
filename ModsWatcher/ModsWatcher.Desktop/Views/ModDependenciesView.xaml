@@ -102,8 +102,20 @@
                            Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
                            Visibility="{Binding HasAvailableParents, Converter={StaticResource InverseBoolToVisConverter}}"/>
 
-                <!-- DEPENDED ON BY (dependents) — read only -->
-                <TextBlock Text="DEPENDED ON BY" Style="{DynamicResource InspectorSectionHeaderStyle}" Margin="0,20,0,10"/>
+                <!-- DEPENDED ON BY (dependents) -->
+                <Grid Margin="0,20,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="DEPENDED ON BY" Style="{DynamicResource InspectorSectionHeaderStyle}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="Remove All"
+                            Command="{Binding RemoveAllDependentsCommand}"
+                            Visibility="{Binding HasDependents, Converter={StaticResource BoolToVis}}"
+                            Style="{DynamicResource ActionIconButtonStyle}"
+                            Foreground="#E57373" FontSize="11"
+                            ToolTip="Remove every dependent of this mod"/>
+                </Grid>
 
                 <TextBlock Text="No other mods depend on this mod."
                            Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,20"
@@ -115,14 +127,30 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Style="{DynamicResource HistoryRowStyle}" Margin="0,0,0,6">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets"
-                                               Foreground="{DynamicResource TextMuted}"
-                                               FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <TextBlock Text="{Binding ModName}"
-                                               Foreground="{DynamicResource TextSecondary}"
-                                               FontSize="14" VerticalAlignment="Center"/>
-                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="{DynamicResource TextMuted}"
+                                                   FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding ModName}"
+                                                   Foreground="{DynamicResource TextSecondary}"
+                                                   FontSize="14" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding DataContext.RemoveDependentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{DynamicResource ActionIconButtonStyle}"
+                                            ToolTip="Remove this dependency">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="#E57373" FontSize="14"/>
+                                    </Button>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

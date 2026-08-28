@@ -38,6 +38,8 @@ namespace ModsWatcher.Desktop.ViewModels
         public ICommand GoBackCommand { get; }
         public ICommand AddDependencyCommand { get; }
         public ICommand RemoveDependencyCommand { get; }
+        public ICommand RemoveDependentCommand { get; }
+        public ICommand RemoveAllDependentsCommand { get; }
 
         public ModDependenciesViewModel(
             INavigationService navigationService,
@@ -58,6 +60,13 @@ namespace ModsWatcher.Desktop.ViewModels
 
             RemoveDependencyCommand = new RelayCommand(
                 async obj => await RemoveDependencyAsync(obj as ModDependencyDisplayDto));
+
+            RemoveDependentCommand = new RelayCommand(
+                async obj => await RemoveDependentAsync(obj as ModDependencyDisplayDto));
+
+            RemoveAllDependentsCommand = new RelayCommand(
+                async _ => await RemoveAllDependentsAsync(),
+                _ => HasDependents);
         }
 
         public async void Initialize((ModdedApp App, ModItemViewModel Mod) data)
@@ -183,6 +192,64 @@ namespace ModsWatcher.Desktop.ViewModels
             {
                 _dialogService.ShowError($"Failed to remove dependency: {ex.Message}");
                 _logger.LogError(ex, "Unexpected error removing dependency");
+            }
+        }
+
+        private async Task RemoveDependentAsync(ModDependencyDisplayDto? dependent)
+        {
+            if (dependent == null) return;
+
+            bool confirmed = _dialogService.ShowConfirmation(
+                $"'{dependent.ModName}' will no longer depend on '{ModName}'. Remove this dependency?",
+                "Remove Dependency");
+
+            if (!confirmed) return;
+
+            try
+            {
+                await _storageService.RemoveDependencyAsync(
+                    Guid.Parse(dependent.ModId),
+                    _modItem.Shell.Id);
+
+                _logger.LogInformation("Removed dependency: {DependentName} no longer depends on {ModName}",
+                    dependent.ModName, _modItem.Shell.Name);
+
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Failed to remove dependency: {ex.Message}");
+                _logger.LogError(ex, "Unexpected error removing dependent relation");
+            }
+        }
+
+        private async Task RemoveAllDependentsAsync()
+        {
+            if (!HasDependents) return;
+
+            bool confirmed = _dialogService.ShowConfirmation(
+                $"Remove all {Dependents.Count} mods currently depending on '{ModName}'? Each of those mods will no longer require this one.",
+                "Remove All Dependents");
+
+            if (!confirmed) return;
+
+            try
+            {
+                foreach (var dependent in Dependents.ToList())
+                {
+                    await _storageService.RemoveDependencyAsync(
+                        Guid.Parse(dependent.ModId),
+                        _modItem.Shell.Id);
+                }
+
+                _logger.LogInformation("Removed all dependents of {ModName}", _modItem.Shell.Name);
+
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Failed to remove all dependents: {ex.Message}");
+                _logger.LogError(ex, "Unexpected error removing all dependents");
             }
         }
 
