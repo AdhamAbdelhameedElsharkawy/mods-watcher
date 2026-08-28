@@ -256,16 +256,20 @@
                                     <TextBlock Grid.Row="3" Text="{Binding ModDescription}" Foreground="{DynamicResource TextMuted}"
                        FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15" Opacity="0.8"/>
 
-                                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,15"
-                                                Visibility="{Binding HasNotes, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                ToolTip="{Binding Notes}">
-                                        <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                    <Grid Grid.Row="4" Margin="0,0,0,15"
+                                          Visibility="{Binding HasNotes, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                          ToolTip="{Binding Notes}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="10"
                                                    Foreground="{DynamicResource AccentWarning}"
                                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding Notes}" Foreground="{DynamicResource AccentWarning}"
+                                        <TextBlock Grid.Column="1" Text="{Binding Notes}" Foreground="{DynamicResource AccentWarning}"
                                                    FontSize="11" FontStyle="Italic" Opacity="0.85"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="320"/>
-                                    </StackPanel>
+                                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
 
                                     <StackPanel Grid.Row="5" Visibility="{Binding Shell.RootSourceUrl, Converter={StaticResource NullToBoolConverter}}" Margin="0,0,0,15">
                                         <TextBlock Text="ROOT SOURCE" Style="{DynamicResource SmallHeaderTextStyle}" Margin="0,0,0,5"/>
