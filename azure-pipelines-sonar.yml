@@ -48,7 +48,7 @@ steps:
     inputs:
       command: 'test'
       projects: 'ModsWatcher/ModsWatcher.Tests/ModsWatcher.Tests.csproj'
-      arguments: '-c $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover'
+      arguments: '-c $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover'
 
   - task: SonarCloudAnalyze@4
     displayName: 'Sonar: run analysis'
