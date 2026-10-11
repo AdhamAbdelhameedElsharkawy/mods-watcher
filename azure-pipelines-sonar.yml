@@ -25,7 +25,7 @@ steps:
       packageType: 'sdk'
       version: '10.0.x'
 
-  - task: SonarCloudPrepare@4
+  - task: SonarCloudPrepare@4.2.6
     displayName: 'Sonar: prepare analysis'
     inputs:
       SonarCloud: 'sonarcloud-mods-watcher'            # Azure DevOps service connection name (you create it)
@@ -50,12 +50,12 @@ steps:
       projects: 'ModsWatcher/ModsWatcher.Tests/ModsWatcher.Tests.csproj'
       arguments: '-c $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover'
 
-  - task: SonarCloudAnalyze@4
+  - task: SonarCloudAnalyze@4.2.6
     displayName: 'Sonar: run analysis'
     inputs:
       jdkversion: 'JAVA_HOME_21_X64'  # docs: Java 17 support removed
 
-  - task: SonarCloudPublish@4
+  - task: SonarCloudPublish@4.2.6
     displayName: 'Sonar: publish quality gate result'
     inputs:
       pollingTimeoutSec: '300'
